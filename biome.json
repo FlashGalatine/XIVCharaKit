@@ -7,5 +7,12 @@
   "formatter": { "indentStyle": "space", "indentWidth": 2 },
   "javascript": { "formatter": { "quoteStyle": "single" } },
   "linter": { "enabled": true, "rules": { "preset": "recommended" } },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } }
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "overrides": [
+    {
+      "includes": ["packages/chara/src/palettes/data/*.json"],
+      "formatter": { "enabled": false },
+      "linter": { "enabled": false }
+    }
+  ]
 }

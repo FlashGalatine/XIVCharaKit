@@ -12,7 +12,9 @@ const entries = execFileSync('tar', ['-tzf', tarball], { encoding: 'utf8' })
 assert(entries.length > 2);
 for (const entry of entries) {
   assert(
-    /^package\/(?:package\.json|dist\/[a-z-]+\.(?:js|d\.ts))$/.test(entry),
+    /^package\/(?:package\.json|dist\/(?:THIRD_PARTY_NOTICES\.md|(?:[a-z-]+\/)*[a-zA-Z0-9_-]+\.(?:js|d\.ts)))$/.test(
+      entry,
+    ),
     'Unexpected package file.',
   );
 }
@@ -44,6 +46,9 @@ await writeFile(
   `import { readChara, inspectChara, modelKey, type CharaInspection } from 'ffxiv-chara';
 const result: CharaInspection = inspectChara(readChara('{"HairTone":0}'));
 const key: string = modelKey({ slot: 'MainHand', set: 634, base: 19, variant: 1 });
+import { createDefaultPaletteProvider, type PaletteProvider } from 'ffxiv-chara/palettes';
+const palettes: PaletteProvider = createDefaultPaletteProvider();
+void palettes;
 void result; void key;
 `,
 );
@@ -62,6 +67,9 @@ await writeFile(
 globalThis.fetch = () => { throw new Error('Unexpected network'); };
 const { readChara, inspectChara } = await import('ffxiv-chara');
 const result = inspectChara(readChara('{"Body":{"ModelBase":361,"ModelVariant":5}}'));
+const { createDefaultPaletteProvider } = await import('ffxiv-chara/palettes');
+const color = await createDefaultPaletteProvider().getColor({ table:'shader', palette:'eyes', index:0 });
+if (color?.hex !== '#F7F7F7') throw new Error('Worker palette mismatch');
 parentPort.postMessage(result.equipment.Body.model);
 `,
 );
@@ -73,6 +81,8 @@ globalThis.fetch = () => { throw new Error('Unexpected network'); };
 const { readChara, inspectChara, modelKey } = await import('ffxiv-chara');
 assert.equal(inspectChara(readChara('{"Tribe":"Dunesfolk"}')).identity.canonicalRace, 'Lalafell');
 assert.equal(modelKey({ slot:'MainHand', set:634, base:19, variant:1 }), '4296213114');
+const { createDefaultPaletteProvider } = await import('ffxiv-chara/palettes');
+assert.equal((await createDefaultPaletteProvider().getColor({ table:'creator', palette:'hair', index:42, tribe:'Raen', gender:'Feminine' }))?.hex, '#FFDC98');
 const worker = new Worker(new URL('./worker.mjs', import.meta.url));
 try {
   const result = await new Promise((resolve, reject) => {

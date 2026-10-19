@@ -47,3 +47,19 @@ The reviewer set aside future Tasks 3–8, real-export fixture ground truth, for
 ## Next milestone
 
 Tasks 3–4: complete palette provenance and regeneration inputs, implement the lazy provider, then appearance interpretation with independent swatch expectations. The package remains private; no merge, push, publication, deployment, or existing-product migration was performed.
+
+## Palette and appearance milestone (in progress)
+
+Reopened by the maintainer's request to proceed. Baseline: `d2a7838`, clean working tree, 122 passing tests. Continue inline on the existing branch; one independent review follows Tasks 3–4.
+
+Shared interfaces: Task 3 supplies `PaletteProvider.getColor` with explicit creator/shader table, palette, index, and optional tribe/gender; Task 4 consumes reader-produced `CharaInspection` evidence without altering it. Optional exports must remain separate from the main entry's static dependency graph.
+
+Decisions before implementation:
+
+- Repack the pinned public generated tables as four hex-only datasets, verifying original index/RGB/hex agreement and recording source and output hashes. No game installation is searched. Real `human.cmp` regeneration remains unverified without an explicit source path; the generator is tested with synthetic binary layouts.
+- Preserve the documented source policy: gamma-2 extended decoding, DeltaE2000 thresholds 6/1, and dark-shader comparison for both dark and light lips. Face paint has no extended color source.
+- Ruling: only a declared valid extended block can apply lip opacity or suppress the indexed lip — this follows the brief's extended-activity boundary even though the older source applied alpha zero regardless of the validity flag. Inactive stored opacity remains visible; cost if wrong is a changed preview for contradictory legacy exports.
+- Ruling: keep complete all-zero legacy blocks as ambiguous evidence rather than erase them or declare active black colors — the plan requires raw-value preservation and honest ambiguity. A single valid black vector remains usable; cost if wrong is an unresolved preview for an intentionally all-zero complete block.
+- Missing highlight/face-paint controls leave activity unknown, with stored swatch evidence still available. Unknown race prevents treating a possible Hrothgar fur index as a lip palette index.
+
+Task 3 implemented: four versioned data tables, all source/output hashes, immutable metadata, detached color results, lazy per-table loading with coalescing/retry, and the explicit bounded local-file generator. Twenty-one provider tests and five generator tests were observed failing before implementation. Full suite: 148/148. Strict type checks, palette verification and installed JS/TS/Node Worker consumers pass. Build metadata rejects optional code in the main static dependency graph. Real source regeneration and release/data-rights review remain pending; Task 4 and the independent review follow.

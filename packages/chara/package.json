@@ -13,6 +13,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./palettes": {
+      "types": "./dist/palettes/index.d.ts",
+      "import": "./dist/palettes.js"
     }
   },
   "scripts": {
