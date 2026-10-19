@@ -70,7 +70,7 @@ describe('versioned palette lookup', () => {
     ).toBeNull();
   });
 
-  it('returns detached colors and immutable provenance with an unknown game revision', async () => {
+  it('returns detached colors and immutable provenance', async () => {
     const provider = createDefaultPaletteProvider();
     const color = await provider.getColor({
       table: 'creator',
@@ -83,7 +83,6 @@ describe('versioned palette lookup', () => {
       (await provider.getColor({ table: 'creator', palette: 'eyes', index: 0 }))
         ?.hex,
     ).toBe('#F7F7F7');
-    expect(provider.metadata.gameVersion).toBeNull();
     expect(() => {
       (provider.metadata as { datasetVersion: string }).datasetVersion =
         'poison';

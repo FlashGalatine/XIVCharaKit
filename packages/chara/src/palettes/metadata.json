@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "datasetVersion": "2026-10-19-baseline",
-  "gameVersion": null,
+  "gameVersion": "7.57",
   "source": {
     "repository": "FlashGalatine/xivdyetools",
     "commit": "b98c8584a85f5dc50b4b4392c508cc627ef004d6",
