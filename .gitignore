@@ -4,3 +4,4 @@ coverage/
 .superpowers/
 .pnpm-store/
 *.tgz
+*.cmp

@@ -43,6 +43,6 @@ These are aggregate compatibility observations, not independently reviewed expec
 ## Pending compatibility gates
 
 - Real producer-generated fixtures with explicit redistribution rights and independently reviewed complete expectations.
-- Real-source palette regeneration and broader independent visual/producer swatch expectations; see [appearance validation](security/appearance-validation.md) for implemented Tasks 3–4 and corpus observations.
+- Broader independent visual/producer swatch expectations; real-source regeneration now matches the baseline exactly. See [appearance validation](security/appearance-validation.md) for implemented Tasks 3–4 and corpus observations.
 - Browser/Worker installed-package behavior and full demo validation (Tasks 7–8).
 - Code/fixture licensing and package identity before any distribution.

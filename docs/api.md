@@ -83,7 +83,7 @@ Colors include the request coordinates, canonical uppercase hex, RGB tuple, and 
 
 Loading/validation failure throws `PaletteDataError` with code `PALETTE_LOAD_FAILED` and a fixed message; native loader errors are not exposed. A host can implement `PaletteProvider` with its own `getColor` and optional metadata instead. Injected provider functions execute with host privileges and can have their own side effects; they are trusted JavaScript, not sandboxed data.
 
-See [data provenance and regeneration](data-provenance.md#palette-baseline-and-regeneration) for source rights, explicit local-file tooling, and the outstanding real-source regeneration check.
+See [data provenance and regeneration](data-provenance.md#palette-baseline-and-regeneration) for source rights, explicit local-file tooling, and the verified supplied-source regeneration result.
 
 ## Appearance interpretation (`ffxiv-chara/appearance`)
 

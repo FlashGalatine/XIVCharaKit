@@ -53,6 +53,6 @@ const hair = appearance.slots.hair;
 
 These imports are available to a local consumer of the packed package; there is no public npm installation yet. Reading, inspection, bundled palette lookup, and appearance interpretation perform no network or storage operations. Main-entry imports exclude optional code/data; palette tables load only when requested. Embedded image fields are omitted; all remaining stored values are untrusted data.
 
-The local sample checker accepts `--appearance` to include aggregate swatch results. It never copies samples or records per-character values. Real `human.cmp` regeneration remains unverified; the committed tables retain their pinned upstream provenance and `gameVersion: null`.
+The local sample checker accepts `--appearance` to include aggregate swatch results. It never copies samples or records per-character values. Regeneration from the maintainer-supplied `human.cmp` exactly matches all four committed palette tables; source hashes are recorded while `gameVersion` remains null.
 
 See [API and limits](docs/api.md), [compatibility evidence](docs/compatibility.md), [source/data provenance](docs/data-provenance.md), [security requirements](docs/security/THREAT_MODEL.md), and [implementation progress](docs/implementation-progress.md). The [MVP plan](docs/plans/2026-10-19-chara-library-mvp.md) retains the full roadmap.

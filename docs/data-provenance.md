@@ -24,4 +24,10 @@ pnpm exec tsx scripts/build-palettes.ts <explicit-human.cmp-path> --dataset-vers
 pnpm verify-palettes
 ```
 
-The generator checks file size/layout before reading, limits work to 16 MiB, writes fixed table/metadata paths, and records the source hash/byte length without its local path. `--check` reports derived hashes without changing files. Review the complete data diff and update reviewed samples for an intentional dataset change. An explicit game-version argument is a maintainer claim requiring evidence; it is not inferred from the file. No real `human.cmp` path has been provided, so real-file regeneration parity is unverified. Synthetic binary tests establish shared/clan/gender offsets, interface/shader separation, and interleaved shader-hair extraction only.
+The generator checks file size/layout before reading, limits work to 16 MiB, writes fixed table/metadata paths, and records the source hash/byte length without its local path. `--check` reports derived hashes without changing files. Review the complete data diff and update reviewed samples for an intentional dataset change. An explicit game-version argument is a maintainer claim requiring evidence; it is not inferred from the file. Synthetic binary tests establish shared/clan/gender offsets, interface/shader separation, and interleaved shader-hair extraction.
+
+### Supplied-source verification — 2026-10-19
+
+The maintainer supplied a real `human.cmp`: 186,752 bytes, SHA-256 `958e90e635b756fff3e1b9c08b7c33fb08708258eee913b8ab57672b67d5e025`. The check-mode generator produced the exact recorded artifact hashes/counts for all four tables (26,208 colors). A subsequent write-mode regeneration with the existing dataset version left every palette data file unchanged; only `generatedFrom` metadata was added. An independent hash check confirmed the source file remained unchanged.
+
+This closes the real-source palette regeneration check for this binary and dataset. The raw file stays outside the repository/package, with `*.cmp` excluded from Git, and its local path is not recorded in metadata. No patch version was supplied or inferred: `gameVersion` remains null. The comparison covers the extracted palette regions, not the unused height/scale tables or every field in the binary, and does not settle redistribution rights.
