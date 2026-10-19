@@ -2,7 +2,7 @@
 
 A TypeScript library in development for reading and inspecting Final Fantasy XIV `.chara` files used by Anamnesis, Ktisis, and Brio.
 
-**Status: library MVP implemented; demo pending.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. The package is private at version 0.0.0 while publication identity and licensing remain undecided.
+**Status: library MVP and local demo implemented.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. The package is private at version 0.0.0 while publication identity and licensing remain undecided.
 
 The full MVP includes:
 
@@ -11,7 +11,7 @@ The full MVP includes:
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and anonymized examples.
 
-The demo website and browser/workerd acceptance checks are upcoming milestones. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
+The demo is verified in Chromium with a module Web Worker. Broader installed-browser/workerd checks and CI remain the next milestone. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
 
 ## Develop locally
 
@@ -19,6 +19,7 @@ Use Node 22.21.0 and pnpm 10.27.0 (pinned in the repository).
 
 ```sh
 pnpm install --frozen-lockfile
+pnpm --filter @ffxiv-chara/demo exec playwright install chromium
 pnpm test
 pnpm type-check
 pnpm lint
@@ -28,6 +29,8 @@ pnpm test:package
 ```
 
 `pnpm test:package` builds and packs the private package locally, checks the exact tarball contents, and exercises installed JavaScript, TypeScript, and Node Worker consumers. It does not publish. `pnpm benchmark` measures synthetic reader cases in isolated Node processes.
+
+Start the demo with `pnpm dev`, or run `pnpm build` followed by `pnpm preview` for the production artifact at `http://127.0.0.1:4173`. Files stay in memory; equipment lookup requires a separate click. The default tests mock upstream responses. See [demo setup and validation](docs/demo.md) for the opt-in live check, privacy limits, and preview headers.
 
 ```ts
 import { readChara, inspectChara, modelKey } from 'ffxiv-chara';
@@ -66,7 +69,7 @@ const result = await resolver.resolve({
 // and ambiguity; result.facewear and upstream evidence are separate.
 ```
 
-Only equipment identifiers are sent. Matching candidates do not establish which inventory item was saved. See [equipment resolution](docs/xivapi.md#equipment-candidate-resolution) for off-hand matching, incomplete results, privacy, and resource limits. Direct browser CORS remains unverified.
+Only equipment identifiers are sent. Matching candidates do not establish which inventory item was saved. See [equipment resolution](docs/xivapi.md#equipment-candidate-resolution) for off-hand matching, incomplete results, privacy, and resource limits. A recorded synthetic browser lookup verified direct CORS from localhost on 2026-10-19; a future public host still needs its own acceptance check.
 
 The local sample checker accepts `--appearance` to include aggregate swatch results. It never copies samples or records per-character values. Regeneration from the maintainer-supplied `human.cmp` exactly matches all four committed palette tables; source hashes and the maintainer-confirmed game version 7.57 are recorded.
 

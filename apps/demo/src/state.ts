@@ -1,0 +1,209 @@
+import type { EquipmentModel } from 'ffxiv-chara';
+import { loadIcons } from './icons.js';
+import type { DemoState, WorkerReply } from './types.js';
+
+const MAX_BYTES = 8 * 1024 * 1024;
+export class DemoSession {
+  readonly state: DemoState = {
+    fileName: null,
+    inspection: null,
+    appearance: null,
+    appearanceStatus: 'idle',
+    resolution: null,
+    error: null,
+    localStatus: 'Choose a file or try a synthetic example.',
+    reading: false,
+    lookingUp: false,
+    lookupMessage: '',
+    icons: new Map(),
+  };
+  private generation = 0;
+  private lookupToken = 0;
+  private worker: Worker | null = null;
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private controller: AbortController | null = null;
+  private exampleController: AbortController | null = null;
+  constructor(private readonly changed: (kind?: 'icons') => void) {}
+  private stopWorker(): void {
+    this.worker?.terminate();
+    this.worker = null;
+    clearTimeout(this.timer);
+  }
+  private stopLookup(): void {
+    this.lookupToken++;
+    this.controller?.abort();
+    this.controller = null;
+    for (const url of this.state.icons.values()) URL.revokeObjectURL(url);
+    this.state.icons.clear();
+    this.state.lookingUp = false;
+  }
+  private begin(): number {
+    this.generation++;
+    this.stopWorker();
+    this.stopLookup();
+    this.exampleController?.abort();
+    this.state.resolution = null;
+    this.state.lookupMessage = '';
+    this.state.error = null;
+    return this.generation;
+  }
+  clear(): void {
+    this.begin();
+    this.state.fileName = null;
+    this.state.inspection = null;
+    this.state.appearance = null;
+    this.state.appearanceStatus = 'idle';
+    this.state.reading = false;
+    this.state.localStatus = 'Choose a file or try a synthetic example.';
+    this.changed();
+  }
+  cancelLookup(): void {
+    this.stopLookup();
+    this.state.resolution = null;
+    this.state.lookupMessage = 'Lookup cancelled.';
+    this.changed();
+  }
+  load(file: File): void {
+    this.start(file, this.begin());
+  }
+  private start(file: File, generation: number): void {
+    if (!/\.chara$/i.test(file.name)) {
+      this.reject('FILE_EXTENSION');
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      this.reject('FILE_TOO_LARGE');
+      return;
+    }
+    this.state.reading = true;
+    this.state.localStatus = 'Reading locally…';
+    this.changed();
+    let committed = false;
+    const worker = new Worker(new URL('./worker.ts', import.meta.url), {
+      type: 'module',
+    });
+    this.worker = worker;
+    const fail = (code: string) => {
+      if (generation !== this.generation) return;
+      this.stopWorker();
+      if (committed) {
+        this.state.appearanceStatus = 'unavailable';
+        this.state.reading = false;
+        this.state.error = `${code}: Appearance could not be resolved. The selected file remains inspected.`;
+        this.state.localStatus =
+          'File inspected locally. Color evidence unavailable.';
+        this.changed();
+      } else this.reject(code);
+    };
+    this.timer = setTimeout(
+      () => fail(committed ? 'APPEARANCE_TIMEOUT' : 'PROCESSING_TIMEOUT'),
+      5000,
+    );
+    worker.onerror = (event) => {
+      event.preventDefault();
+      fail('PROCESSING_FAILED');
+    };
+    worker.onmessage = (event: MessageEvent<WorkerReply>) => {
+      if (generation !== this.generation) return;
+      const message = event.data;
+      if (message.type === 'inspection') {
+        committed = true;
+        this.state.fileName = file.name.slice(0, 256);
+        this.state.inspection = message.inspection;
+        this.state.appearance = null;
+        this.state.appearanceStatus = 'loading';
+        this.state.localStatus =
+          'File inspected locally. Loading color evidence…';
+        this.changed();
+      } else if (message.type === 'appearance') {
+        this.state.appearance = message.appearance;
+        this.state.appearanceStatus = 'ready';
+        this.state.reading = false;
+        this.state.localStatus = 'File inspected locally.';
+        this.stopWorker();
+        this.changed();
+      } else fail(message.code);
+    };
+    worker.postMessage(file);
+  }
+  private reject(code: string): void {
+    this.state.error = `${code}: Could not finish local inspection. Your previous valid file is retained.`;
+    this.state.reading = false;
+    this.state.localStatus = 'File rejected or processing incomplete.';
+    this.changed();
+  }
+  async example(producer: 'anamnesis' | 'ktisis' | 'brio'): Promise<void> {
+    const generation = this.begin();
+    const control = new AbortController();
+    this.exampleController = control;
+    this.state.reading = true;
+    this.state.localStatus = 'Loading synthetic example…';
+    this.changed();
+    try {
+      const response = await fetch(`/examples/${producer}.chara`, {
+        signal: control.signal,
+        credentials: 'omit',
+        referrerPolicy: 'no-referrer',
+        cache: 'no-store',
+      });
+      if (!response.ok) throw new Error('EXAMPLE_UNAVAILABLE');
+      const blob = await response.blob();
+      if (generation === this.generation)
+        this.start(new File([blob], `${producer}.chara`), generation);
+    } catch {
+      if (generation === this.generation && !control.signal.aborted)
+        this.reject('EXAMPLE_UNAVAILABLE');
+    }
+  }
+  async resolve(): Promise<void> {
+    const inspection = this.state.inspection;
+    if (!inspection || this.state.lookingUp) return;
+    this.stopLookup();
+    const token = this.lookupToken;
+    const generation = this.generation;
+    const current = () =>
+      token === this.lookupToken && generation === this.generation;
+    const control = new AbortController();
+    this.controller = control;
+    this.state.lookingUp = true;
+    this.state.lookupMessage = 'Looking up equipment IDs…';
+    this.state.resolution = null;
+    this.changed();
+    try {
+      const { createXivapiResolver } = await import('ffxiv-chara/xivapi');
+      if (!current()) return;
+      const models: EquipmentModel[] = Object.values(inspection.equipment)
+        .filter((e) => e.status === 'worn')
+        .flatMap((e) => (e.model ? [{ ...e.model }] : []));
+      const glassesId =
+        inspection.facewear.state === 'valid' && inspection.facewear.value > 0
+          ? inspection.facewear.value
+          : undefined;
+      const result = await createXivapiResolver().resolve(
+        { models, ...(glassesId === undefined ? {} : { glassesId }) },
+        { signal: control.signal },
+      );
+      if (!current()) return;
+      this.state.resolution = result;
+      this.state.lookingUp = false;
+      this.state.lookupMessage =
+        'Lookup finished. Candidate matches do not establish the original item.';
+      this.changed();
+      await loadIcons(result, control.signal, (key, url) => {
+        if (!current()) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        this.state.icons.set(key, url);
+        this.changed('icons');
+      });
+    } catch {
+      if (current()) {
+        this.state.lookingUp = false;
+        this.state.lookupMessage =
+          'Lookup unavailable. Local inspection remains usable.';
+        this.changed();
+      }
+    }
+  }
+}

@@ -6,7 +6,7 @@ This document supplements the [implementation plan](../plans/2026-10-19-chara-li
 
 ## Scope and review record
 
-The review covers the public reader/inspection API, appearance swatches, bundled palettes, optional XIVAPI adapter, static reference website, public fixtures, and eventual package/build pipeline. It used the repository's two initial documents, an independent read-only design review, and the primary sources linked below. Dependency scans, exploit tests, runtime benchmarks, and live browser/network checks were not run because the implementation does not exist.
+The review covers the public reader/inspection API, appearance swatches, bundled palettes, optional XIVAPI adapter, static reference website, public fixtures, and eventual package/build pipeline. It used the repository's two initial documents, an independent read-only design review, and the primary sources linked below. At the original planning review, dependency scans, exploit tests, runtime benchmarks, and live browser/network checks were not run because the implementation did not exist. Subsequent implementation evidence is recorded in [implementation progress](../implementation-progress.md), including the [demo's browser/privacy and live-integration checks](../demo.md). CI, broader runtime acceptance and actual deployed-host headers remain open gates.
 
 There is no account system, database, file-upload backend, arbitrary URL importer, game-plugin execution, or `.chara` writer in the proposed MVP. Adding any of these, a proxy, persistent character sharing, or automatic remote enrichment requires revisiting this model. Server-side consumers of the library have additional responsibilities even though the demo is static.
 
@@ -108,7 +108,7 @@ Before the first public package or hosted demo, add `SECURITY.md` with supported
 
 ## Security acceptance cases for the future implementation
 
-All cases below are pending. Use synthetic inputs and mock upstreams for adversarial, fuzz, load and automated acceptance tests; those tests must not target third-party production services. The implementation plan separately retains an ordinary, low-volume live browser lookup to verify integration after implementation is authorized. That lookup does not authorize security probing or load testing of XIVAPI.
+The table below records the original acceptance requirements; consult [implementation progress](../implementation-progress.md) for completed milestones and remaining gates. Use synthetic inputs and mock upstreams for adversarial, fuzz, load and automated acceptance tests; those tests must not target third-party production services. The implementation plan separately retains an ordinary, low-volume live browser lookup to verify integration after implementation is authorized. That lookup does not authorize security probing or load testing of XIVAPI.
 
 | Gate | Evidence required | Owner |
 |---|---|---|

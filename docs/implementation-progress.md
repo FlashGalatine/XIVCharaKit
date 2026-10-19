@@ -4,7 +4,7 @@ Plan: `docs/plans/2026-10-19-chara-library-mvp.md`.
 Implementation reopened by the maintainer on 2026-10-19.
 
 The reader foundation covers Task 0 evidence and Tasks 1–2. The second milestone implements Tasks 3–4 (palettes and appearance); independent review is complete and both reported findings are fixed.
-Tasks 5–6 add portable XIVAPI transport/cache and equipment candidate resolution. Tasks 7–8 remain pending; publication, deployment, and XIV Dye Tools migration are separate scope.
+Tasks 5–6 add portable XIVAPI transport/cache and equipment candidate resolution. Task 7 adds the local demo and recorded live browser integration. Task 8 distribution/CI remains pending; publication, deployment, and XIV Dye Tools migration are separate scope.
 
 ## Decisions
 
@@ -117,3 +117,25 @@ Independent review found no Critical, Important or Minor code findings. Its read
 Task 6 complete: 38 focused resolver tests and 295/295 full-suite tests across 10 files. `pnpm type-check`, `pnpm lint`, `pnpm verify-fixtures`, `pnpm verify-palettes`, and `pnpm test:package` pass. The package check builds production bundles, verifies optional-module separation, checks 37 allowlisted files, and exercises the installed resolver in JavaScript, TypeScript and a Node Worker. No package was published.
 
 Next step: Task 7, the local demo website. True browser CORS and browser/workerd acceptance remain pending. No push, PR, merge, publication, deployment or consumer migration is part of this milestone.
+
+## Reference website milestone
+
+Task 7 baseline: `dd1ffda`, clean working tree. Execution stayed inline on the existing branch, using the agreed brief, test-first browser scenarios and one fresh read-only review. The private Vite application uses ordinary DOM rendering and built public library exports; parsing/inspection/appearance run in a module Web Worker, and equipment resolution remains an explicit separate action. Exact development dependencies are Vite 8.3.4 and Playwright 1.64.1; no runtime dependency was added to the library.
+
+Rulings and interfaces:
+
+- Preserve the previous valid inspection on rejected replacement; if appearance fails after a new inspection succeeds, keep the new stored evidence and mark swatches unavailable. Cost: two distinct failure paths with honest status messages.
+- File admission uses extension and 8 MiB size before reading, then library content recognition. Terminate superseded/five-second worker jobs, abort network work, and guard every asynchronous result by generation. Clear releases references and revokes icon URLs without claiming memory erasure.
+- Raw children page in reversible groups of 200; candidate lists page in groups of ten. Bounded previews distinguish JSON scalar types. This bounds rendering while retaining all admitted evidence and candidates for navigation.
+- Fetch optional icons only through validated numeric/version-derived XIVAPI asset paths, bounded PNG bodies/dimensions, and revocable local Blob URLs. Icon failures do not invalidate equipment. No backend, telemetry, persistent storage or automatic API lookup was introduced.
+- Public examples are exact copies of three reviewed synthetic fixtures. Fixture verification now checks those copies. No private samples, raw game source, generated concept images, or local review screenshots are shipped.
+
+Initial thirteen browser behavior cases were observed failing against the stub. Independent review found appearance-failure status and reversible raw pagination defects, plus ambiguous JSON scalar previews; the last was elevated from Minor to Important by the implementer because the global contract preserves stored evidence. All three reproduced RED→GREEN and are fixed. Additional regressions cover bounded names and candidate pagination. No deferred code findings remain; the broader installed-browser/workerd, CI, release and hosting gates stay in Task 8 or separate deployment scope. An intermediate Chromium navigation failed with `ERR_NO_BUFFER_SPACE` before the app loaded; focused and full reruns passed.
+
+Final verification: 295/295 library tests and 19/19 default Chromium browser scenarios pass, with one intentional opt-in live skip. The separately invoked live browser case also passes. Strict type checks, lint, fixture/palette verification, production builds, locked offline installation, dependency audits (zero known vulnerabilities), and installed JS/TS/Node Worker consumers pass. The private tarball retains 37 allowlisted files and zero runtime dependencies.
+
+Live evidence: synthetic Ktisis Body `361/5` and Glasses `12` resolved to Bloodhempen Chestwrap of Casting and Brown Oval Spectacles. Five GET requests (version, search, Glasses, two assets) returned HTTP 200 with CORS `*`. Assertions checked identifiers/allowed controls only, no request body/Cookie/Authorization/Referer; two icons decoded as 80×80 local Blob images. Observed version `5c744a8d8daafb25`, schema `exdschema@2:rev:e773c41a90aed788cf4c1c48469fa85618ef01fb`. Cancellation and stale responses were checked with controlled upstreams. A future public origin still requires validation; this is no availability guarantee.
+
+The generated desktop reference and final desktop/mobile captures were compared at original resolution; interactive in-app browser checks supplemented Playwright's production-preview coverage. The [demo guide](demo.md) records setup, privacy bounds, live evidence and the seven-point fidelity ledger, including deliberate functional deviations. Production preview headers were exercised; no public hosting headers are claimed.
+
+Next step: Task 8, distribution/runtime acceptance, CI and review artifacts. The package remains private and the website local; no push, PR, merge, publication, deployment or consumer migration was performed.

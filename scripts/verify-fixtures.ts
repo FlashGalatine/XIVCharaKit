@@ -30,6 +30,20 @@ if (
   manifest.equipmentRows.sha256
 )
   throw new Error('Equipment fixture hash mismatch.');
+const examplesRoot = new URL('../apps/demo/public/examples/', import.meta.url);
+for (const [example, source] of [
+  ['anamnesis.chara', 'anamnesis/full.chara'],
+  ['ktisis.chara', 'ktisis/full.chara'],
+  ['brio.chara', 'brio/extended.chara'],
+]) {
+  if (!example || !source) throw new Error('Missing example mapping.');
+  const [exampleBytes, sourceBytes] = await Promise.all([
+    readFile(new URL(example, examplesRoot)),
+    readFile(new URL(source, root)),
+  ]);
+  if (!exampleBytes.equals(sourceBytes))
+    throw new Error('Public example differs from reviewed synthetic fixture.');
+}
 console.log(
-  `Verified ${manifest.fixtures.length} synthetic character fixtures and the equipment-row fixture hash; identity/facewear expectations checked.`,
+  `Verified ${manifest.fixtures.length} synthetic character fixtures, equipment-row hash, and 3 exact public example copies; identity/facewear expectations checked.`,
 );

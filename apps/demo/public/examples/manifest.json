@@ -1,0 +1,21 @@
+{
+  "kind": "synthetic",
+  "description": "Authored from documented field shapes. No private producer exports or embedded images.",
+  "examples": [
+    {
+      "producer": "Anamnesis",
+      "file": "anamnesis.chara",
+      "source": "fixtures/anamnesis/full.chara"
+    },
+    {
+      "producer": "Ktisis",
+      "file": "ktisis.chara",
+      "source": "fixtures/ktisis/full.chara"
+    },
+    {
+      "producer": "Brio",
+      "file": "brio.chara",
+      "source": "fixtures/brio/extended.chara"
+    }
+  ]
+}

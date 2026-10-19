@@ -7,6 +7,8 @@
     "node": ">=22.12.0 <23 || >=24"
   },
   "scripts": {
+    "dev": "pnpm --filter ffxiv-chara build && pnpm --filter @ffxiv-chara/demo dev",
+    "preview": "pnpm --filter @ffxiv-chara/demo preview",
     "test": "pnpm -r test",
     "build": "pnpm -r build",
     "type-check": "tsc --noEmit -p tsconfig.json && pnpm -r type-check",

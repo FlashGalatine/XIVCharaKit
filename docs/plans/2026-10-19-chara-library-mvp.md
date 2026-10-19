@@ -1,6 +1,6 @@
 # ffxiv-chara MVP Implementation Plan
 
-**Status:** implementation reopened by the maintainer on 2026-10-19. Reader/inspection, palette/appearance, and optional XIVAPI equipment resolution (Tasks 1–6) are implemented with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Tasks 7–8 remain pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
+**Status:** implementation reopened by the maintainer on 2026-10-19. Reader/inspection, palette/appearance, optional XIVAPI equipment resolution and the local demo (Tasks 1–7) are implemented with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Task 8 remains pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
 
 > **For agentic workers:** Execute the selected milestone inline using superpowers:executing-plans and test-driven development, with a final independent review. Checkboxes track implementation where complete; pending tasks do not authorize publication, deployment, or consumer migration.
 
@@ -232,14 +232,16 @@ Finalize these names when reopening the plan; subsequent tasks use them consiste
 
 **Interfaces:** Consumes `readChara`, `inspectChara`, `resolveAppearance`, `createDefaultPaletteProvider`, and `createXivapiResolver`; produces a static demo artifact.
 
-- [ ] Write browser scenarios for each producer, partial files, stored-value expansion, appearance swatches with source labels, equipment/dye IDs, multiple item candidates, and keyboard-accessible file selection. Assert imported HTML-like names render as literal text.
-- [ ] Add API-failure and overlapping-file scenarios: resolve file A slowly, select file B, then finish A; every displayed result must belong to B. An invalid replacement file preserves the previous valid inspection and reports the rejection. Refuse non-`.chara` names and over-limit files before reading; a renamed pose still fails content recognition.
-- [ ] Run `pnpm --filter './apps/demo' exec playwright test`; confirm the missing behavior. Use mocked XIVAPI responses for deterministic automated tests, not a dependency on live upstream availability.
-- [ ] Implement a small responsive page with in-memory state, accessible status messages, and lazy optional-module imports. Display appearance/gear immediately; enrich equipment asynchronously. Abort superseded requests and use generation checks to prevent late updates. Render stored values without offering edit/write controls or decoding embedded images.
-- [ ] Run the browser scenarios and a production build/preview. Perform a separately recorded live browser lookup with a known model and verify that only identifiers leave the page. Check browser CORS, cancellation, returned version, and icons. If direct access is blocked, record the limitation and resolve proxy scope with the maintainer before adding any backend or claiming a working live demo.
-- [ ] Commit the demo/example paths. Do not deploy the preview or choose a public domain automatically.
+- [x] Write browser scenarios for each producer, partial files, stored-value expansion, appearance swatches with source labels, equipment/dye IDs, multiple item candidates, and keyboard-accessible file selection. Assert imported HTML-like names render as literal text.
+- [x] Add API-failure and overlapping-file scenarios: resolve file A slowly, select file B, then finish A; every displayed result must belong to B. An invalid replacement file preserves the previous valid inspection and reports the rejection. Refuse non-`.chara` names and over-limit files before reading; a renamed pose still fails content recognition.
+- [x] Run `pnpm --filter './apps/demo' exec playwright test`; confirm the missing behavior. Use mocked XIVAPI responses for deterministic automated tests, not a dependency on live upstream availability.
+- [x] Implement a small responsive page with in-memory state, accessible status messages, and lazy optional-module imports. Display appearance/gear immediately; enrich equipment asynchronously. Abort superseded requests and use generation checks to prevent late updates. Render stored values without offering edit/write controls or decoding embedded images.
+- [x] Run the browser scenarios and a production build/preview. Perform a separately recorded live browser lookup with a known model and verify that only identifiers leave the page. Check browser CORS, cancellation, returned version, and icons. If direct access is blocked, record the limitation and resolve proxy scope with the maintainer before adding any backend or claiming a working live demo.
+- [x] Commit the demo/example paths. Do not deploy the preview or choose a public domain automatically.
 
 **Exit:** The website demonstrates the installed library's read/inspect/swatch/resolve flow, including clear degraded states. Live integration remains unverified until the browser lookup succeeds; a recorded transport limitation is a pending item, not a passing live gate.
+
+Task 7 evidence: [demo validation](../demo.md). Direct localhost Chromium CORS, returned upstream identities and icons passed a separate synthetic live check; cancellation/stale results passed controlled-response browser tests. No deployment was performed.
 
 ## Task 8: Verify distribution, document usage, and prepare review artifacts
 
