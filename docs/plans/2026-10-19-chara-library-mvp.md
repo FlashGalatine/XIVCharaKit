@@ -1,8 +1,8 @@
 # ffxiv-chara MVP Implementation Plan
 
-**Status:** draft, planning only — 2026-10-19. Creation of the public `FlashGalatine/ffxiv-chara` repository and committing these planning documents are authorized. All product implementation remains explicitly deferred; do not execute this task list until the user reopens implementation.
+**Status:** implementation reopened by the maintainer on 2026-10-19. The first milestone implements the reader and typed inspection (Tasks 1–2) with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Tasks 3–8 remain pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
 
-> **For agentic workers:** When implementation is explicitly authorized, use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task by task. The execution method has not been selected. Steps use checkbox (`- [ ]`) syntax for future tracking; none have been executed.
+> **For agentic workers:** Execute the selected milestone inline using superpowers:executing-plans and test-driven development, with a final independent review. Checkboxes track implementation where complete; pending tasks do not authorize publication, deployment, or consumer migration.
 
 **Goal:** Build an open source, reusable `.chara` inspection library for Anamnesis, Ktisis, and Brio, with appearance swatches, optional XIVAPI equipment resolution, and a small website demonstrating the public API.
 
@@ -22,7 +22,7 @@ Compatibility must include selectively saved files, producer differences, missin
 
 ## Global constraints
 
-- **Planning only now.** Repository setup and committing the README and this plan are authorized. Do not scaffold product files, install dependencies, run product builds/tests, modify existing application behavior, publish packages, or deploy the website.
+- **Implementation reopened.** Local code, development dependencies, tests, builds and review artifacts are authorized. Do not change existing applications, publish packages, or deploy the website as part of this initial milestone.
 - **Reading and inspection only.** No editing controls, `.chara` serializer, file conversion, or write-back API in the MVP.
 - **Independent package.** No dependency on `@xivdyetools/core`, application services, Cloudflare bindings, browser storage, or DOM APIs in library entry points. The demo is the browser-specific consumer.
 - **Optional work stays optional.** Importing the main entry point must not load palettes, perform network requests, or import the XIVAPI adapter. Appearance resolution must not require XIVAPI.
@@ -146,11 +146,11 @@ Finalize these names when reopening the plan; subsequent tasks use them consiste
 
 **Interfaces:** Consumes Task 0's field matrix. Produces `readChara`, `ReadOptions`, `CharaDocument`, `CharaInputError`, and the shared `Issue`/presence types.
 
-- [ ] Write failing cases: valid full/partial character objects; gear-only export; invalid JSON/top-level array; pose-only object; a spoofed `TypeName` with no character fields; UTF-8 multibyte input exactly at/over `maxBytes`; invalid UTF-8; a leading BOM; depth/node bounds; `__proto__`/`constructor` data keys; embedded image omitted from returned fields. Assert the stable fatal codes above.
-- [ ] Run `pnpm --filter './packages/chara' exec vitest run test/read.test.ts`; require a behavioral failure after the initial package harness is installed. A missing dependency alone is not the red test.
-- [ ] Implement byte-first decoding and an iterative bounded object walk. Use own-property-safe structures; never coerce arbitrary nested objects into diagnostic strings. Keep unknown non-image fields as data, flag unsupported ones, and distinguish fatal input failure from later field-level issues.
-- [ ] Build the four ESM entry points with esbuild and generate declarations with TypeScript. The main entry exports only reader/inspection contracts and their small helpers; optional entries may be introduced as their tasks land.
-- [ ] Re-run the reader tests, package type-check, and a main-entry import with a fetch spy that asserts zero calls. Commit the reader/configuration paths only.
+- [x] Write failing cases: valid full/partial character objects; gear-only export; invalid JSON/top-level array; pose-only object; a spoofed `TypeName` with no character fields; UTF-8 multibyte input exactly at/over `maxBytes`; invalid UTF-8; a leading BOM; depth/node bounds; `__proto__`/`constructor` data keys; embedded image omitted from returned fields. Assert the stable fatal codes above.
+- [x] Run `pnpm --filter './packages/chara' exec vitest run test/read.test.ts`; require a behavioral failure after the initial package harness is installed. A missing dependency alone is not the red test.
+- [x] Implement byte-first decoding and an iterative bounded object walk. Use own-property-safe structures; never coerce arbitrary nested objects into diagnostic strings. Keep unknown non-image fields as data, flag unsupported ones, and distinguish fatal input failure from later field-level issues.
+- [x] Build the four ESM entry points with esbuild and generate declarations with TypeScript. The main entry exports only reader/inspection contracts and their small helpers; optional entries may be introduced as their tasks land.
+- [x] Re-run the reader tests, package type-check, and a main-entry import with a fetch spy that asserts zero calls. Commit the reader/configuration paths only.
 
 **Exit:** An independently imported package can read supported character documents locally with bounded behavior.
 
@@ -160,11 +160,11 @@ Finalize these names when reopening the plan; subsequent tasks use them consiste
 
 **Interfaces:** Consumes `CharaDocument`; produces `inspectChara`, `CharaInspection`, `EquipmentModel`, `EquipmentResolveInput`, and `modelKey`.
 
-- [ ] Write failing cases for the producer field matrix: absent/null/zero/false; tribe/race spelling differences; unknown identity fields; malformed individual fields; both facewear representations; worn/empty/missing/invalid gear; both dye channels, including zero; and a color error that does not hide valid equipment.
-- [ ] Pin model arithmetic: armor `{base:361, variant:5}` gives `328041`; weapon `{set:634, base:19, variant:1}` gives `4296213114`. Check slot mapping, both rings, uint16 lane boundaries, and rejection-with-diagnostics of fractional/negative/out-of-range lanes rather than silent flooring.
-- [ ] Run `pnpm --filter './packages/chara' exec vitest run test/inspect.test.ts test/models.test.ts`; confirm the new cases fail for the missing behavior.
-- [ ] Implement normalization from field presence and verified shapes. Preserve declared producer labels as metadata, not trusted routing. Retain exact extended values before conversion and field-level diagnostics; do not swap eyes, discard all-zero values, or infer active colors in this layer.
-- [ ] Re-run Task 1 plus these suites and type-check. Confirm inspection is JSON-serializable and leaves the source document unchanged. Commit this task's paths.
+- [x] Write failing cases for the producer field matrix: absent/null/zero/false; tribe/race spelling differences; unknown identity fields; malformed individual fields; both facewear representations; worn/empty/missing/invalid gear; both dye channels, including zero; and a color error that does not hide valid equipment.
+- [x] Pin model arithmetic: armor `{base:361, variant:5}` gives `328041`; weapon `{set:634, base:19, variant:1}` gives `4296213114`. Check slot mapping, both rings, uint16 lane boundaries, and rejection-with-diagnostics of fractional/negative/out-of-range lanes rather than silent flooring.
+- [x] Run `pnpm --filter './packages/chara' exec vitest run test/inspect.test.ts test/models.test.ts`; confirm the new cases fail for the missing behavior.
+- [x] Implement normalization from field presence and verified shapes. Preserve declared producer labels as metadata, not trusted routing. Retain exact extended values before conversion and field-level diagnostics; do not swap eyes, discard all-zero values, or infer active colors in this layer.
+- [x] Re-run Task 1 plus these suites and type-check. Confirm inspection is JSON-serializable and leaves the source document unchanged. Commit this task's paths.
 
 **Exit:** A consumer can inspect complete or partial character data without loading palettes or calling an API.
 

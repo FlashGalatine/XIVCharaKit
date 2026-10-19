@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "reviewed": "2026-10-19",
+  "releaseLicense": "Pending maintainer decision",
+  "fixtures": [
+    {
+      "path": "anamnesis/full.chara",
+      "kind": "synthetic",
+      "source": "Authored in this repository from documented field shapes; no producer export or private corpus copied",
+      "sha256": "d8a8fc5a9fb955d1729166df600038e11b8972b21a191cda00e548d36343456c",
+      "expected": {
+        "canonicalRace": "Hyur",
+        "facewear": 0
+      }
+    },
+    {
+      "path": "ktisis/full.chara",
+      "kind": "synthetic",
+      "source": "Authored in this repository from documented field shapes; no producer export or private corpus copied",
+      "sha256": "a1a325b76d0a56be184dcc8e951d1651b78c4ae3f340c8af50183b8e3c662b51",
+      "expected": {
+        "canonicalRace": "Lalafell",
+        "facewear": 12
+      }
+    },
+    {
+      "path": "brio/extended.chara",
+      "kind": "synthetic",
+      "source": "Authored in this repository from documented field shapes; no producer export or private corpus copied",
+      "sha256": "e10b53f3ee56cfccdfe574f8cbdccd66cb43df3435d0950bb6fca8a782f5b949",
+      "expected": {
+        "canonicalRace": "Au Ra",
+        "facewear": 4
+      }
+    },
+    {
+      "path": "partial/equipment.chara",
+      "kind": "synthetic",
+      "source": "Authored in this repository from documented field shapes; no producer export or private corpus copied",
+      "sha256": "9253f04c450670a0cece900ce6cb38b1d694a5487d78a425ea3631edebffa7d7",
+      "expected": {
+        "canonicalRace": null,
+        "facewear": null
+      }
+    },
+    {
+      "path": "partial/appearance.chara",
+      "kind": "synthetic",
+      "source": "Authored in this repository from documented field shapes; no producer export or private corpus copied",
+      "sha256": "af7abc6410e896a7a13de3cfb39e34f356f65a6608b6bc89794fe7938e64fce7",
+      "expected": {
+        "canonicalRace": "Viera",
+        "facewear": null
+      }
+    }
+  ],
+  "sources": [
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "f97c9808185fd9af24d3dd9101e4e87466d65fc4",
+      "path": "Anamnesis/Files/CharacterFile.cs",
+      "sha256": "72864a57ac15db8a0056adba7f021bbe3090fc7c9303d9d337d3fd5db42247b1"
+    },
+    {
+      "repository": "ktisis-tools/Ktisis",
+      "commit": "551bb23f5726ecffd1426ee3b540caf34feab18a",
+      "path": "Ktisis/Data/Files/CharaFile.cs",
+      "sha256": "622a3acc8095d016274b4062024505ad6ef4ca22aac34542ae2fdf7e0bec65df"
+    },
+    {
+      "repository": "Etheirys/Brio",
+      "commit": "5213bd81cf5bacee430548d4aff96500298dcc21",
+      "path": "Brio/Files/AnamnesisCharaFile.cs",
+      "sha256": "9b86c89367931d2071ae96e3698ca8e3db5fb997abf2157d2bae43a2c0ab7bd8"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "f97c9808185fd9af24d3dd9101e4e87466d65fc4",
+      "path": "Anamnesis/Serialization/Converters/GlassesSaveConverter.cs",
+      "sha256": "d1f7e77572fc2908099cff8994745cf3fac1db86cfb2e2e4d3371e2524cca332"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "f97c9808185fd9af24d3dd9101e4e87466d65fc4",
+      "path": "Anamnesis/Memory/ActorCustomizeMemory.cs",
+      "sha256": "f0f8d86ec7b59ec4450b74f139fbe1c0919994bd225030fdcd023fb50e94b17e"
+    }
+  ]
+}
