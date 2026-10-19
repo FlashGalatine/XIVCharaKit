@@ -1,15 +1,20 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
+import { resolveAppearance } from '../packages/chara/src/appearance/index.js';
 import {
   CharaInputError,
   inspectChara,
   READ_DEFAULTS,
   readChara,
 } from '../packages/chara/src/index.js';
+import { createDefaultPaletteProvider } from '../packages/chara/src/palettes/index.js';
 
 // Opt-in local evidence only. No sample paths, names, stored values, or payloads are printed.
 const directory = process.argv[2];
+const palettes = process.argv.includes('--appearance')
+  ? createDefaultPaletteProvider()
+  : null;
 if (!directory) throw new Error('Supply a local sample directory.');
 const report = {
   files: 0,
@@ -25,6 +30,12 @@ const report = {
   issues: Object.create(null) as Record<string, number>,
   elapsedMs: 0,
   incompleteModels: Object.create(null) as Record<string, number>,
+  appearance: {
+    enabled: palettes !== null,
+    corrections: 0,
+    interpretations: Object.create(null) as Record<string, number>,
+    issues: Object.create(null) as Record<string, number>,
+  },
 };
 const start = performance.now();
 for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -40,6 +51,16 @@ for (const entry of await readdir(directory, { withFileTypes: true })) {
       throw new CharaInputError('INPUT_TOO_LARGE');
     const document = readChara(await readFile(path));
     const inspection = inspectChara(document);
+    if (palettes) {
+      const appearance = await resolveAppearance(inspection, { palettes });
+      report.appearance.corrections += appearance.corrections.length;
+      for (const slot of Object.values(appearance.slots))
+        report.appearance.interpretations[slot.interpretation] =
+          (report.appearance.interpretations[slot.interpretation] ?? 0) + 1;
+      for (const issue of appearance.issues)
+        report.appearance.issues[issue.code] =
+          (report.appearance.issues[issue.code] ?? 0) + 1;
+    }
     report.accepted++;
     if (document.hasEmbeddedImage) report.embeddedImageFiles++;
     for (const issue of inspection.issues)

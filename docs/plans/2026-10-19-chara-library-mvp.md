@@ -1,6 +1,6 @@
 # ffxiv-chara MVP Implementation Plan
 
-**Status:** implementation reopened by the maintainer on 2026-10-19. The first milestone implements the reader and typed inspection (Tasks 1–2) with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Tasks 3–8 remain pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
+**Status:** implementation reopened by the maintainer on 2026-10-19. Reader/inspection and palette/appearance milestones (Tasks 1–4) are implemented with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Tasks 5–8 remain pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
 
 > **For agentic workers:** Execute the selected milestone inline using superpowers:executing-plans and test-driven development, with a final independent review. Checkboxes track implementation where complete; pending tasks do not authorize publication, deployment, or consumer migration.
 
@@ -174,11 +174,11 @@ Finalize these names when reopening the plan; subsequent tasks use them consiste
 
 **Interfaces:** Produces `PaletteProvider`, `PaletteRequest`, `PaletteColor`, dataset metadata, and `createDefaultPaletteProvider`.
 
-- [ ] Write failing checks against reviewed creator/shader sample entries from Task 0; ensure shared and tribe/gender-dependent tables resolve independently and invalid/missing coordinates return null. Test lazy import, concurrent-load deduplication, and retry after a failed load.
-- [ ] Run `pnpm --filter './packages/chara' exec vitest run test/palettes.test.ts`; verify the expected missing behavior.
-- [ ] Extract only palette access, not dye matching or the full character-color service. Port the existing generator into an explicit local-file tool that accepts a maintainer-supplied `human.cmp`; ordinary package builds use committed generated tables and never require a game installation.
-- [ ] Store creator and shader tables separately. Embed their recorded provenance and content hashes; publish metadata with `gameVersion: null` where the source game version cannot be substantiated. Bundle JSON into portable ESM chunks so Node consumers do not need special JSON import handling.
-- [ ] Run the palette suite and `pnpm exec tsx scripts/verify-palettes.ts`; compare known entries, table sizes, and hashes to the reviewed baseline. A generator round trip requires the actual source file and must not be claimed if unavailable. Commit the data/provider/provenance paths.
+- [x] Write failing checks against reviewed creator/shader sample entries from Task 0; ensure shared and tribe/gender-dependent tables resolve independently and invalid/missing coordinates return null. Test lazy import, concurrent-load deduplication, and retry after a failed load.
+- [x] Run `pnpm --filter './packages/chara' exec vitest run test/palettes.test.ts`; verify the expected missing behavior.
+- [x] Extract only palette access, not dye matching or the full character-color service. Port the existing generator into an explicit local-file tool that accepts a maintainer-supplied `human.cmp`; ordinary package builds use committed generated tables and never require a game installation.
+- [x] Store creator and shader tables separately. Embed their recorded provenance and content hashes; publish metadata with `gameVersion: null` where the source game version cannot be substantiated. Bundle JSON into portable ESM chunks so Node consumers do not need special JSON import handling.
+- [x] Run the palette suite and `pnpm exec tsx scripts/verify-palettes.ts`; compare known entries, table sizes, and hashes to the reviewed baseline. A generator round trip requires the actual source file and must not be claimed if unavailable. Commit the data/provider/provenance paths.
 
 **Exit:** Indexed swatches can be obtained locally through either the bundled provider or a host-supplied provider.
 
@@ -188,11 +188,11 @@ Finalize these names when reopening the plan; subsequent tasks use them consiste
 
 **Interfaces:** Consumes `CharaInspection` and `PaletteProvider`; produces `resolveAppearance`, `AppearanceOptions`, `AppearanceInspection`, and the versioned default policy.
 
-- [ ] Write failing cases for eyes/heterochromia, tribe/gender skin and hair, highlights disabled, face paint disabled, dark/light palette ranges and invalid gaps, Hrothgar fur-pattern versus lip color, lip alpha zero/absent/intermediate, and missing tribe/gender.
-- [ ] Add creator-versus-shader disagreement, square-root decoding of verified gamma-2.0 extended values, absent/false extended-valid flags, custom off-grid values, float-only slots, and evidenced historical crossed-eye cases. Preserve all-zero values as stored evidence; ambiguous legacy semantics must be reported instead of silently identifying a producer or active color.
-- [ ] Run `pnpm --filter './packages/chara' exec vitest run test/appearance.test.ts` and confirm meaningful failures.
-- [ ] Port the minimal conversion/DeltaE/compositing math and resolution policy. Keep palette, shader, and extended colors separately visible. Record why a display interpretation was selected, why a slot is inactive/unresolved, and any eye-pair correction; corrections never overwrite parsed fields. Label lip composites as derived previews.
-- [ ] Re-run against independently reviewed expected swatches, including indices/floats on either side of the 6 DeltaE threshold and the 1 DeltaE historical-match tolerance. Test injected providers as well as bundled data. Commit the appearance paths.
+- [x] Write failing cases for eyes/heterochromia, tribe/gender skin and hair, highlights disabled, face paint disabled, dark/light palette ranges and invalid gaps, Hrothgar fur-pattern versus lip color, lip alpha zero/absent/intermediate, and missing tribe/gender.
+- [x] Add creator-versus-shader disagreement, square-root decoding of verified gamma-2.0 extended values, absent/false extended-valid flags, custom off-grid values, float-only slots, and evidenced historical crossed-eye cases. Preserve all-zero values as stored evidence; ambiguous legacy semantics must be reported instead of silently identifying a producer or active color.
+- [x] Run `pnpm --filter './packages/chara' exec vitest run test/appearance.test.ts` and confirm meaningful failures.
+- [x] Port the minimal conversion/DeltaE/compositing math and resolution policy. Keep palette, shader, and extended colors separately visible. Record why a display interpretation was selected, why a slot is inactive/unresolved, and any eye-pair correction; corrections never overwrite parsed fields. Label lip composites as derived previews.
+- [x] Re-run against independently reviewed expected swatches, including indices/floats on either side of the 6 DeltaE threshold and the 1 DeltaE historical-match tolerance. Test injected providers as well as bundled data. Commit the appearance paths.
 
 **Exit:** Consumers can display understandable appearance swatches without an equipment service or dye database.
 

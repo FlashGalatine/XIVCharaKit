@@ -1,0 +1,31 @@
+[
+  {
+    "input": { "Tribe": "Raen", "Gender": "Feminine", "HairTone": 42 },
+    "slot": "hair",
+    "expected": {
+      "creatorHex": "#FFDC98",
+      "shaderHex": "#E5D2AC",
+      "displayHex": "#FFDC98",
+      "interpretation": "palette"
+    }
+  },
+  {
+    "input": { "LEyeColor": 0 },
+    "slot": "leftEye",
+    "expected": {
+      "creatorHex": "#F7F7F7",
+      "shaderHex": "#F7F7F7",
+      "displayHex": "#F7F7F7",
+      "interpretation": "palette"
+    }
+  },
+  {
+    "input": { "SkinColor": "0, 0.25, 1", "IsExtendedAppearanceValid": true },
+    "slot": "skin",
+    "expected": {
+      "extendedHex": "#0080FF",
+      "displayHex": "#0080FF",
+      "interpretation": "extendedOnly"
+    }
+  }
+]

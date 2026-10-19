@@ -1,6 +1,6 @@
 # Reader foundation API
 
-The private development package exposes its main ESM entry only. `/appearance`, `/palettes`, and `/xivapi` will be added when their implementations are ready. Main-entry imports, reading, inspection, and model arithmetic perform no I/O and have no runtime dependencies. Bundles target ES2022 and include TypeScript declarations; installed JavaScript, TypeScript, and Node Worker consumers are checked locally. Browser/Web Worker/workerd validation is pending.
+The private development package exposes the main ESM entry plus optional `/palettes` and `/appearance` entries. `/xivapi` remains pending. Reading, inspection, model arithmetic, bundled palette lookup, and appearance interpretation perform no I/O and have no runtime dependencies. Bundles target ES2022 and include TypeScript declarations; installed JavaScript, TypeScript, and Node Worker consumers exercise all three entries locally. Browser/Web Worker/workerd validation is pending. Build metadata verifies that the main static dependency graph contains no optional modules or palette data. Bundled JSON tables become lazy ESM chunks, without requiring JSON import flags in installed consumers.
 
 ## Read
 
@@ -63,3 +63,52 @@ Equipment models carry a supported slot, uint16 `base` and `variant`, plus uint1
 Armor packs `base + variant × 65536`. Weapons pack `set + base × 65536 + variant × 4294967296` using internal bigint arithmetic. Results are decimal strings and inspections remain JSON-serializable. These identifiers represent model identity, not a unique inventory item.
 
 `EquipmentResolveInput` currently defines the future transport boundary as `{ models: readonly EquipmentModel[], glassesId?: number }`. No resolver implementation is exported yet. It has no character metadata, appearance, or stain fields.
+
+## Palette provider (`ffxiv-chara/palettes`)
+
+`createDefaultPaletteProvider(): PaletteProvider`
+
+`PaletteProvider.getColor(request: PaletteRequest): Promise<PaletteColor | null>`
+
+Requests name `table: 'creator' | 'shader'`, a primitive string `palette`, a zero-based in-table `index`, and optionally `tribe` and `gender: 'Masculine' | 'Feminine'`. Race palettes require one of the sixteen supported tribe names and a gender. Validated scalar coordinates are captured before any asynchronous work, so reusing/mutating the caller's request cannot alter an in-flight lookup. The four table groups load independently on first lookup; concurrent loads coalesce and failed loads can retry. Invalid coordinates return null before loading, without property-key coercion. No arbitrary request field can choose an import path.
+
+| Palette | Creator | Shader | Index range |
+| --- | --- | --- | --- |
+| `eyes`, `highlights`, `features` | yes | yes | 0–191 |
+| `lipsDark` | yes | yes | 0–95 |
+| `lipsLight`, `facePaintDark`, `facePaintLight` | yes | unavailable in this baseline | 0–95 |
+| `skin`, `hair` | yes | yes | 0–191, tribe/gender required |
+
+Colors include the request coordinates, canonical uppercase hex, RGB tuple, and `datasetVersion`. Returned colors are detached; changing one cannot poison later lookups. `PALETTE_METADATA` and the bundled provider's `metadata` are deeply frozen, with dataset/source schema versions, `gameVersion: null`, source hashes and artifact hashes/counts. Dataset schema 1 and upstream schema 2.0.0 do not establish a game patch.
+
+Loading/validation failure throws `PaletteDataError` with code `PALETTE_LOAD_FAILED` and a fixed message; native loader errors are not exposed. A host can implement `PaletteProvider` with its own `getColor` and optional metadata instead. Injected provider functions execute with host privileges and can have their own side effects; they are trusted JavaScript, not sandboxed data.
+
+See [data provenance and regeneration](data-provenance.md#palette-baseline-and-regeneration) for source rights, explicit local-file tooling, and the outstanding real-source regeneration check.
+
+## Appearance interpretation (`ffxiv-chara/appearance`)
+
+`resolveAppearance(inspection: CharaInspection, options: AppearanceOptions): Promise<AppearanceInspection>`
+
+`options.palettes` supplies a `PaletteProvider`; there is no implicit default provider import or network lookup. The result has eight keyed slots (`leftEye`, `rightEye`, `hair`, `highlights`, `skin`, `limbal`, `lip`, `facePaint`), the actual policy, optional provider metadata, bounded issues, eye-pair corrections, and `eyesShareIndex`. Each slot retains `storedIndex` and `storedExtended` evidence, separate creator/shader/original extended colors, the effective interpreted extended color, activity state, interpretation/reason, and a nullable display color. Original stored fields are never rewritten, including on historical correction. Gloss, bust-scale, and other extended controls remain available from inspection; these eight swatches do not interpret them as additional colors.
+
+| Interpretation | Meaning |
+| --- | --- |
+| `palette` | Creator swatch selected; extended data is absent/inactive/ambiguous or agrees with the shader reference |
+| `offGrid` | A declared live extended color differs from the shader reference by more than the threshold |
+| `extendedOnly` | A declared live extended color has no applicable stored palette index |
+| `inactive` | An explicit control, fur-only index, or live zero-opacity lip disables this swatch |
+| `unresolved` | Missing/invalid context or reference data prevents a substantiated display choice |
+
+`active` is independent of availability: false means explicitly disabled, null means a required activity control is unknown. Missing highlight and face-paint controls remain unknown. `displayHex` is null for inactive/unresolved slots. Preview evidence is not a promise of exact in-game rendering or mod behavior.
+
+Policy version `1.0.0` uses gamma-2 decoding (`sqrt(clamp(channel, 0, 1)) × 255`, rounded), while keeping exact input components. Clipped RGB or opacity gets a bounded issue. Extended values can influence the selected color/opacity only when `IsExtendedAppearanceValid` is valid and true. A complete seven-vector all-zero legacy block is marked ambiguous and cannot override the index; one black vector in a partial/live block remains valid.
+
+Live extended color is compared against the shader table using CIEDE2000, rather than against the creator swatch. A distance greater than 6 selects off-grid extended color; otherwise the creator swatch is displayed. Both dark and light lips use `lipsDark` shader reference at the in-sheet index. A missing shader reference leaves the result unresolved, without pretending a creator comparison is equivalent.
+
+Lip/face-paint indices 0–95 use dark tables, 128–223 use light tables with 128 subtracted, and other byte values remain unresolved. Hrothgar's `LipsToneFurPattern` is a fur enum, not a lip color index; a live mouth float can still supply a lip swatch. Unknown race leaves a present lip/fur index unresolved. Live lip opacity at/below zero disables lip color; inactive extended opacity never disables the palette index. Positive live opacity produces a labelled `lipComposite` only when both selected skin/lip colors exist, using linear-sRGB compositing. Absent opacity remains null, not zero or an invented default.
+
+The historical eye rule requires two different supported eye indices, live extended colors, and both shader references. Both extended colors must match the opposite shader within 1 CIEDE2000 while neither matches its own. Correction changes only `effectiveExtendedHex`, records `historicalEyePairSwap` on the slots and a `HISTORICAL_EYE_PAIR_SWAP` entry; `extendedHex` and raw fields remain original. No producer label selects this behavior.
+
+`options.policy` may override `offGridDeltaE`, `eyeMatchDeltaE`, and `historicalEyeCorrection`. Thresholds must be finite numbers 0–100, with eye tolerance no greater than off-grid tolerance; the correction control must be boolean. Invalid options throw `AppearanceInputError` with fixed code `INVALID_APPEARANCE_OPTIONS` before provider work. Defaults are exported as frozen `DEFAULT_APPEARANCE_POLICY`; the returned policy records all actual values.
+
+Provider responses must have canonical hex and the requested coordinate association. Provider failures produce fixed `PALETTE_UNAVAILABLE` issues; invalid associations/colors produce `INVALID_PALETTE_RESPONSE`. Other interpretation issues include `AMBIGUOUS_ZERO_BLOCK`, `EXTENDED_CLAMPED`, `ALPHA_CLAMPED`, `PALETTE_INDEX_OUT_OF_RANGE`, `MISSING_PALETTE_CONTEXT`, and `MISSING_SHADER_REFERENCE`. At most 64 bounded issues are returned. Native errors and provider payloads are never quoted.

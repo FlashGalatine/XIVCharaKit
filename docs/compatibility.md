@@ -1,6 +1,6 @@
 # Reader and inspection compatibility
 
-The first implementation milestone reads and inspects JSON `.chara` documents. It does not edit files, infer active colors, load palettes, or resolve items. Producer names are untrusted metadata. A supported character field is required; a type label alone and pose-only files are rejected. Recognized fields may be null, malformed, or missing in selective exports; inspection reports those states independently.
+The reader foundation reads and inspects JSON `.chara` documents. Optional palette and appearance entries now interpret source-labelled swatches without changing the stored evidence; the main reader/inspection entry still does not load palettes or resolve items. Producer names are untrusted metadata. A supported character field is required; a type label alone and pose-only files are rejected. Recognized fields may be null, malformed, or missing in selective exports; inspection reports those states independently.
 
 ## Reviewed format snapshots
 
@@ -43,6 +43,6 @@ These are aggregate compatibility observations, not independently reviewed expec
 ## Pending compatibility gates
 
 - Real producer-generated fixtures with explicit redistribution rights and independently reviewed complete expectations.
-- Palette generation/source validation and appearance interpretation (Tasks 3–4).
+- Real-source palette regeneration and broader independent visual/producer swatch expectations; see [appearance validation](security/appearance-validation.md) for implemented Tasks 3–4 and corpus observations.
 - Browser/Worker installed-package behavior and full demo validation (Tasks 7–8).
 - Code/fixture licensing and package identity before any distribution.

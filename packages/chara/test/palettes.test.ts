@@ -92,6 +92,61 @@ describe('versioned palette lookup', () => {
 });
 
 describe('lazy loading boundaries', () => {
+  const malformedCoordinates: { palette: unknown }[] = [
+    { palette: ['eyes'] },
+    { palette: { toString: null } },
+    { palette: { valueOf: null } },
+  ];
+  it.each(malformedCoordinates)(
+    'rejects non-string palette coordinates without coercion or loading %j',
+    async ({ palette }) => {
+      const load = vi.fn(async () => {
+        throw new Error('Should not load');
+      });
+      const provider = createLazyPaletteProvider({ 'creator-shared': load });
+      expect(
+        await provider.getColor({
+          table: 'creator',
+          palette,
+          index: 0,
+        } as never),
+      ).toBeNull();
+      expect(load).not.toHaveBeenCalled();
+    },
+  );
+  it('snapshots validated coordinates when a request object is reused during a cold load', async () => {
+    const provider = createDefaultPaletteProvider();
+    const request = {
+      table: 'creator',
+      palette: 'hair',
+      index: 42,
+      tribe: 'Raen',
+      gender: 'Feminine',
+    } as import('../src/palettes/index.js').PaletteRequest;
+    const creator = provider.getColor(request);
+    request.table = 'shader';
+    const shader = provider.getColor(request);
+    request.palette = 'skin';
+    request.index = 0;
+    request.tribe = 'Veena';
+    request.gender = 'Masculine';
+    expect(await creator).toMatchObject({
+      table: 'creator',
+      palette: 'hair',
+      index: 42,
+      tribe: 'Raen',
+      gender: 'Feminine',
+      hex: '#FFDC98',
+    });
+    expect(await shader).toMatchObject({
+      table: 'shader',
+      palette: 'hair',
+      index: 42,
+      tribe: 'Raen',
+      gender: 'Feminine',
+      hex: '#E5D2AC',
+    });
+  });
   it('does not load unused tables and deduplicates concurrent requests', async () => {
     const load = vi.fn(async () => ({
       eyes: Array.from({ length: 192 }, () => '#FFFFFF'),

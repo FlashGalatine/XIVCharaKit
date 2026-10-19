@@ -1,10 +1,10 @@
-# Reader foundation implementation
+# Implementation progress
 
 Plan: `docs/plans/2026-10-19-chara-library-mvp.md`.
 Implementation reopened by the maintainer on 2026-10-19.
 
-This first milestone covers Task 0 evidence and Tasks 1–2 (reader and inspection).
-Tasks 3–8 remain pending; publication, deployment, and XIV Dye Tools migration are separate scope.
+The reader foundation covers Task 0 evidence and Tasks 1–2. The second milestone implements Tasks 3–4 (palettes and appearance); independent review is complete and both reported findings are fixed.
+Tasks 5–8 remain pending; publication, deployment, and XIV Dye Tools migration are separate scope.
 
 ## Decisions
 
@@ -44,11 +44,11 @@ A fresh read-only reviewer inspected this milestone. No Critical issues were fou
 
 The reviewer set aside future Tasks 3–8, real-export fixture ground truth, forged JavaScript objects/getters/proxies, and lossless decimal-token storage. These boundaries stand: this milestone implements the reader-produced-document contract; raw precision uses documented JavaScript semantics, and the other work remains pending. No deferred code findings remain.
 
-## Next milestone
+## Reader foundation handoff (historical)
 
 Tasks 3–4: complete palette provenance and regeneration inputs, implement the lazy provider, then appearance interpretation with independent swatch expectations. The package remains private; no merge, push, publication, deployment, or existing-product migration was performed.
 
-## Palette and appearance milestone (in progress)
+## Palette and appearance milestone
 
 Reopened by the maintainer's request to proceed. Baseline: `d2a7838`, clean working tree, 122 passing tests. Continue inline on the existing branch; one independent review follows Tasks 3–4.
 
@@ -61,5 +61,14 @@ Decisions before implementation:
 - Ruling: only a declared valid extended block can apply lip opacity or suppress the indexed lip — this follows the brief's extended-activity boundary even though the older source applied alpha zero regardless of the validity flag. Inactive stored opacity remains visible; cost if wrong is a changed preview for contradictory legacy exports.
 - Ruling: keep complete all-zero legacy blocks as ambiguous evidence rather than erase them or declare active black colors — the plan requires raw-value preservation and honest ambiguity. A single valid black vector remains usable; cost if wrong is an unresolved preview for an intentionally all-zero complete block.
 - Missing highlight/face-paint controls leave activity unknown, with stored swatch evidence still available. Unknown race prevents treating a possible Hrothgar fur index as a lip palette index.
+- Ruling: no creator-color fallback when a live extended comparison lacks its shader reference — that would hide missing source evidence. Return unresolved with both available colors retained; cost if wrong is a degraded result for incomplete custom providers.
 
 Task 3 implemented: four versioned data tables, all source/output hashes, immutable metadata, detached color results, lazy per-table loading with coalescing/retry, and the explicit bounded local-file generator. Twenty-one provider tests and five generator tests were observed failing before implementation. Full suite: 148/148. Strict type checks, palette verification and installed JS/TS/Node Worker consumers pass. Build metadata rejects optional code in the main static dependency graph. Real source regeneration and release/data-rights review remain pending; Task 4 and the independent review follow.
+
+Task 4 implemented: source-separated swatches, gamma-2 extended decoding, CIEDE2000 policy, recorded historical eye correction, inactive/unknown activity, toned ranges, Hrothgar fur semantics, and derived lip composites. Forty-nine initial tests were observed failing before implementation; two extra opacity regressions were also observed failing before implementation. Pre-review suite: 201/201. Installed JS/TS/Node Worker consumers exercise all three exports with no I/O; the tarball contains 28 allowlisted files. All 1,093 local samples completed appearance interpretation, with two honestly unresolved out-of-range slots. Detailed evidence: [appearance validation](security/appearance-validation.md).
+
+Final milestone review: a fresh read-only reviewer found no Critical or Minor issues and two Important provider defects. Regressions reproduced non-string key coercion and changing associations when caller requests were reused during a lazy load. Both are fixed: validate primitive palette names, capture validated scalar coordinates before awaiting, and use the snapshot for lookup/results. Final suite: 205/205; strict type checks, lint, fixture/palette verification, build, and installed JS/TS/Node Worker checks pass. No deferred code findings remain.
+
+The review left real-source regeneration, browser/demo gates, forged inspections or hostile JavaScript providers/getters, and unsupported FacePaint bit semantics outside this milestone. These boundaries stand: injected host functions remain trusted code, the zero-only face-paint rule follows the documented source baseline, and no broader runtime/rendering/source-parity claim is made. Policy rulings above remain explicit; the reviewer found no contradictory evidence.
+
+Next step: Tasks 5–6, portable XIVAPI transport/cache and candidate resolution. Keep the explicit lookup privacy boundary and threat-model network budgets; no proxy or external publication is authorized by these local milestones.

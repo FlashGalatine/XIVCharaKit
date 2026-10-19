@@ -104,47 +104,49 @@ export function createLazyPaletteProvider(
   return {
     metadata: PALETTE_METADATA,
     async getColor(request: PaletteRequest): Promise<PaletteColor | null> {
+      if (!isRecord(request)) return null;
+      // Capture scalar coordinates before any asynchronous load or caller reuse.
+      const { table, palette: name, index, tribe, gender } = request;
       if (
-        !isRecord(request) ||
-        (request.table !== 'creator' && request.table !== 'shader') ||
-        !Number.isInteger(request.index) ||
-        request.index < 0
+        (table !== 'creator' && table !== 'shader') ||
+        typeof name !== 'string' ||
+        !Number.isInteger(index) ||
+        index < 0
       )
         return null;
-      const race = request.palette === 'skin' || request.palette === 'hair';
+      const race = name === 'skin' || name === 'hair';
       if (
         !race &&
-        (!own(SHARED_LENGTHS, request.palette) ||
-          request.index >=
-            SHARED_LENGTHS[request.palette as keyof typeof SHARED_LENGTHS])
+        (!own(SHARED_LENGTHS, name) ||
+          index >= SHARED_LENGTHS[name as keyof typeof SHARED_LENGTHS])
       )
         return null;
       if (
-        request.table === 'shader' &&
+        table === 'shader' &&
         !race &&
-        !(SHADER_SHARED as readonly unknown[]).includes(request.palette)
+        !(SHADER_SHARED as readonly unknown[]).includes(name)
       )
         return null;
       if (
         race &&
-        (request.index >= 192 ||
-          !(TRIBES as readonly unknown[]).includes(request.tribe) ||
-          (request.gender !== 'Masculine' && request.gender !== 'Feminine'))
+        (index >= 192 ||
+          !(TRIBES as readonly unknown[]).includes(tribe) ||
+          (gender !== 'Masculine' && gender !== 'Feminine'))
       )
         return null;
-      const data = await load(`${request.table}-${race ? 'race' : 'shared'}`);
-      const palette = data[request.palette];
+      const data = await load(`${table}-${race ? 'race' : 'shared'}`);
+      const palette = data[name];
       const hex = race
-        ? (palette as RaceDataset[string])[request.tribe as string]?.[
-            request.gender === 'Masculine' ? 'Male' : 'Female'
-          ]?.[request.index]
-        : (palette as readonly string[])[request.index];
+        ? (palette as RaceDataset[string])[tribe as string]?.[
+            gender === 'Masculine' ? 'Male' : 'Female'
+          ]?.[index]
+        : (palette as readonly string[])[index];
       if (!hex) return null;
       return {
-        table: request.table,
-        palette: request.palette,
-        index: request.index,
-        ...(race ? { tribe: request.tribe, gender: request.gender } : {}),
+        table,
+        palette: name,
+        index,
+        ...(race ? { tribe, gender } : {}),
         hex,
         rgb: [
           Number.parseInt(hex.slice(1, 3), 16),

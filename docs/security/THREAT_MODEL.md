@@ -1,6 +1,6 @@
 # Security design review: ffxiv-chara MVP
 
-**Status:** implementation underway following maintainer authorization on 2026-10-19. The original design review was against documentation commit `e426278c2c70664f4a6579c0d9553d01743d83d3`; its scope and historical observations below remain the review record. Reader/inspection evidence is now recorded in [reader validation](reader-validation.md). The remaining MVP controls are requirements for later tasks, not a security certification.
+**Status:** implementation underway following maintainer authorization on 2026-10-19. The original design review was against documentation commit `e426278c2c70664f4a6579c0d9553d01743d83d3`; its scope and historical observations below remain the review record. Evidence is recorded in [reader validation](reader-validation.md) and [palette/appearance validation](appearance-validation.md). The remaining MVP controls are requirements for later tasks, not a security certification.
 
 This document supplements the [implementation plan](../plans/2026-10-19-chara-library-mvp.md). Its proposed controls and numerical defaults must be resolved in Task 0 and verified during the corresponding implementation tasks. Security work is part of those tasks, not a final scan after the MVP is built.
 

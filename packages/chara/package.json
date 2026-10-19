@@ -17,6 +17,10 @@
     "./palettes": {
       "types": "./dist/palettes/index.d.ts",
       "import": "./dist/palettes.js"
+    },
+    "./appearance": {
+      "types": "./dist/appearance/index.d.ts",
+      "import": "./dist/appearance.js"
     }
   },
   "scripts": {

@@ -9,7 +9,11 @@ if (dirname(output) !== resolve(packageRoot))
   throw new Error('Unexpected build output directory.');
 await rm(output, { recursive: true, force: true });
 const result = await build({
-  entryPoints: { index: 'src/index.ts', palettes: 'src/palettes/index.ts' },
+  entryPoints: {
+    index: 'src/index.ts',
+    palettes: 'src/palettes/index.ts',
+    appearance: 'src/appearance/index.ts',
+  },
   outdir: 'dist',
   bundle: true,
   format: 'esm',
