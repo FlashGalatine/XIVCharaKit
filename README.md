@@ -2,7 +2,7 @@
 
 A TypeScript library in development for reading and inspecting Final Fantasy XIV `.chara` files used by Anamnesis, Ktisis, and Brio.
 
-**Status: reader, appearance, and XIVAPI transport implemented.** Bounded reading, typed inspection, model keys, creator/shader palettes, source-labelled swatches, and optional bounded XIVAPI row lookup/caching are available. The package is private at version 0.0.0 while publication identity and licensing remain undecided.
+**Status: library MVP implemented; demo pending.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. The package is private at version 0.0.0 while publication identity and licensing remain undecided.
 
 The full MVP includes:
 
@@ -11,7 +11,7 @@ The full MVP includes:
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and anonymized examples.
 
-Equipment candidate matching and the demo website are upcoming milestones. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
+The demo website and browser/workerd acceptance checks are upcoming milestones. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
 
 ## Develop locally
 
@@ -52,6 +52,21 @@ const hair = appearance.slots.hair;
 ```
 
 These imports are available to a local consumer of the packed package; there is no public npm installation yet. Reading, inspection, bundled palette lookup, and appearance interpretation perform no network or storage operations. Main-entry imports exclude optional code/data; palette tables load only when requested. Embedded image fields are omitted; all remaining stored values are untrusted data.
+
+Equipment lookup is an explicit optional action:
+
+```ts
+import { createXivapiResolver, createMemoryCache } from 'ffxiv-chara/xivapi';
+
+const resolver = createXivapiResolver({ cache: createMemoryCache() });
+const result = await resolver.resolve({
+  models: [{ slot: 'Body', base: 361, variant: 5 }],
+});
+// result.items.Body: status, original model identity, all sorted candidates,
+// and ambiguity; result.facewear and upstream evidence are separate.
+```
+
+Only equipment identifiers are sent. Matching candidates do not establish which inventory item was saved. See [equipment resolution](docs/xivapi.md#equipment-candidate-resolution) for off-hand matching, incomplete results, privacy, and resource limits. Direct browser CORS remains unverified.
 
 The local sample checker accepts `--appearance` to include aggregate swatch results. It never copies samples or records per-character values. Regeneration from the maintainer-supplied `human.cmp` exactly matches all four committed palette tables; source hashes and the maintainer-confirmed game version 7.57 are recorded.
 

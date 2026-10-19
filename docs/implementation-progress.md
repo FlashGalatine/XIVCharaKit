@@ -4,7 +4,7 @@ Plan: `docs/plans/2026-10-19-chara-library-mvp.md`.
 Implementation reopened by the maintainer on 2026-10-19.
 
 The reader foundation covers Task 0 evidence and Tasks 1–2. The second milestone implements Tasks 3–4 (palettes and appearance); independent review is complete and both reported findings are fixed.
-Task 5 adds the portable XIVAPI transport/cache. Tasks 6–8 remain pending; publication, deployment, and XIV Dye Tools migration are separate scope.
+Tasks 5–6 add portable XIVAPI transport/cache and equipment candidate resolution. Tasks 7–8 remain pending; publication, deployment, and XIV Dye Tools migration are separate scope.
 
 ## Decisions
 
@@ -95,3 +95,25 @@ Initial suite: 32 failures against transport/cache stubs (8 rejection/status che
 Independent review found one Important issue (facewear 404 could be a false negative) and one Minor issue (cache adapters reordering JSON properties cause misses). The implementer graded the second Important because canonical JSON adapters are ordinary supported cache implementations. Both reproduced RED→GREEN; no deferred code findings remain. Review set aside Task 6 matching, demo behavior, live browser CORS/browser/workerd execution, release/hosting security, and ongoing packaging/docs. Those rulings stand: future work remains pending, and packaging/docs were verified separately by the implementer. See [XIVAPI validation](security/xivapi-validation.md) and [transport contract](xivapi.md).
 
 Next step: Task 6 candidate resolution, including ambiguity, off-hand/main-hand context and facewear. Browser CORS and browser/workerd runtime acceptance remain Tasks 7–8. No private corpus identifiers were sent upstream, and resource tests used synthetic transport. No push, PR, merge, package publication, deployment or consumer migration was performed.
+
+## Equipment candidate milestone
+
+Task 6 baseline: `ba6acd3`, clean working tree. Execution stayed inline on the existing branch, using the agreed brief, test-driven implementation and one fresh independent review. Pure matching consumes only Task 2 identities and Task 5 admitted rows; the public resolver composes it with transport, keeping network work separate from inspection and appearance.
+
+Rulings:
+
+- Keep matched/notFound/partial/unavailable, plus explicit cancelled inherited from Task 5. Collapsing cancellation into an outage would violate that contract. Cost: callers handle five states.
+- Upstream identities remain separate for item/facewear responses, which can differ when a changing alias cannot be resolved. Cost: consumers inspect two identities when relevant.
+- Only main-hand rows actually paired by ModelSub or a copied main-hand key become off-hand candidates. Copying every main-hand candidate when just one pairs would add unsupported candidates. Missing ModelSub makes the off-hand incomplete even if a direct candidate is available. Cost: more partial answers when context is missing.
+- A resolve call owns one scheduler job and shared request/byte/row/deadline budget. Items run before facewear to preserve the two-active-request bound. The initial composition of two independent client calls failed the aggregate-budget test and was replaced. Cost: facewear waits for items, but completed components remain independently usable.
+- The page bound counts item-search cursor pages; facewear uses one nonpaginated sheet response. Both share the total 40-request cap. This follows Task 5's search-cursor wording; cost: up to 20 search pages plus one sheet response, within unchanged request/byte/deadline limits.
+- Cache source rows only; recalculate contextual off-hand choices each call. Grouped cache identities include the main hand. Zero model/facewear identifiers remain explicit lookups; hosts should pass inspected worn models and omit absent facewear.
+- Retain every candidate and its available rule/level/icon/category evidence, without name-based retirement labels, filtering, preferred twins, acquisition policy or alternate cap. No source evidence supports guessing retirement metadata.
+
+Twenty-nine initial tests failed against the resolver stub. Pre-review resolver suite: 37 tests; full suite: 294/294 across 10 files. The request-budget regression failed before the shared scheduler change. Strict type checks, lint, fixture verification and installed JS/TS/Node Worker checks pass; the private package has 37 allowlisted files and no runtime dependencies. The synthetic equipment fixture contains seven hand-reviewed model/slot cases with a manifest hash. No private samples or live resource probes were used.
+
+Independent review found no Critical, Important or Minor code findings. Its read-only probe additionally verified that 5,000 encountered item rows followed by a facewear row retain matched items and report unavailable facewear with ROW_LIMIT; this is now a retained regression test. The recommendation to clarify search-page counting is adopted in the contract. The reviewer set aside intentionally excluded acquisition/regional/retired-name/UI policies, live upstream/browser/demo/runtime/deployment work, and ongoing packaging/docs. Those boundaries stand; the implementer verified packaging/docs separately. No deferred code findings remain.
+
+Task 6 complete: 38 focused resolver tests and 295/295 full-suite tests across 10 files. `pnpm type-check`, `pnpm lint`, `pnpm verify-fixtures`, `pnpm verify-palettes`, and `pnpm test:package` pass. The package check builds production bundles, verifies optional-module separation, checks 37 allowlisted files, and exercises the installed resolver in JavaScript, TypeScript and a Node Worker. No package was published.
+
+Next step: Task 7, the local demo website. True browser CORS and browser/workerd acceptance remain pending. No push, PR, merge, publication, deployment or consumer migration is part of this milestone.

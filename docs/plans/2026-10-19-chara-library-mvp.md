@@ -1,6 +1,6 @@
 # ffxiv-chara MVP Implementation Plan
 
-**Status:** implementation reopened by the maintainer on 2026-10-19. Reader/inspection, palette/appearance and XIVAPI transport/cache (Tasks 1–5) are implemented with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Tasks 6–8 remain pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
+**Status:** implementation reopened by the maintainer on 2026-10-19. Reader/inspection, palette/appearance, and optional XIVAPI equipment resolution (Tasks 1–6) are implemented with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Tasks 7–8 remain pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
 
 > **For agentic workers:** Execute the selected milestone inline using superpowers:executing-plans and test-driven development, with a final independent review. Checkboxes track implementation where complete; pending tasks do not authorize publication, deployment, or consumer migration.
 
@@ -217,12 +217,12 @@ Finalize these names when reopening the plan; subsequent tasks use them consiste
 
 **Interfaces:** Consumes Task 2 model identities and Task 5 upstream/cache contracts. Produces `createXivapiResolver`, `EquipmentResolver`, candidate types, and `EquipmentResolution`.
 
-- [ ] Write failing cases for unique/ambiguous armor, duplicate ring models, weapon triples, shields, a quiver/focus/fist pair matched through its main hand's `ModelSub`, a copied main-hand model, facewear, and a model with no item row.
-- [ ] Add partial-page, outage, missing rule-field, modded/NPC key, and main-hand-context cache cases. Only a complete successful search may produce `notFound`; partial or unavailable lookups keep those statuses even when no candidate has arrived.
-- [ ] Run `pnpm --filter './packages/chara' exec vitest run test/resolution.test.ts`; confirm the cases fail for the expected behavior.
-- [ ] Extract matching independently from transport. Re-associate rows by slot and packed key, resolve off-hand relationships using the main-hand context first, and return stable item-ID-ordered candidates. Return all retrieved candidates; do not copy the existing UI's eight-alternate cap or acquisition-dependent preferred-item rule into the generic API.
-- [ ] Preserve retired/unobtainable rows with any substantiated metadata instead of silently removing them. Keep missing wear/dye/glamour fields unknown. Acquisition text, preferred-twin policies, and regional-name enrichment remain optional future extensions.
-- [ ] Re-run Tasks 5–6 and type-check; compare reviewed rows to expected slot/model relationships. Commit the resolver paths.
+- [x] Write failing cases for unique/ambiguous armor, duplicate ring models, weapon triples, shields, a quiver/focus/fist pair matched through its main hand's `ModelSub`, a copied main-hand model, facewear, and a model with no item row.
+- [x] Add partial-page, outage, missing rule-field, modded/NPC key, and main-hand-context cache cases. Only a complete successful search may produce `notFound`; partial or unavailable lookups keep those statuses even when no candidate has arrived.
+- [x] Run `pnpm --filter './packages/chara' exec vitest run test/resolution.test.ts`; confirm the cases fail for the expected behavior.
+- [x] Extract matching independently from transport. Re-associate rows by slot and packed key, resolve off-hand relationships using the main-hand context first, and return stable item-ID-ordered candidates. Return all retrieved candidates; do not copy the existing UI's eight-alternate cap or acquisition-dependent preferred-item rule into the generic API.
+- [x] Preserve retired/unobtainable rows with any substantiated metadata instead of silently removing them. Keep missing wear/dye/glamour fields unknown. Acquisition text, preferred-twin policies, and regional-name enrichment remain optional future extensions.
+- [x] Re-run Tasks 5–6 and type-check; compare reviewed rows to expected slot/model relationships. Commit the resolver paths.
 
 **Exit:** A standalone consumer can resolve equipment while retaining ambiguity, missing data, and upstream failure states.
 

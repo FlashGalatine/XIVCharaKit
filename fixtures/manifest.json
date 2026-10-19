@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "reviewed": "2026-10-19",
   "releaseLicense": "Pending maintainer decision",
+  "equipmentRows": {
+    "path": "expected/equipment-rows.json",
+    "kind": "synthetic",
+    "sha256": "7b47690d02c39915a2d1d7c6536aecada7b1e9fd73371aea49a4bcc47c3b8662"
+  },
   "fixtures": [
     {
       "path": "anamnesis/full.chara",

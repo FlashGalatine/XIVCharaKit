@@ -6,6 +6,7 @@ const root = new URL('../fixtures/', import.meta.url);
 const manifest = JSON.parse(
   await readFile(new URL('manifest.json', root), 'utf8'),
 ) as {
+  equipmentRows: { path: string; sha256: string };
   fixtures: {
     path: string;
     sha256: string;
@@ -23,6 +24,12 @@ for (const entry of manifest.fixtures) {
   )
     throw new Error('Fixture expectation mismatch.');
 }
+const rows = await readFile(new URL(manifest.equipmentRows.path, root));
+if (
+  createHash('sha256').update(rows).digest('hex') !==
+  manifest.equipmentRows.sha256
+)
+  throw new Error('Equipment fixture hash mismatch.');
 console.log(
-  `Verified ${manifest.fixtures.length} synthetic fixture hashes and reviewed identity/facewear expectations.`,
+  `Verified ${manifest.fixtures.length} synthetic character fixtures and the equipment-row fixture hash; identity/facewear expectations checked.`,
 );

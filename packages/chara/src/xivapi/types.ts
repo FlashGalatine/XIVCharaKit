@@ -1,4 +1,9 @@
-import type { EquipmentModel, EquipmentSlot, Issue } from '../types.js';
+import type {
+  EquipmentModel,
+  EquipmentResolveInput,
+  EquipmentSlot,
+  Issue,
+} from '../types.js';
 
 export type Language = 'en' | 'ja' | 'de' | 'fr';
 export interface ItemRules {
@@ -60,4 +65,52 @@ export interface XivapiClient {
     id: number,
     options?: { signal?: AbortSignal },
   ): Promise<LookupResult<GlassesRow>>;
+}
+
+export type ResolutionStatus =
+  | 'matched'
+  | 'notFound'
+  | 'partial'
+  | 'unavailable'
+  | 'cancelled';
+export interface EquipmentCandidate {
+  itemId: number;
+  names: Partial<Record<Language, string>>;
+  iconId: number | null;
+  levelEquip: number | null;
+  uiCategory: number | null;
+  rules: ItemRules;
+  viaMainHand: boolean;
+}
+export interface SlotResolution {
+  model: EquipmentModel;
+  modelKey: string;
+  status: ResolutionStatus;
+  /** Describes observed candidates; incomplete results cannot establish uniqueness. */
+  ambiguous: boolean;
+  candidates: EquipmentCandidate[];
+}
+export interface FacewearResolution {
+  id: number;
+  status: ResolutionStatus;
+  candidates: GlassesRow[];
+}
+export interface UpstreamIdentity {
+  version: string | null;
+  schema: string | null;
+}
+export interface EquipmentResolution {
+  items: Partial<Record<EquipmentSlot, SlotResolution>>;
+  facewear: FacewearResolution | null;
+  upstream: {
+    items: UpstreamIdentity | null;
+    facewear: UpstreamIdentity | null;
+  };
+  issues: Issue[];
+}
+export interface EquipmentResolver {
+  resolve(
+    input: EquipmentResolveInput,
+    options?: { signal?: AbortSignal },
+  ): Promise<EquipmentResolution>;
 }

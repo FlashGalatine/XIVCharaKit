@@ -1,6 +1,7 @@
 import { isRecord } from '../field-spec.js';
 import { IssueCollector } from '../issues.js';
 import { readBoundedJson } from '../read.js';
+import type { EquipmentModel } from '../types.js';
 import { admittedJson } from './cache.js';
 import {
   buildQuery,
@@ -89,19 +90,40 @@ async function delay(ms: number, signal: AbortSignal): Promise<void> {
 interface Budget {
   requests: number;
   bytes: number;
+  rows: number;
   signal: AbortSignal;
 }
 interface Job {
   controller: AbortController;
-  promise: Promise<LookupResult>;
-  finish(result: LookupResult): void;
-  run(): Promise<LookupResult>;
+  promise: Promise<unknown>;
+  finish(result: unknown): void;
+  run(): Promise<unknown>;
+  failure(code: string, cancelled?: boolean): unknown;
   subscribers: number;
   started: boolean;
   expires: number;
 }
 
-export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
+interface ResolvedRows {
+  items: LookupResult<ItemRow> | null;
+  facewear: LookupResult<GlassesRow> | null;
+}
+interface Transport extends XivapiClient {
+  resolveRows(
+    models: readonly EquipmentModel[],
+    glassesId: number | undefined,
+    signal?: AbortSignal,
+  ): Promise<ResolvedRows>;
+}
+const newBudget = (signal: AbortSignal): Budget => ({
+  signal,
+  requests: 0,
+  bytes: 0,
+  rows: 0,
+});
+
+/** Internal shared scheduler for both the low-level client and whole resolutions. */
+export function createTransport(options: XivapiOptions = {}): Transport {
   const invalid = (): never => {
     throw new XivapiInputError('INVALID_OPTIONS');
   };
@@ -174,6 +196,8 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
   ): Promise<{ status: number; data: unknown }> {
     for (let attempt = 0; attempt < 2; attempt++) {
       if (budget.signal.aborted) throw reason(budget.signal);
+      if (budget.bytes > 10 * 1024 * 1024) throw new Failure('RESPONSE_LIMIT');
+      if (budget.rows > 5000) throw new Failure('ROW_LIMIT');
       if (++budget.requests > 40) throw new Failure('REQUEST_LIMIT');
       const control = new AbortController();
       const abort = () => control.abort(reason(budget.signal));
@@ -298,9 +322,9 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
 
   async function lookup(
     selection: readonly SlotLookup[] | number,
-    signal: AbortSignal,
+    budget: Budget,
   ): Promise<LookupResult> {
-    const budget: Budget = { signal, bytes: 0, requests: 0 };
+    const { signal } = budget;
     const diagnostics = new IssueCollector();
     const rows = new Map<number, PublicRow>();
     let upstreamVersion: string | null = null;
@@ -311,7 +335,9 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
     const keyFor = (v: string, s: string) =>
       JSON.stringify([1, base.href, v, s, fields, selection]);
     try {
+      if (signal.aborted) throw reason(signal);
       const pin = await resolvedVersion(budget);
+      if (signal.aborted) throw reason(signal);
       const memo = pin ? schemas.get(pin) : undefined;
       const schemaPin = canonicalSchema(schema)
         ? schema
@@ -344,7 +370,9 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
             if (
               normalized.length === data.rows.length &&
               new Set(normalized.map((r) => r.rowId)).size === normalized.length
-            )
+            ) {
+              budget.rows += normalized.length;
+              if (budget.rows > 5000) throw new Failure('ROW_LIMIT');
               return {
                 status: 'complete',
                 rows: normalized,
@@ -352,6 +380,7 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
                 schema: schemaPin,
                 issues: [],
               };
+            }
           }
         } catch {
           if (signal.aborted) throw reason(signal);
@@ -359,7 +388,6 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
       }
       let cursor: string | undefined;
       const cursors = new Set<string>();
-      let encountered = 0;
       for (let page = 0; page < maxPages; page++) {
         const url = new URL(items ? 'search' : 'sheet/Glasses', base);
         url.search = new URLSearchParams({
@@ -394,8 +422,8 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
         const results = items ? data.results : data.rows;
         if (!Array.isArray(results) || results.length > 500)
           throw new Failure('ROW_LIMIT');
-        encountered += results.length;
-        if (encountered > 5000) throw new Failure('ROW_LIMIT');
+        budget.rows += results.length;
+        if (budget.rows > 5000) throw new Failure('ROW_LIMIT');
         for (const raw of results) {
           const row = normalizeRow(raw, languages, items);
           if (!row || !associated(row, selection)) {
@@ -496,28 +524,28 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
       job.started = true;
       void job
         .run()
-        .then(job.finish, () => job.finish(failureResult('NETWORK_ERROR')))
+        .then(job.finish, () => job.finish(job.failure('NETWORK_ERROR')))
         .finally(() => {
           active--;
           pump();
         });
     }
   }
-  function subscribe(
-    selection: readonly SlotLookup[] | number,
+  function subscribe<T>(
+    key: string,
+    run: (signal: AbortSignal) => Promise<T>,
+    failure: (code: string, cancelled?: boolean) => T,
     signal?: AbortSignal,
-  ): Promise<LookupResult> {
-    if (signal?.aborted)
-      return Promise.resolve(failureResult('CANCELLED', true));
-    const key = JSON.stringify(selection);
+  ): Promise<T> {
+    if (signal?.aborted) return Promise.resolve(failure('CANCELLED', true));
     let job = jobs.get(key);
     if (job?.controller.signal.aborted) job = undefined;
     if (!job) {
       if (active >= 2 && queue.length >= 16)
-        return Promise.resolve(failureResult('QUEUE_FULL'));
+        return Promise.resolve(failure('QUEUE_FULL'));
       const controller = new AbortController();
-      let settle: (r: LookupResult) => void = () => {};
-      const promise = new Promise<LookupResult>((resolve) => {
+      let settle: (r: unknown) => void = () => {};
+      const promise = new Promise<unknown>((resolve) => {
         settle = resolve;
       });
       const timer = setTimeout(
@@ -530,7 +558,8 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
         subscribers: 0,
         started: false,
         expires: Date.now() + 30_000,
-        run: () => lookup(selection, controller.signal),
+        run: () => run(controller.signal),
+        failure,
         finish: (result) => {
           clearTimeout(timer);
           controller.signal.removeEventListener('abort', abort);
@@ -543,7 +572,7 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
         if (index >= 0) queue.splice(index, 1);
         if (!current.started)
           current.finish(
-            failureResult(
+            failure(
               reason(controller.signal).code,
               reason(controller.signal).code === 'CANCELLED',
             ),
@@ -559,15 +588,15 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
     shared.subscribers++;
     return new Promise((resolve) => {
       let done = false;
-      const finish = (result: LookupResult) => {
+      const finish = (result: unknown) => {
         if (done) return;
         done = true;
         signal?.removeEventListener('abort', abort);
         if (--shared.subscribers === 0)
           shared.controller.abort(new Failure('CANCELLED'));
-        resolve(JSON.parse(JSON.stringify(result)) as LookupResult);
+        resolve(JSON.parse(JSON.stringify(result)) as T);
       };
-      const abort = () => finish(failureResult('CANCELLED', true));
+      const abort = () => finish(failure('CANCELLED', true));
       signal?.addEventListener('abort', abort, { once: true });
       void shared.promise.then(finish);
     });
@@ -584,7 +613,9 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
           issues: [],
         };
       return (await subscribe(
-        selection,
+        JSON.stringify(['items', selection]),
+        (signal) => lookup(selection, newBudget(signal)),
+        failureResult,
         requestOptions.signal,
       )) as LookupResult<ItemRow>;
     },
@@ -597,9 +628,47 @@ export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
       )
         throw new XivapiInputError('INVALID_LOOKUP');
       return (await subscribe(
-        id,
+        JSON.stringify(['glasses', id]),
+        (signal) => lookup(id, newBudget(signal)),
+        failureResult,
         requestOptions.signal,
       )) as LookupResult<GlassesRow>;
     },
+    async resolveRows(models, glassesId, signal) {
+      const selection = lookupsFrom(models);
+      if (!selection.length && glassesId === undefined)
+        return { items: null, facewear: null };
+      const failure = (code: string, cancelled = false): ResolvedRows => ({
+        items: selection.length
+          ? (failureResult(code, cancelled) as LookupResult<ItemRow>)
+          : null,
+        facewear:
+          glassesId !== undefined
+            ? (failureResult(code, cancelled) as LookupResult<GlassesRow>)
+            : null,
+      });
+      return subscribe(
+        JSON.stringify(['resolve', selection, glassesId ?? null]),
+        async (sharedSignal) => {
+          const budget = newBudget(sharedSignal);
+          // Sequential components keep the instance's two-request concurrency bound.
+          const items = selection.length
+            ? ((await lookup(selection, budget)) as LookupResult<ItemRow>)
+            : null;
+          const facewear =
+            glassesId !== undefined
+              ? ((await lookup(glassesId, budget)) as LookupResult<GlassesRow>)
+              : null;
+          return { items, facewear };
+        },
+        failure,
+        signal,
+      );
+    },
   };
+}
+
+export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
+  const { searchItems, getGlasses } = createTransport(options);
+  return { searchItems, getGlasses };
 }
