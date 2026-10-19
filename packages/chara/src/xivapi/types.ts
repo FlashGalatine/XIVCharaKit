@@ -1,0 +1,63 @@
+import type { EquipmentModel, EquipmentSlot, Issue } from '../types.js';
+
+export type Language = 'en' | 'ja' | 'de' | 'fr';
+export interface ItemRules {
+  dyeCount: number | null;
+  glamourable: boolean | null;
+  wear: Partial<Record<string, boolean>>;
+  grandCompany: number | null;
+}
+export interface GlassesRow {
+  rowId: number;
+  names: Partial<Record<Language, string>>;
+  iconId: number | null;
+}
+export interface ItemRow extends GlassesRow {
+  modelMain: string;
+  modelSub: string | null;
+  slots: EquipmentSlot[];
+  levelEquip: number | null;
+  uiCategory: number | null;
+  rules: ItemRules;
+}
+export type PublicRow = ItemRow | GlassesRow;
+export interface LookupResult<R extends PublicRow = PublicRow> {
+  status: 'complete' | 'partial' | 'unavailable' | 'cancelled';
+  rows: R[];
+  version: string | null;
+  schema: string | null;
+  issues: Issue[];
+}
+export interface CachedRows {
+  format: 1;
+  namespace: string;
+  version: string;
+  schema: string;
+  complete: true;
+  rows: PublicRow[];
+}
+export interface ResolutionCache {
+  get(key: string): Promise<CachedRows | null>;
+  set(key: string, value: CachedRows, ttlMs: number): Promise<void>;
+}
+export interface XivapiOptions {
+  fetch?: typeof globalThis.fetch;
+  /** HTTPS API root, including /api. Trusted host configuration only. */
+  baseUrl?: string;
+  version?: string;
+  schema?: string;
+  languages?: readonly Language[];
+  maxPages?: number;
+  timeoutMs?: number;
+  cache?: ResolutionCache;
+}
+export interface XivapiClient {
+  searchItems(
+    models: readonly EquipmentModel[],
+    options?: { signal?: AbortSignal },
+  ): Promise<LookupResult<ItemRow>>;
+  getGlasses(
+    id: number,
+    options?: { signal?: AbortSignal },
+  ): Promise<LookupResult<GlassesRow>>;
+}

@@ -53,6 +53,9 @@ const appearance: AppearanceInspection = await resolveAppearance(result, { palet
 void appearance;
 void palettes;
 void result; void key;
+import { createXivapiClient, createMemoryCache, type XivapiClient } from 'ffxiv-chara/xivapi';
+const transport: XivapiClient = createXivapiClient({ cache: createMemoryCache() });
+void transport;
 `,
 );
 execFileSync(
@@ -76,6 +79,9 @@ if (color?.hex !== '#F7F7F7') throw new Error('Worker palette mismatch');
 const { resolveAppearance } = await import('ffxiv-chara/appearance');
 const appearance = await resolveAppearance(inspectChara(readChara('{"LEyeColor":0}')), { palettes:createDefaultPaletteProvider() });
 if (appearance.slots.leftEye.displayHex !== '#F7F7F7') throw new Error('Worker appearance mismatch');
+const { createXivapiClient } = await import('ffxiv-chara/xivapi');
+const transport = createXivapiClient({ fetch: async () => new Response(JSON.stringify({ version:'0123456789abcdef', schema:'exdschema@2:rev:' + 'a'.repeat(40), rows:[] })), version:'0123456789abcdef' });
+if ((await transport.getGlasses(8)).status !== 'complete') throw new Error('Worker transport mismatch');
 parentPort.postMessage(result.equipment.Body.model);
 `,
 );
@@ -92,6 +98,9 @@ assert.equal((await createDefaultPaletteProvider().getColor({ table:'creator', p
 const { resolveAppearance } = await import('ffxiv-chara/appearance');
 const appearance = await resolveAppearance(inspectChara(readChara('{"LEyeColor":0}')), { palettes:createDefaultPaletteProvider() });
 assert.equal(appearance.slots.leftEye.displayHex, '#F7F7F7');
+const { createXivapiClient, createMemoryCache } = await import('ffxiv-chara/xivapi');
+const transport = createXivapiClient({ cache:createMemoryCache() });
+assert.equal((await transport.searchItems([])).status, 'complete');
 const worker = new Worker(new URL('./worker.mjs', import.meta.url));
 try {
   const result = await new Promise((resolve, reject) => {

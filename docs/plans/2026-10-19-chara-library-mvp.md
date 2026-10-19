@@ -1,6 +1,6 @@
 # ffxiv-chara MVP Implementation Plan
 
-**Status:** implementation reopened by the maintainer on 2026-10-19. Reader/inspection and palette/appearance milestones (Tasks 1–4) are implemented with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Tasks 5–8 remain pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
+**Status:** implementation reopened by the maintainer on 2026-10-19. Reader/inspection, palette/appearance and XIVAPI transport/cache (Tasks 1–5) are implemented with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Tasks 6–8 remain pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
 
 > **For agentic workers:** Execute the selected milestone inline using superpowers:executing-plans and test-driven development, with a final independent review. Checkboxes track implementation where complete; pending tasks do not authorize publication, deployment, or consumer migration.
 
@@ -202,12 +202,12 @@ Finalize these names when reopening the plan; subsequent tasks use them consiste
 
 **Interfaces:** Produces the injected transport, upstream row types, cursor handling, and `ResolutionCache` consumed by Task 6. Shared options are `XivapiOptions` from the API contracts.
 
-- [ ] Write mocked failing tests for properly encoded grouped slot/model queries, decimal weapon keys, deduplication, language fields, version/schema forwarding, cursor iteration, per-operation page bounds, malformed JSON/rows, timeout, cancellation, 429/503, and explicit incomplete results.
-- [ ] Add request-minimization tests: only lookup identifiers/version/schema/fields reach URLs or request bodies; no source document metadata, appearance, or stain IDs. The default browser transport must not set a forbidden `User-Agent` header; server hosts may customize their injected fetch.
-- [ ] Run `pnpm --filter './packages/chara' exec vitest run test/xivapi-client.test.ts`; verify the new failures.
-- [ ] Implement on standard fetch/URL/AbortSignal primitives, with no Hono or Cloudflare imports. Coalesce repeated lookups, use the exact timeout/retry defaults above, and make external failures inspectable. Treat caller cancellation distinctly from service unavailability.
-- [ ] Namespace cached rows by endpoint, resolved game version, schema/field shape, locale selection, and slot/model or facewear key. Cache complete empty results only; never turn a truncated/failed response into a negative cache entry. Refresh changing `latest` aliases without reusing a previous version's data; skip cache storage when no immutable version can be established. Test positive/negative TTL expiry and alias changes with Vitest's fake clock.
-- [ ] Re-run the client suite and runtime import checks. Document that direct browser access still needs a real browser smoke test in Task 7; the planning session did not verify CORS because the terminal could not resolve the upstream hostname. Commit these paths.
+- [x] Write mocked failing tests for properly encoded grouped slot/model queries, decimal weapon keys, deduplication, language fields, version/schema forwarding, cursor iteration, per-operation page bounds, malformed JSON/rows, timeout, cancellation, 429/503, and explicit incomplete results.
+- [x] Add request-minimization tests: only lookup identifiers/version/schema/fields reach URLs or request bodies; no source document metadata, appearance, or stain IDs. The default browser transport must not set a forbidden `User-Agent` header; server hosts may customize their injected fetch.
+- [x] Run `pnpm --filter './packages/chara' exec vitest run test/xivapi-client.test.ts`; verify the new failures.
+- [x] Implement on standard fetch/URL/AbortSignal primitives, with no Hono or Cloudflare imports. Coalesce repeated lookups, use the exact timeout/retry defaults above, and make external failures inspectable. Treat caller cancellation distinctly from service unavailability.
+- [x] Namespace cached rows by endpoint, resolved game version, schema/field shape, locale selection, and slot/model or facewear key. Cache complete empty results only; never turn a truncated/failed response into a negative cache entry. Refresh changing `latest` aliases without reusing a previous version's data; skip cache storage when no immutable version can be established. Test positive/negative TTL expiry and alias changes with Vitest's fake clock.
+- [x] Re-run the client suite and runtime import checks. Document that direct browser access still needs a real browser smoke test in Task 7; the planning session did not verify CORS because the terminal could not resolve the upstream hostname. Commit these paths.
 
 **Exit:** A host can query and cache XIVAPI data with controlled, replaceable transport and no character upload.
 

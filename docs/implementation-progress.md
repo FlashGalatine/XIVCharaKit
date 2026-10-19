@@ -4,7 +4,7 @@ Plan: `docs/plans/2026-10-19-chara-library-mvp.md`.
 Implementation reopened by the maintainer on 2026-10-19.
 
 The reader foundation covers Task 0 evidence and Tasks 1–2. The second milestone implements Tasks 3–4 (palettes and appearance); independent review is complete and both reported findings are fixed.
-Tasks 5–8 remain pending; publication, deployment, and XIV Dye Tools migration are separate scope.
+Task 5 adds the portable XIVAPI transport/cache. Tasks 6–8 remain pending; publication, deployment, and XIV Dye Tools migration are separate scope.
 
 ## Decisions
 
@@ -76,3 +76,22 @@ Next step: Tasks 5–6, portable XIVAPI transport/cache and candidate resolution
 ## Supplied human.cmp verification
 
 On 2026-10-19 the maintainer supplied the explicit local source. Its 186,752 bytes and SHA-256 `958e90e635b756fff3e1b9c08b7c33fb08708258eee913b8ab57672b67d5e025` are recorded without the local path. Check-mode generation matched every baseline artifact hash and color count; actual regeneration then left all four data files unchanged and added `generatedFrom` metadata only. The raw source hash was unchanged afterward. The maintainer then confirmed the file is from game version 7.57, which is now recorded in `gameVersion`. This closes the earlier real-source regeneration limitation for all 26,208 palette entries in this dataset; release/data-rights gates remain open. Raw `*.cmp` files are ignored by Git and are absent from the package allowlist.
+
+## XIVAPI transport milestone
+
+Task 5 baseline: `3ae73a5`, clean working tree. Execution stayed inline on the existing branch, with test-driven implementation and one fresh independent read-only review. The existing agreed brief remains the spec; no new publication or deployment scope was added.
+
+Interface check: Task 2 supplies validated equipment lanes and decimal model keys; Task 5 captures only slot/model scalars and returns normalized upstream rows for Task 6. It exposes `createXivapiClient` separately from the future `createXivapiResolver`, keeping transport and candidate matching independently testable. No character documents or dyes enter this API. The new optional export remains outside the main static import graph.
+
+Rulings:
+
+- `baseUrl` names an HTTPS API root including `/api`; aliases use the official `/version` list. Strict supported version/schema grammar is documented. Cache reads require immutable version and canonical response shape; failed refresh never reuses a stale alias. Moving schema selections refresh after ten minutes too, preventing indefinite caching behind a mutable schema alias.
+- Cache namespace includes the sorted requested slot/model set. This still keys by model identity and prevents a group-level interruption from establishing a cached miss for one slot. Cost: less cache reuse across different combinations, without leaking character metadata.
+- Facewear uses the documented row-list endpoint with `rows=id`. A valid 200 empty list establishes absence; raw 404 does not, since it may describe endpoint/version/schema errors. Cost: one list wrapper instead of single-row response.
+- Preserve nullable individual rule evidence rather than requiring all rule columns at once. No inferred wear mask, job eligibility, preferred twin, acquisition or icon fetch is added here.
+
+Initial suite: 32 failures against transport/cache stubs (8 rejection/status checks already passed). Additional failing regressions covered deadline queueing, serialization hooks, admission before cache copying, generic 404 false negatives, and property-order-independent cache validation. All corrections were checked with the full suite. Final focused suite: 52 tests; full suite: 257 tests across 9 files. `pnpm type-check`, `pnpm lint`, `pnpm verify-fixtures`, `pnpm verify-palettes`, and `pnpm test:package` pass. Installed JS/TS/Node Worker checks exercise all four exports; package contains 36 allowlisted files and no runtime dependencies. The package check includes the production build and verifies optional code stays outside main imports.
+
+Independent review found one Important issue (facewear 404 could be a false negative) and one Minor issue (cache adapters reordering JSON properties cause misses). The implementer graded the second Important because canonical JSON adapters are ordinary supported cache implementations. Both reproduced RED→GREEN; no deferred code findings remain. Review set aside Task 6 matching, demo behavior, live browser CORS/browser/workerd execution, release/hosting security, and ongoing packaging/docs. Those rulings stand: future work remains pending, and packaging/docs were verified separately by the implementer. See [XIVAPI validation](security/xivapi-validation.md) and [transport contract](xivapi.md).
+
+Next step: Task 6 candidate resolution, including ambiguity, off-hand/main-hand context and facewear. Browser CORS and browser/workerd runtime acceptance remain Tasks 7–8. No private corpus identifiers were sent upstream, and resource tests used synthetic transport. No push, PR, merge, package publication, deployment or consumer migration was performed.

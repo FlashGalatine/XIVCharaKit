@@ -2,7 +2,7 @@
 
 A TypeScript library in development for reading and inspecting Final Fantasy XIV `.chara` files used by Anamnesis, Ktisis, and Brio.
 
-**Status: reader, palettes, and appearance interpretation implemented.** Bounded reading, typed inspection, model keys, creator/shader palette lookup, and source-labelled swatches are available. The package is private at version 0.0.0 while publication identity and licensing remain undecided.
+**Status: reader, appearance, and XIVAPI transport implemented.** Bounded reading, typed inspection, model keys, creator/shader palettes, source-labelled swatches, and optional bounded XIVAPI row lookup/caching are available. The package is private at version 0.0.0 while publication identity and licensing remain undecided.
 
 The full MVP includes:
 
@@ -11,7 +11,7 @@ The full MVP includes:
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and anonymized examples.
 
-XIVAPI resolution and the demo website are upcoming milestones. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
+Equipment candidate matching and the demo website are upcoming milestones. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
 
 ## Develop locally
 

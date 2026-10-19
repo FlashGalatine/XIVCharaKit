@@ -1,6 +1,6 @@
-# Reader foundation API
+# Library API
 
-The private development package exposes the main ESM entry plus optional `/palettes` and `/appearance` entries. `/xivapi` remains pending. Reading, inspection, model arithmetic, bundled palette lookup, and appearance interpretation perform no I/O and have no runtime dependencies. Bundles target ES2022 and include TypeScript declarations; installed JavaScript, TypeScript, and Node Worker consumers exercise all three entries locally. Browser/Web Worker/workerd validation is pending. Build metadata verifies that the main static dependency graph contains no optional modules or palette data. Bundled JSON tables become lazy ESM chunks, without requiring JSON import flags in installed consumers.
+The private development package exposes the main ESM entry plus optional `/palettes`, `/appearance`, and [`/xivapi`](xivapi.md) entries. Reading, inspection, model arithmetic, bundled palette lookup, and appearance interpretation perform no I/O and have no runtime dependencies. The optional XIVAPI client performs identifier-only requests when called. Bundles target ES2022 and include TypeScript declarations; installed JavaScript, TypeScript, and Node Worker consumers exercise all four entries locally. Browser/Web Worker/workerd validation is pending. Build metadata verifies that the main static dependency graph contains no optional modules or palette data. Bundled JSON tables become lazy ESM chunks, without requiring JSON import flags in installed consumers.
 
 ## Read
 

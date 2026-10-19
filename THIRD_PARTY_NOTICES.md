@@ -2,7 +2,7 @@
 
 ## XIV Dye Tools
 
-Palette layout and appearance interpretation were adapted from `FlashGalatine/xivdyetools`, commit `b98c8584a85f5dc50b4b4392c508cc627ef004d6`. Source locations and hashes are recorded in the palette metadata and data-provenance documentation. The color generator layout and interpretation rules are supplied under the following upstream code notice:
+Palette layout, appearance interpretation, and equipment query/row conventions were adapted from `FlashGalatine/xivdyetools`, commit `b98c8584a85f5dc50b4b4392c508cc627ef004d6`. Source locations and hashes are recorded in the palette metadata, data-provenance documentation, and implementation plan. The adapted source code is supplied under the following upstream code notice:
 
 MIT License
 

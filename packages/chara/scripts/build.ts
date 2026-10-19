@@ -13,6 +13,7 @@ const result = await build({
     index: 'src/index.ts',
     palettes: 'src/palettes/index.ts',
     appearance: 'src/appearance/index.ts',
+    xivapi: 'src/xivapi/index.ts',
   },
   outdir: 'dist',
   bundle: true,

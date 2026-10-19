@@ -90,6 +90,7 @@ class Reader {
   constructor(
     private readonly text: string,
     private readonly limits: Limits,
+    private readonly omitImages = true,
   ) {
     this.diagnostics = new IssueCollector(limits.maxIssues);
   }
@@ -240,7 +241,7 @@ class Reader {
       this.take(':');
       this.whitespace();
       const childPath = boundedPath([...path, key]);
-      const image = key.toLowerCase() === 'base64image';
+      const image = this.omitImages && key.toLowerCase() === 'base64image';
       if (image && !discard) {
         this.hasImage = true;
         const initial = this.text[this.pos];
@@ -305,6 +306,11 @@ class Reader {
       this.take(',');
     }
   }
+}
+
+/** Internal transport parser: structural admission without character/image policy. */
+export function readBoundedJson(input: Uint8Array): JsonValue {
+  return new Reader(admit(input, 2 * 1024 * 1024), READ_DEFAULTS, false).read();
 }
 
 export function readChara(
