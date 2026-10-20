@@ -1,0 +1,19 @@
+# XIVAPI transport validation
+
+Task 5 implements transport/cache. Task 6 candidate matching and Tasks 7–8 browser/demo/runtime checks remain pending. This is implementation evidence, not a security certification.
+
+Transport tests use synthetic responses and injected fetch. No private corpus values were sent to XIVAPI, and automated resource-limit tests never contacted production. Official docs/OpenAPI and commit-pinned public sources supply the protocol reference.
+
+The suite covers grouped decimal identities, request minimization, locales/schema/version, opaque cursors and continued fields, cursor/page/request/row/byte bounds, malformed/excessive JSON, identity changes, unrelated rows, partial preservation, missing rules, queue/concurrency bounds, operation deadlines, stalled headers/body, retries, independent shared cancellation, final-subscriber abortion, and backoff/queue cancellation. Cache tests cover aliases and failed refresh, namespace isolation, positive/negative expiry, detached values, invalid/cyclic/accessor/hooked data, completeness/association, property ordering, entry count and serialized capacity. A complete 5,000-row response demonstrates cache admission before copying or adapter invocation.
+
+Initial behavior tests failed against stubs. Further failing regressions exposed queued operations starting at their expired deadline, nonenumerable serialization hooks, cache admission after cloning, ambiguous facewear HTTP 404s, and property-order-dependent cache hits. Corrections retain partial rows and fixed bounded issues.
+
+Independent read-only review found one Important issue (404 false negatives) and one Minor issue (cache order interoperability). The implementer graded the latter Important because ordinary canonical-JSON adapters otherwise cannot hit valid entries. Both were reproduced and corrected. The review set aside candidate resolution, demo behavior, real browser CORS/browser/workerd execution, publication/hosting security, and packaging/docs still being edited. Future gates remain pending; the implementer verifies packaging/docs separately. No deferred code findings remain.
+
+Final command evidence and handoff: [implementation progress](../implementation-progress.md). Contract and bounds: [XIVAPI reference](../xivapi.md).
+
+## Candidate resolution
+
+Task 6 adds pure slot/model association and a public resolver. Its scheduler shares one deadline, request/byte/encountered-row budget, queue entry, and subscriber lifecycle across items and facewear. Matching tests cover armor-slot separation, both rings, weapon triples, contextual ModelSub and copied-main-hand matches, standalone shields, all ambiguous candidates in stable order, and preserved old-name rows and unknown rule values. Missing ModelSub cannot establish complete off-hand matching. Incomplete batches cannot establish missing per-slot items.
+
+Integration tests cover component outages and distinct response identities, full-resolution coalescing/cancellation, shared request/byte/deadline/queue limits, the 5,000-encountered-row boundary across both components, source-input mutation, detached cross-slot results, and main-hand-context cache isolation. Only synthetic rows are used. An independent read-only review found no code issues and separately verified the aggregate row boundary. Live upstream/browser CORS/demo/workerd and release gates remain pending; package imports/build/declarations are verified separately by the implementer.

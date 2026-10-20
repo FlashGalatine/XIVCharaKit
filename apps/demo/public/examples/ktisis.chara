@@ -1,0 +1,16 @@
+{
+  "TypeName": "Ktisis Character File",
+  "FileVersion": 1,
+  "Race": "Lalafel",
+  "Tribe": "Dunesfolk",
+  "Gender": "Feminine",
+  "Height": 0,
+  "EnableHighlights": true,
+  "HairTone": 4,
+  "Highlights": 1,
+  "Skintone": 8,
+  "Body": { "ModelBase": 361, "ModelVariant": 5, "DyeId": 0, "DyeId2": 0 },
+  "Glasses": { "GlassesId": 12 },
+  "Transparency": 1,
+  "BustScale": "1, 1, 1"
+}

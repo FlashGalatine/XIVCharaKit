@@ -1,0 +1,163 @@
+{
+  "kind": "synthetic",
+  "source": "Authored from documented Item row/model relationships; no private export or live item identity copied. Decimal keys and expected associations reviewed by hand.",
+  "rows": [
+    {
+      "rowId": 101,
+      "names": { "en": "Synthetic Dated Coat" },
+      "iconId": 123,
+      "modelMain": "328041",
+      "modelSub": "0",
+      "slots": ["Body"],
+      "levelEquip": 20,
+      "uiCategory": null,
+      "rules": {
+        "dyeCount": null,
+        "glamourable": null,
+        "wear": {},
+        "grandCompany": null
+      }
+    },
+    {
+      "rowId": 102,
+      "names": { "en": "Aetherial Synthetic Coat" },
+      "iconId": 124,
+      "modelMain": "328041",
+      "modelSub": "0",
+      "slots": ["Body"],
+      "levelEquip": 20,
+      "uiCategory": null,
+      "rules": {
+        "dyeCount": 2,
+        "glamourable": true,
+        "wear": { "Hyur": true, "Female": true },
+        "grandCompany": 0
+      }
+    },
+    {
+      "rowId": 103,
+      "names": { "en": "Synthetic Hat" },
+      "iconId": 125,
+      "modelMain": "328041",
+      "modelSub": "0",
+      "slots": ["HeadGear"],
+      "levelEquip": null,
+      "uiCategory": null,
+      "rules": {
+        "dyeCount": null,
+        "glamourable": null,
+        "wear": {},
+        "grandCompany": null
+      }
+    },
+    {
+      "rowId": 201,
+      "names": { "en": "Synthetic Ring" },
+      "iconId": null,
+      "modelMain": "65543",
+      "modelSub": "0",
+      "slots": ["LeftRing", "RightRing"],
+      "levelEquip": null,
+      "uiCategory": null,
+      "rules": {
+        "dyeCount": 0,
+        "glamourable": false,
+        "wear": {},
+        "grandCompany": null
+      }
+    },
+    {
+      "rowId": 301,
+      "names": { "en": "Synthetic Weapon A" },
+      "iconId": null,
+      "modelMain": "4296213114",
+      "modelSub": "4304732858",
+      "slots": ["MainHand"],
+      "levelEquip": null,
+      "uiCategory": null,
+      "rules": {
+        "dyeCount": null,
+        "glamourable": null,
+        "wear": {},
+        "grandCompany": null
+      }
+    },
+    {
+      "rowId": 302,
+      "names": { "en": "Synthetic Weapon B" },
+      "iconId": null,
+      "modelMain": "4296213115",
+      "modelSub": "4304732858",
+      "slots": ["MainHand"],
+      "levelEquip": null,
+      "uiCategory": null,
+      "rules": {
+        "dyeCount": null,
+        "glamourable": null,
+        "wear": {},
+        "grandCompany": null
+      }
+    },
+    {
+      "rowId": 401,
+      "names": { "en": "Synthetic Shield" },
+      "iconId": null,
+      "modelMain": "4304732858",
+      "modelSub": "0",
+      "slots": ["OffHand"],
+      "levelEquip": null,
+      "uiCategory": null,
+      "rules": {
+        "dyeCount": null,
+        "glamourable": null,
+        "wear": {},
+        "grandCompany": null
+      }
+    }
+  ],
+  "cases": [
+    {
+      "models": [
+        { "slot": "Body", "base": 361, "variant": 5 },
+        { "slot": "HeadGear", "base": 361, "variant": 5 }
+      ],
+      "expected": { "Body": [101, 102], "HeadGear": [103] }
+    },
+    {
+      "models": [
+        { "slot": "LeftRing", "base": 7, "variant": 1 },
+        { "slot": "RightRing", "base": 7, "variant": 1 }
+      ],
+      "expected": { "LeftRing": [201], "RightRing": [201] }
+    },
+    {
+      "models": [
+        { "slot": "MainHand", "set": 634, "base": 19, "variant": 1 },
+        { "slot": "OffHand", "set": 698, "base": 149, "variant": 1 }
+      ],
+      "expected": { "MainHand": [301], "OffHand": [301] }
+    },
+    {
+      "models": [
+        { "slot": "MainHand", "set": 635, "base": 19, "variant": 1 },
+        { "slot": "OffHand", "set": 698, "base": 149, "variant": 1 }
+      ],
+      "expected": { "MainHand": [302], "OffHand": [302] }
+    },
+    {
+      "models": [{ "slot": "OffHand", "set": 698, "base": 149, "variant": 1 }],
+      "expected": { "OffHand": [401] }
+    },
+    {
+      "models": [
+        { "slot": "MainHand", "set": 634, "base": 19, "variant": 1 },
+        { "slot": "OffHand", "set": 634, "base": 19, "variant": 1 }
+      ],
+      "expected": { "MainHand": [301], "OffHand": [301] }
+    },
+    {
+      "models": [{ "slot": "Body", "base": 65535, "variant": 65535 }],
+      "expected": { "Body": [] }
+    }
+  ]
+}

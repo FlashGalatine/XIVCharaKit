@@ -1,0 +1,14 @@
+{
+  "TypeName": "Synthetic Brio-compatible example",
+  "Race": "AuRa",
+  "Tribe": "Xaela",
+  "Gender": 0,
+  "IsExtendedAppearanceValid": true,
+  "SkinColor": { "X": 0, "Y": 0.25, "Z": 1 },
+  "LeftEyeColor": "0, 0, 0",
+  "RightEyeColor": "0.25, 0.5, 1",
+  "MouthColor": { "X": 0.5, "Y": 0.25, "Z": 0, "W": 0 },
+  "LeftRing": { "ModelBase": 0, "ModelVariant": 0, "DyeId": 0, "DyeId2": 0 },
+  "RightRing": { "ModelBase": 1, "ModelVariant": 1, "DyeId": 0, "DyeId2": 0 },
+  "Glasses": { "GlassesId": 4 }
+}

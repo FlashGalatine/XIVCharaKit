@@ -1,0 +1,10 @@
+{
+  "TypeName": "Synthetic partial character",
+  "Race": null,
+  "Tribe": "Rava",
+  "EnableHighlights": false,
+  "HairTone": 0,
+  "HairColor": "0, 0, 0",
+  "IsExtendedAppearanceValid": false,
+  "FutureField": { "enabled": false, "count": 0, "label": "" }
+}

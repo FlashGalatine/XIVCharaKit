@@ -1,0 +1,21 @@
+{
+  "TypeName": "Anamnesis Character File",
+  "Nickname": "Synthetic example",
+  "SaveMode": "All",
+  "Race": "Hyur",
+  "Tribe": "Midlander",
+  "Gender": "Masculine",
+  "Age": "Normal",
+  "Height": 50,
+  "Hair": 1,
+  "Head": 1,
+  "Skintone": 0,
+  "EnableHighlights": false,
+  "HairTone": 0,
+  "Highlights": 0,
+  "REyeColor": 0,
+  "LEyeColor": 1,
+  "MainHand": { "ModelSet": 634, "ModelBase": 19, "ModelVariant": 1, "DyeId": 0, "DyeId2": 3 },
+  "HeadGear": { "ModelBase": 361, "ModelVariant": 5, "DyeId": 2, "DyeId2": 0 },
+  "Glasses": { "GlassesId": 0 }
+}

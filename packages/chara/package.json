@@ -1,0 +1,39 @@
+{
+  "name": "ffxiv-chara",
+  "version": "0.0.0",
+  "description": "Portable, local inspection of FFXIV character files",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./palettes": {
+      "types": "./dist/palettes/index.d.ts",
+      "import": "./dist/palettes.js"
+    },
+    "./appearance": {
+      "types": "./dist/appearance/index.d.ts",
+      "import": "./dist/appearance.js"
+    },
+    "./dyes": {
+      "types": "./dist/dyes/index.d.ts",
+      "import": "./dist/dyes.js"
+    },
+    "./xivapi": {
+      "types": "./dist/xivapi/index.d.ts",
+      "import": "./dist/xivapi.js"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "type-check": "tsc --noEmit",
+    "build": "tsx scripts/build.ts && tsc -p tsconfig.build.json"
+  }
+}

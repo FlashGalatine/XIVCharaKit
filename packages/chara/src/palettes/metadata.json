@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "2026-10-19-baseline",
+  "gameVersion": "7.57",
+  "source": {
+    "repository": "FlashGalatine/xivdyetools",
+    "commit": "b98c8584a85f5dc50b4b4392c508cc627ef004d6",
+    "schemaVersion": "2.0.0"
+  },
+  "artifactHashEncoding": "SHA-256 of UTF-8 JSON.stringify(parsed JSON)",
+  "generatedFrom": {
+    "sha256": "958e90e635b756fff3e1b9c08b7c33fb08708258eee913b8ab57672b67d5e025",
+    "bytes": 186752
+  },
+  "sources": [
+    {
+      "path": "packages/core/src/data/character_colors/index.json",
+      "sha256": "026d62b28c72661cb4646fb7647dd1ba4ef6ea777f637ecdc6e8fc3e89366802",
+      "bytes": 833
+    },
+    {
+      "path": "packages/core/src/data/character_colors/race_specific/hair_colors.json",
+      "sha256": "9840c7871118aa71c54079295d8924f17f5ce9e42d9965d59362f1b78d6fdf1d",
+      "bytes": 917209
+    },
+    {
+      "path": "packages/core/src/data/character_colors/race_specific/skin_colors.json",
+      "sha256": "2bdd6f121fd0cf732f1fc5383c88d99cf736953802992decddc0eff466908a2f",
+      "bytes": 917804
+    },
+    {
+      "path": "packages/core/src/data/character_colors/shader/race_specific.json",
+      "sha256": "80cbc38ce873c9d73263301f9fc81cec53a0bea4234ddd537ac9efd2d3379f8e",
+      "bytes": 235884
+    },
+    {
+      "path": "packages/core/src/data/character_colors/shader/shared.json",
+      "sha256": "16f16ac020baf10a6c95d7405fc4625c5f7f79b1600872261261041e4793ea57",
+      "bytes": 10160
+    },
+    {
+      "path": "packages/core/src/data/character_colors/shared/eye_colors.json",
+      "sha256": "efca453202a897574dd901642fb52ec251229761d5e9d47d818214419a6e2bdf",
+      "bytes": 21704
+    },
+    {
+      "path": "packages/core/src/data/character_colors/shared/face_paint_dark.json",
+      "sha256": "e65c43b18217cd5785da1ce765d9c2882e5257412b886ec481a5fca2b62555c1",
+      "bytes": 10798
+    },
+    {
+      "path": "packages/core/src/data/character_colors/shared/face_paint_light.json",
+      "sha256": "e65c43b18217cd5785da1ce765d9c2882e5257412b886ec481a5fca2b62555c1",
+      "bytes": 10798
+    },
+    {
+      "path": "packages/core/src/data/character_colors/shared/highlight_colors.json",
+      "sha256": "020bc6a088f51f6a8fb614a35d3ea661882ea1317a973e71f5b9859456d0942b",
+      "bytes": 21699
+    },
+    {
+      "path": "packages/core/src/data/character_colors/shared/lip_colors_dark.json",
+      "sha256": "e65c43b18217cd5785da1ce765d9c2882e5257412b886ec481a5fca2b62555c1",
+      "bytes": 10798
+    },
+    {
+      "path": "packages/core/src/data/character_colors/shared/lip_colors_light.json",
+      "sha256": "e65c43b18217cd5785da1ce765d9c2882e5257412b886ec481a5fca2b62555c1",
+      "bytes": 10798
+    },
+    {
+      "path": "packages/core/src/data/character_colors/shared/tattoo_colors.json",
+      "sha256": "968535757b1394f24580ee6ac40c24cbdfa32055be89eb83131aee6bb2092fd1",
+      "bytes": 21700
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "data/creator-shared.json",
+      "sha256": "ad0fb10b7036dc82e2bb307a948dbb1c5995fbcee6855b3e3f57edb5810f2926",
+      "colorCount": 960
+    },
+    {
+      "file": "data/creator-race.json",
+      "sha256": "2b8936bbe86705eba32d441b342cae959dd4cbb45421e02cdf3f577fa411d296",
+      "colorCount": 12288
+    },
+    {
+      "file": "data/shader-shared.json",
+      "sha256": "fca8dc40866e36d6d3a8e3df953a58adcd4a2299f8b1f957df1cea4da3591e7d",
+      "colorCount": 672
+    },
+    {
+      "file": "data/shader-race.json",
+      "sha256": "43ea819f583a60d9824d322be312a0a0058d11139405d4fa5a30e229547455bc",
+      "colorCount": 12288
+    }
+  ]
+}
