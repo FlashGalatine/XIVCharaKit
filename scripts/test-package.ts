@@ -12,18 +12,24 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertPublicArtifact } from './package-policy.js';
+import { getPackageArtifactName } from './release.js';
 import { runRuntimeChecks } from './runtime-runner.js';
 
 const root = new URL('../', import.meta.url);
 const scratch = new URL('.superpowers/package-smoke/', root);
-const tarball = fileURLToPath(new URL('xivcharakit-0.0.0.tgz', scratch));
+const committedMetadata = JSON.parse(
+  await readFile(new URL('packages/chara/package.json', root), 'utf8'),
+);
+const tarball = fileURLToPath(
+  new URL(getPackageArtifactName(committedMetadata), scratch),
+);
 const entries = execFileSync('tar', ['-tzf', tarball], { encoding: 'utf8' })
   .trim()
   .split(/\r?\n/);
 assert(entries.length > 2);
 for (const entry of entries) {
   assert(
-    /^package\/(?:package\.json|dist\/(?:LICENSE|THIRD_PARTY_NOTICES\.md|(?:[a-z-]+\/)*[a-zA-Z0-9_-]+\.(?:js|d\.ts)))$/.test(
+    /^package\/(?:package\.json|README\.md|dist\/(?:LICENSE|THIRD_PARTY_NOTICES\.md|(?:[a-z-]+\/)*[a-zA-Z0-9_-]+\.(?:js|d\.ts)))$/.test(
       entry,
     ),
     'Unexpected package file.',
@@ -73,6 +79,17 @@ try {
   assert.equal(metadata.type, 'module');
   assert.equal(metadata.name, 'xivcharakit');
   assert.equal(metadata.license, 'MIT');
+  assert.equal(metadata.version, committedMetadata.version);
+  assert.deepEqual(metadata.publishConfig, committedMetadata.publishConfig);
+  assert.equal(
+    await readFile(`${installed}/README.md`, 'utf8'),
+    await readFile(new URL('packages/chara/README.md', root), 'utf8'),
+    'Installed package must include the reviewed package README.',
+  );
+  assert.equal(
+    await readFile(`${installed}/dist/THIRD_PARTY_NOTICES.md`, 'utf8'),
+    await readFile(new URL('THIRD_PARTY_NOTICES.md', root), 'utf8'),
+  );
   assert.equal(
     await readFile(`${installed}/dist/LICENSE`, 'utf8'),
     await readFile(new URL('LICENSE', root), 'utf8'),

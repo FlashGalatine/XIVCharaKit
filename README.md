@@ -2,7 +2,7 @@
 
 A TypeScript library in development for reading and inspecting Final Fantasy XIV `.chara` files used by Anamnesis, Ktisis, and Brio.
 
-**Status: library MVP and local demo implemented.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. The selected npm name is `xivcharakit`; the package remains private at version 0.0.0 while release/data-rights checks are pending. The repository is now [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
+**Status: library MVP and local demo implemented; npm candidate prepared.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. The unpublished candidate is `xivcharakit@0.1.0-beta.1` for the `next` tag. Release/data-rights checks remain pending; see the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
 
 The full MVP includes:
 
@@ -34,7 +34,7 @@ pnpm verify-dyes
 pnpm test:package
 ```
 
-`pnpm test:package` builds and packs the private package locally, checks the tarball and static demo artifacts, and exercises installed JavaScript/TypeScript plus Node, Node Worker, Chromium, module Web Worker and local workerd consumers outside the workspace. It does not publish. `pnpm test` includes artifact-policy tooling, library units and demo browser scenarios. `pnpm benchmark` measures synthetic reader cases in isolated Node processes. See [contributor setup](CONTRIBUTING.md), [distribution validation](docs/security/distribution-validation.md), [security/reporting status](SECURITY.md), [changelog](CHANGELOG.md), and [future migration notes](migration.md).
+`pnpm test:package` builds and packs the candidate locally, checks the tarball and static demo artifacts, and exercises installed JavaScript/TypeScript plus Node, Node Worker, Chromium, module Web Worker and local workerd consumers outside the workspace. It does not publish. `pnpm test` includes artifact/release-policy tooling, library units and demo browser scenarios. `pnpm benchmark` measures synthetic reader cases in isolated Node processes. See [contributor setup](CONTRIBUTING.md), [distribution validation](docs/security/distribution-validation.md), [security/reporting status](SECURITY.md), [changelog](CHANGELOG.md), and [future migration notes](migration.md).
 
 Start the demo with `pnpm dev`, or run `pnpm build` followed by `pnpm preview` for the production artifact at `http://127.0.0.1:4173`. Files stay in memory; equipment lookup requires a separate click. The default tests mock upstream responses. See [demo setup and validation](docs/demo.md) for the opt-in live check, privacy limits, and preview headers.
 

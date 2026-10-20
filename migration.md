@@ -4,7 +4,7 @@ The standalone package and reference demo are implemented here. Migrating XIV Dy
 
 ## Try a local artifact
 
-Run `pnpm test:package` to build and validate `.superpowers/package-smoke/xivcharakit-0.0.0.tgz`. A fresh local consumer can install that tarball with `pnpm add <absolute-tarball-path>`; `xivcharakit` is the selected name, but no public npm package has been published.
+Run `pnpm test:package` to build and validate `.superpowers/package-smoke/xivcharakit-0.1.0-beta.1.tgz`. A fresh local consumer can install that tarball with `pnpm add <absolute-tarball-path>`; no public npm package has been published. The artifact name follows the committed library version.
 
 ```ts
 import { readChara, inspectChara } from 'xivcharakit';
