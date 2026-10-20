@@ -12,7 +12,7 @@ The full MVP includes:
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and anonymized examples.
 
-The demo is verified in Chromium with a module Web Worker. Broader installed-browser/workerd checks and CI remain the next milestone. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
+The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
 
 ## Develop locally
 
@@ -26,10 +26,11 @@ pnpm type-check
 pnpm lint
 pnpm verify-fixtures
 pnpm verify-palettes
+pnpm verify-dyes
 pnpm test:package
 ```
 
-`pnpm test:package` builds and packs the private package locally, checks the exact tarball contents, and exercises installed JavaScript, TypeScript, and Node Worker consumers. It does not publish. `pnpm benchmark` measures synthetic reader cases in isolated Node processes.
+`pnpm test:package` builds and packs the private package locally, checks the tarball and static demo artifacts, and exercises installed JavaScript/TypeScript plus Node, Node Worker, Chromium, module Web Worker and local workerd consumers outside the workspace. It does not publish. `pnpm test` includes artifact-policy tooling, library units and demo browser scenarios. `pnpm benchmark` measures synthetic reader cases in isolated Node processes. See [contributor setup](CONTRIBUTING.md), [distribution validation](docs/security/distribution-validation.md), [security/reporting status](SECURITY.md), [changelog](CHANGELOG.md), and [future migration notes](migration.md).
 
 Start the demo with `pnpm dev`, or run `pnpm build` followed by `pnpm preview` for the production artifact at `http://127.0.0.1:4173`. Files stay in memory; equipment lookup requires a separate click. The default tests mock upstream responses. See [demo setup and validation](docs/demo.md) for the opt-in live check, privacy limits, and preview headers.
 
