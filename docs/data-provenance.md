@@ -6,6 +6,8 @@ Format references and source SHA-256 values are in [fixtures/manifest.json](../f
 
 The private sample folder is an opt-in test input, never a build input. The local corpus checker logs only aggregate counts. Synthetic fixtures use invented metadata and combinations of public format fields, without embedded images or copied character data. Fixture release rights must be settled with the project license; shape compatibility is not producer-export verification.
 
+Separately, on 2026-10-20 the maintainer supplied four default-setting exports from Anamnesis, Ktisis and Brio and confirmed ownership of the player character and permission for redistribution. Byte-identical copies are retained as test-only [producer fixtures](../fixtures/producer-exports/README.md), with hashes and the contributor permission statement in the manifest. These approved exports retain their supplied metadata and are not anonymized examples. They are excluded from the packed library and static demo. This permission does not select a general project/fixture license or settle game-derived data rights. Exact app versions, selective-export coverage and independent visual/control expectations remain open in [fixture validation](producer-fixture-validation.md).
+
 ## Palette baseline and regeneration
 
 See also the independent [English dye-name snapshot](#english-dye-name-snapshot); its revision is not the palette's game version.

@@ -1,1 +1,4 @@
 * text=auto eol=lf
+
+# Preserve original producer-export bytes for manifest SHA-256 verification.
+fixtures/producer-exports/*.chara -text whitespace=cr-at-eol

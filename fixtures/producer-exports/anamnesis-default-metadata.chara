@@ -1,0 +1,128 @@
+{
+  "FileExtension": ".chara",
+  "TypeName": "Anamnesis Character File",
+  "SaveMode": "All",
+  "ModelType": 0,
+  "ObjectKind": "Player",
+  "Race": "Elezen",
+  "Gender": "Feminine",
+  "Age": "Normal",
+  "Height": 100,
+  "Tribe": "Duskwight",
+  "Head": 4,
+  "Hair": 183,
+  "EnableHighlights": true,
+  "Skintone": 0,
+  "REyeColor": 42,
+  "HairTone": 71,
+  "Highlights": 36,
+  "FacialFeatures": "First, Second, Third, Fifth",
+  "LimbalEyes": 7,
+  "Eyebrows": 2,
+  "LEyeColor": 169,
+  "Eyes": 2,
+  "Nose": 3,
+  "Jaw": 1,
+  "Mouth": 2,
+  "LipsToneFurPattern": 53,
+  "EarMuscleTailSize": 100,
+  "TailEarsType": 3,
+  "Bust": 100,
+  "FacePaint": 0,
+  "FacePaintColor": 55,
+  "MainHand": {
+    "Color": "0, 0, 0",
+    "Scale": "0, 0, 0",
+    "ModelSet": 2027,
+    "ModelBase": 4,
+    "ModelVariant": 1,
+    "DyeId": 0,
+    "DyeId2": 0
+  },
+  "OffHand": {
+    "Color": "0, 0, 0",
+    "Scale": "0, 0, 0",
+    "ModelSet": 2099,
+    "ModelBase": 1,
+    "ModelVariant": 1,
+    "DyeId": 0,
+    "DyeId2": 0
+  },
+  "HeadGear": {
+    "ModelBase": 6246,
+    "ModelVariant": 1,
+    "DyeId": 35,
+    "DyeId2": 0
+  },
+  "Body": {
+    "ModelBase": 779,
+    "ModelVariant": 1,
+    "DyeId": 33,
+    "DyeId2": 11
+  },
+  "Hands": {
+    "ModelBase": 688,
+    "ModelVariant": 1,
+    "DyeId": 35,
+    "DyeId2": 41
+  },
+  "Legs": {
+    "ModelBase": 769,
+    "ModelVariant": 1,
+    "DyeId": 33,
+    "DyeId2": 0
+  },
+  "Feet": {
+    "ModelBase": 772,
+    "ModelVariant": 1,
+    "DyeId": 35,
+    "DyeId2": 41
+  },
+  "Ears": {
+    "ModelBase": 78,
+    "ModelVariant": 1,
+    "DyeId": 0,
+    "DyeId2": 0
+  },
+  "Neck": {
+    "ModelBase": 186,
+    "ModelVariant": 1,
+    "DyeId": 0,
+    "DyeId2": 0
+  },
+  "Wrists": {
+    "ModelBase": 173,
+    "ModelVariant": 1,
+    "DyeId": 0,
+    "DyeId2": 0
+  },
+  "LeftRing": {
+    "ModelBase": 3,
+    "ModelVariant": 4,
+    "DyeId": 0,
+    "DyeId2": 0
+  },
+  "RightRing": {
+    "ModelBase": 115,
+    "ModelVariant": 5,
+    "DyeId": 0,
+    "DyeId2": 0
+  },
+  "Glasses": {
+    "GlassesId": 0
+  },
+  "SkinColor": "0.976609, 0.976609, 0.98437524",
+  "LeftEyeColor": "0.28027683, 0.56692046, 0.40859672",
+  "RightEyeColor": "0.7443291, 0.53204155, 0.17937717",
+  "LimbalRingColor": "0, 0, 0",
+  "HairColor": "0.03543253, 0.022206845, 0.015747791",
+  "HairHighlight": "0.5094041, 0.33685508, 0.119092666",
+  "MouthColor": "0, 0, 0, 0",
+  "BustScale": "1.08, 1.2, 1.184",
+  "Transparency": 1,
+  "MuscleTone": 1,
+  "HeightMultiplier": 1.039,
+  "Author": "Flash Galatine",
+  "Description": "Rowynn Galatine, Machinist, Anamnesis Export, Full Gear",
+  "Version": "7.4"
+}
