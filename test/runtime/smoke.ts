@@ -12,11 +12,11 @@ export async function smoke() {
   };
   try {
     const [main, palettes, appearance, dyes, xivapi] = await Promise.all([
-      import('ffxiv-chara'),
-      import('ffxiv-chara/palettes'),
-      import('ffxiv-chara/appearance'),
-      import('ffxiv-chara/dyes'),
-      import('ffxiv-chara/xivapi'),
+      import('xivcharakit'),
+      import('xivcharakit/palettes'),
+      import('xivcharakit/appearance'),
+      import('xivcharakit/dyes'),
+      import('xivcharakit/xivapi'),
     ]);
     const input =
       '{"Tribe":"Midlander","Gender":"Masculine","LEyeColor":0,"Body":{"ModelBase":361,"ModelVariant":5,"DyeId":3,"DyeId2":0},"Base64Image":"OMITTED","__proto__":{"safe":true}}';

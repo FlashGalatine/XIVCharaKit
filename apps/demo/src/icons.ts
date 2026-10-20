@@ -1,4 +1,4 @@
-import type { EquipmentResolution } from 'ffxiv-chara/xivapi';
+import type { EquipmentResolution } from 'xivcharakit/xivapi';
 
 export const iconKey = (id: number, version: string) => `${version}:${id}`;
 export async function loadIcons(

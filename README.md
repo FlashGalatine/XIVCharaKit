@@ -1,8 +1,8 @@
-# ffxiv-chara
+# XIVCharaKit
 
 A TypeScript library in development for reading and inspecting Final Fantasy XIV `.chara` files used by Anamnesis, Ktisis, and Brio.
 
-**Status: library MVP and local demo implemented.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. The package is private at version 0.0.0 while publication identity and licensing remain undecided.
+**Status: library MVP and local demo implemented; npm candidate prepared.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. The unpublished candidate is `xivcharakit@0.1.0-beta.1` for the `next` tag. Release/data-rights checks remain pending; see the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
 
 The full MVP includes:
 
@@ -14,13 +14,17 @@ The full MVP includes:
 
 The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
 
+## License and attribution
+
+Original library, demo and tooling code is covered by the [MIT license](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md) for upstream attribution and separate data rights. FINAL FANTASY XIV © SQUARE ENIX. This independent community project is not affiliated with, sponsored by, or endorsed by Square Enix. Game-derived materials are not covered by the MIT code license.
+
 ## Develop locally
 
 Use Node 22.21.0 and pnpm 10.27.0 (pinned in the repository).
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm --filter @ffxiv-chara/demo exec playwright install chromium
+pnpm --filter @xivcharakit/demo exec playwright install chromium
 pnpm test
 pnpm type-check
 pnpm lint
@@ -30,12 +34,12 @@ pnpm verify-dyes
 pnpm test:package
 ```
 
-`pnpm test:package` builds and packs the private package locally, checks the tarball and static demo artifacts, and exercises installed JavaScript/TypeScript plus Node, Node Worker, Chromium, module Web Worker and local workerd consumers outside the workspace. It does not publish. `pnpm test` includes artifact-policy tooling, library units and demo browser scenarios. `pnpm benchmark` measures synthetic reader cases in isolated Node processes. See [contributor setup](CONTRIBUTING.md), [distribution validation](docs/security/distribution-validation.md), [security/reporting status](SECURITY.md), [changelog](CHANGELOG.md), and [future migration notes](migration.md).
+`pnpm test:package` builds and packs the candidate locally, checks the tarball and static demo artifacts, and exercises installed JavaScript/TypeScript plus Node, Node Worker, Chromium, module Web Worker and local workerd consumers outside the workspace. It does not publish. `pnpm test` includes artifact/release-policy tooling, library units and demo browser scenarios. `pnpm benchmark` measures synthetic reader cases in isolated Node processes. See [contributor setup](CONTRIBUTING.md), [distribution validation](docs/security/distribution-validation.md), [security/reporting status](SECURITY.md), [changelog](CHANGELOG.md), and [future migration notes](migration.md).
 
 Start the demo with `pnpm dev`, or run `pnpm build` followed by `pnpm preview` for the production artifact at `http://127.0.0.1:4173`. Files stay in memory; equipment lookup requires a separate click. The default tests mock upstream responses. See [demo setup and validation](docs/demo.md) for the opt-in live check, privacy limits, and preview headers.
 
 ```ts
-import { readChara, inspectChara, modelKey } from 'ffxiv-chara';
+import { readChara, inspectChara, modelKey } from 'xivcharakit';
 
 const document = readChara('{"Body":{"ModelBase":361,"ModelVariant":5,"DyeId":0}}');
 const inspection = inspectChara(document);
@@ -46,8 +50,8 @@ if (body.model) console.log(modelKey(body.model)); // "328041"
 Optional appearance interpretation uses separate exports:
 
 ```ts
-import { createDefaultPaletteProvider } from 'ffxiv-chara/palettes';
-import { resolveAppearance } from 'ffxiv-chara/appearance';
+import { createDefaultPaletteProvider } from 'xivcharakit/palettes';
+import { resolveAppearance } from 'xivcharakit/appearance';
 
 const appearance = await resolveAppearance(inspection, {
   palettes: createDefaultPaletteProvider(),
@@ -61,7 +65,7 @@ These imports are available to a local consumer of the packed package; there is 
 Dye names are also available without network requests:
 
 ```ts
-import { getDyeName, DYE_METADATA } from 'ffxiv-chara/dyes';
+import { getDyeName, DYE_METADATA } from 'xivcharakit/dyes';
 getDyeName(3); // "Goobbue Grey"; unknown/blank IDs return null
 // DYE_METADATA records the separate, pinned English Stain source revision.
 ```
@@ -71,7 +75,7 @@ The demo shows `No dye (0)` for a valid zero, names with IDs for known stains, a
 Equipment lookup is an explicit optional action:
 
 ```ts
-import { createXivapiResolver, createMemoryCache } from 'ffxiv-chara/xivapi';
+import { createXivapiResolver, createMemoryCache } from 'xivcharakit/xivapi';
 
 const resolver = createXivapiResolver({ cache: createMemoryCache() });
 const result = await resolver.resolve({

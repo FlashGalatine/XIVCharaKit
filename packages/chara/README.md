@@ -1,0 +1,49 @@
+# XIVCharaKit
+
+Read and inspect Final Fantasy XIV `.chara` files from Anamnesis, Ktisis and Brio. A portable TypeScript library with ESM exports, declarations and zero runtime dependencies.
+
+This is the **0.1.0-beta.1 release candidate**. The API and compatibility coverage may change. Installation after publication:
+
+```sh
+npm install xivcharakit@next
+```
+
+```ts
+import { readChara, inspectChara, modelKey } from 'xivcharakit';
+import { getDyeName } from 'xivcharakit/dyes';
+
+const inspection = inspectChara(readChara(
+  '{"Body":{"ModelBase":361,"ModelVariant":5,"DyeId":3}}',
+));
+const body = inspection.equipment.Body;
+if (body.model) console.log(modelKey(body.model)); // "328041"
+console.log(getDyeName(3)); // "Goobbue Grey"
+```
+
+## Exports
+
+| Import | Purpose |
+| --- | --- |
+| `xivcharakit` | Bounded reading, typed inspection and model identifiers |
+| `xivcharakit/palettes` | Lazy creator/shader palette provider |
+| `xivcharakit/appearance` | Source-labelled appearance interpretation |
+| `xivcharakit/dyes` | Local English dye names and source metadata |
+| `xivcharakit/xivapi` | Optional equipment candidates, transport and caching |
+
+```ts
+import { createDefaultPaletteProvider } from 'xivcharakit/palettes';
+import { resolveAppearance } from 'xivcharakit/appearance';
+
+const appearance = await resolveAppearance(inspection, {
+  palettes: createDefaultPaletteProvider(),
+});
+console.log(appearance.slots.hair);
+```
+
+Reading, inspection and bundled appearance/dye lookup perform no network or storage operations. Embedded image fields are omitted. Remaining file values are untrusted; hosts must set suitable resource limits and should use a Worker for browser parsing. The optional XIVAPI resolver sends equipment identifiers when explicitly called. Matching candidates do not identify a unique inventory item.
+
+Bundles target ES2022. Installed-package checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports, including declarations in an external consumer. This is evidence for tested environments, not all browsers or game versions. CommonJS, editing and writing character files are not provided. Appearance palettes record game version 7.57; English dye names use a separate pinned snapshot. See the [API](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/api.md), [compatibility evidence](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/compatibility.md), [data provenance](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/data-provenance.md), [equipment/privacy contract](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/xivapi.md) and [security policy](https://github.com/FlashGalatine/XIVCharaKit/blob/main/SECURITY.md).
+
+## License and attribution
+
+Original code is MIT-licensed; the complete license and third-party notices are included at `dist/LICENSE` and `dist/THIRD_PARTY_NOTICES.md`. Game-derived materials have separate rights and are not covered by the MIT code license. FINAL FANTASY XIV © SQUARE ENIX. This independent community project is not affiliated with, sponsored by, or endorsed by Square Enix.

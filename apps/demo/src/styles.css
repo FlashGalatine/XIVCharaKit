@@ -15,6 +15,14 @@
 body {
   margin: 0;
 }
+.legal-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 32px;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
 button,
 input {
   font: inherit;

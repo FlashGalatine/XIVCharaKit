@@ -12,7 +12,7 @@ export default defineConfig({
     viewport: { width: 1374, height: 1145 },
   },
   webServer: {
-    command: 'pnpm --filter ffxiv-chara build && pnpm build && pnpm preview',
+    command: 'pnpm --filter xivcharakit build && pnpm build && pnpm preview',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
     timeout: 60_000,

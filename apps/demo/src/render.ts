@@ -1,8 +1,8 @@
-import type { Field, JsonValue } from 'ffxiv-chara';
-import { EQUIPMENT_SLOTS } from 'ffxiv-chara';
-import type { AppearanceSlot } from 'ffxiv-chara/appearance';
-import { getDyeName } from 'ffxiv-chara/dyes';
-import type { EquipmentCandidate } from 'ffxiv-chara/xivapi';
+import type { Field, JsonValue } from 'xivcharakit';
+import { EQUIPMENT_SLOTS } from 'xivcharakit';
+import type { AppearanceSlot } from 'xivcharakit/appearance';
+import { getDyeName } from 'xivcharakit/dyes';
+import type { EquipmentCandidate } from 'xivcharakit/xivapi';
 import { iconKey } from './icons.js';
 import type { DemoSession } from './state.js';
 import type { DemoState } from './types.js';
@@ -299,7 +299,7 @@ export function render(root: HTMLElement, session: DemoSession): void {
   const focus = document.activeElement?.id;
   const header = el('header', 'masthead');
   header.append(
-    el('span', 'wordmark', 'ffxiv-chara'),
+    el('span', 'wordmark', 'XIVCharaKit'),
     el('span', 'demo-label', 'Library demo'),
   );
   const shell = el('div', 'shell');
@@ -716,7 +716,27 @@ export function render(root: HTMLElement, session: DemoSession): void {
     main.append(diagnostics);
   }
   shell.append(rail, main);
-  root.replaceChildren(header, shell);
+  const footer = el('footer', 'legal-notice caption');
+  footer.append(
+    el(
+      'p',
+      '',
+      'Original code is MIT-licensed. FINAL FANTASY XIV © SQUARE ENIX.',
+    ),
+    el(
+      'p',
+      '',
+      'Independent community project. Not affiliated with, sponsored by, or endorsed by Square Enix. Game-derived materials are not covered by the MIT code license.',
+    ),
+  );
+  const licenseLink = el('a', '', 'MIT license');
+  licenseLink.href = '/LICENSE.txt';
+  const noticesLink = el('a', '', 'Third-party notices');
+  noticesLink.href = '/THIRD_PARTY_NOTICES.txt';
+  const legalLinks = el('p');
+  legalLinks.append(licenseLink, document.createTextNode(' · '), noticesLink);
+  footer.append(legalLinks);
+  root.replaceChildren(header, shell, footer);
   renderIcons(root, state);
   for (const id of opened) {
     const node = document.getElementById(id);

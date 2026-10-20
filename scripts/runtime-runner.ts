@@ -102,10 +102,10 @@ if (isMainThread) {
     metafile: true,
   });
   const libraryInputs = Object.keys(bundle.metafile.inputs).filter((path) =>
-    path.includes('ffxiv-chara'),
+    path.includes('xivcharakit'),
   );
   assert(libraryInputs.length > 0, 'No installed package was bundled.');
-  const installed = resolve(consumer, 'node_modules/ffxiv-chara');
+  const installed = resolve(consumer, 'node_modules/xivcharakit');
   for (const path of libraryInputs) {
     const within = relative(installed, resolve(consumer, path));
     assert(

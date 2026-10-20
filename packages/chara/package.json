@@ -1,9 +1,22 @@
 {
-  "name": "ffxiv-chara",
-  "version": "0.0.0",
+  "name": "xivcharakit",
+  "version": "0.1.0-beta.1",
   "description": "Portable, local inspection of FFXIV character files",
-  "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public",
+    "tag": "next"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FlashGalatine/XIVCharaKit.git",
+    "directory": "packages/chara"
+  },
+  "homepage": "https://github.com/FlashGalatine/XIVCharaKit#readme",
+  "bugs": {
+    "url": "https://github.com/FlashGalatine/XIVCharaKit/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "files": [

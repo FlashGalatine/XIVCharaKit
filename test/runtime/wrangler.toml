@@ -1,4 +1,4 @@
-name = "ffxiv-chara-local-smoke"
+name = "xivcharakit-local-smoke"
 main = "cloudflare.ts"
 compatibility_date = "2026-10-19"
 workers_dev = false

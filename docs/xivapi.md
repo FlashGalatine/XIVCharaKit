@@ -1,9 +1,9 @@
 # Optional XIVAPI transport
 
-The optional `ffxiv-chara/xivapi` export provides `createXivapiResolver`, `createXivapiClient`, `createMemoryCache`, and their types. Tasks 5–6 implement transport/cache and candidate matching. Importing the export or creating a client/resolver performs no I/O. The adapter has no runtime dependencies and uses standard fetch, readable streams, URL, and AbortSignal APIs.
+The optional `xivcharakit/xivapi` export provides `createXivapiResolver`, `createXivapiClient`, `createMemoryCache`, and their types. Tasks 5–6 implement transport/cache and candidate matching. Importing the export or creating a client/resolver performs no I/O. The adapter has no runtime dependencies and uses standard fetch, readable streams, URL, and AbortSignal APIs.
 
 ```ts
-import { createXivapiClient, createMemoryCache } from 'ffxiv-chara/xivapi';
+import { createXivapiClient, createMemoryCache } from 'xivcharakit/xivapi';
 
 const client = createXivapiClient({ cache: createMemoryCache() });
 // Run after the host's explicit equipment-lookup action.

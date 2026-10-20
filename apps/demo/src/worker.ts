@@ -1,4 +1,4 @@
-import { CharaInputError, inspectChara, readChara } from 'ffxiv-chara';
+import { CharaInputError, inspectChara, readChara } from 'xivcharakit';
 import type { WorkerReply } from './types.js';
 
 const context = globalThis as unknown as {
@@ -14,8 +14,8 @@ context.onmessage = async (event) => {
     inspected = true;
     context.postMessage({ type: 'inspection', inspection });
     const [appearance, palettes] = await Promise.all([
-      import('ffxiv-chara/appearance'),
-      import('ffxiv-chara/palettes'),
+      import('xivcharakit/appearance'),
+      import('xivcharakit/palettes'),
     ]);
     const result = await appearance.resolveAppearance(inspection, {
       palettes: palettes.createDefaultPaletteProvider(),

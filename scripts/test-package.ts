@@ -12,26 +12,32 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertPublicArtifact } from './package-policy.js';
+import { getPackageArtifactName } from './release.js';
 import { runRuntimeChecks } from './runtime-runner.js';
 
 const root = new URL('../', import.meta.url);
 const scratch = new URL('.superpowers/package-smoke/', root);
-const tarball = fileURLToPath(new URL('ffxiv-chara-0.0.0.tgz', scratch));
+const committedMetadata = JSON.parse(
+  await readFile(new URL('packages/chara/package.json', root), 'utf8'),
+);
+const tarball = fileURLToPath(
+  new URL(getPackageArtifactName(committedMetadata), scratch),
+);
 const entries = execFileSync('tar', ['-tzf', tarball], { encoding: 'utf8' })
   .trim()
   .split(/\r?\n/);
 assert(entries.length > 2);
 for (const entry of entries) {
   assert(
-    /^package\/(?:package\.json|dist\/(?:THIRD_PARTY_NOTICES\.md|(?:[a-z-]+\/)*[a-zA-Z0-9_-]+\.(?:js|d\.ts)))$/.test(
+    /^package\/(?:package\.json|README\.md|dist\/(?:LICENSE|THIRD_PARTY_NOTICES\.md|(?:[a-z-]+\/)*[a-zA-Z0-9_-]+\.(?:js|d\.ts)))$/.test(
       entry,
     ),
     'Unexpected package file.',
   );
 }
-const consumer = await mkdtemp(join(tmpdir(), 'ffxiv-chara-consumer-'));
+const consumer = await mkdtemp(join(tmpdir(), 'xivcharakit-consumer-'));
 try {
-  const installed = `${consumer}/node_modules/ffxiv-chara`;
+  const installed = `${consumer}/node_modules/xivcharakit`;
   await mkdir(installed, { recursive: true });
   execFileSync('tar', [
     '-xzf',
@@ -54,7 +60,7 @@ try {
         await checkDemo(new URL(`${entry.name}/`, directory), `${path}/`);
       else {
         assert(
-          /^(?:index\.html|assets\/[a-zA-Z0-9_-]+\.(?:js|css)|examples\/(?:anamnesis|ktisis|brio)\.chara|examples\/manifest\.json)$/.test(
+          /^(?:index\.html|LICENSE\.txt|THIRD_PARTY_NOTICES\.txt|assets\/[a-zA-Z0-9_-]+\.(?:js|css)|examples\/(?:anamnesis|ktisis|brio)\.chara|examples\/manifest\.json)$/.test(
             path,
           ),
           'Unexpected demo artifact.',
@@ -71,6 +77,34 @@ try {
     await readFile(`${installed}/package.json`, 'utf8'),
   );
   assert.equal(metadata.type, 'module');
+  assert.equal(metadata.name, 'xivcharakit');
+  assert.equal(metadata.license, 'MIT');
+  assert.equal(metadata.version, committedMetadata.version);
+  assert.deepEqual(metadata.publishConfig, committedMetadata.publishConfig);
+  assert.equal(
+    await readFile(`${installed}/README.md`, 'utf8'),
+    await readFile(new URL('packages/chara/README.md', root), 'utf8'),
+    'Installed package must include the reviewed package README.',
+  );
+  assert.equal(
+    await readFile(`${installed}/dist/THIRD_PARTY_NOTICES.md`, 'utf8'),
+    await readFile(new URL('THIRD_PARTY_NOTICES.md', root), 'utf8'),
+  );
+  assert.equal(
+    await readFile(`${installed}/dist/LICENSE`, 'utf8'),
+    await readFile(new URL('LICENSE', root), 'utf8'),
+    'Installed package must include the complete project license.',
+  );
+  for (const [source, output] of [
+    ['LICENSE', 'LICENSE.txt'],
+    ['THIRD_PARTY_NOTICES.md', 'THIRD_PARTY_NOTICES.txt'],
+  ] as const) {
+    assert.equal(
+      await readFile(new URL(`apps/demo/dist/${output}`, root), 'utf8'),
+      await readFile(new URL(source, root), 'utf8'),
+      'Demo must include the complete project license and notices.',
+    );
+  }
   assert.equal(Object.keys(metadata.dependencies ?? {}).length, 0);
   await writeFile(
     `${consumer}/package.json`,
@@ -91,22 +125,22 @@ try {
   );
   await writeFile(
     `${consumer}/consumer.ts`,
-    `import { readChara, inspectChara, modelKey, type CharaInspection } from 'ffxiv-chara';
+    `import { readChara, inspectChara, modelKey, type CharaInspection } from 'xivcharakit';
 const result: CharaInspection = inspectChara(readChara('{"HairTone":0}'));
 const key: string = modelKey({ slot: 'MainHand', set: 634, base: 19, variant: 1 });
-import { createDefaultPaletteProvider, type PaletteProvider } from 'ffxiv-chara/palettes';
+import { createDefaultPaletteProvider, type PaletteProvider } from 'xivcharakit/palettes';
 const palettes: PaletteProvider = createDefaultPaletteProvider();
-import { resolveAppearance, type AppearanceInspection } from 'ffxiv-chara/appearance';
+import { resolveAppearance, type AppearanceInspection } from 'xivcharakit/appearance';
 const appearance: AppearanceInspection = await resolveAppearance(result, { palettes });
 void appearance;
 void palettes;
 void result; void key;
-import { createXivapiClient, createMemoryCache, createXivapiResolver, type EquipmentResolution, type XivapiClient } from 'ffxiv-chara/xivapi';
+import { createXivapiClient, createMemoryCache, createXivapiResolver, type EquipmentResolution, type XivapiClient } from 'xivcharakit/xivapi';
 const transport: XivapiClient = createXivapiClient({ cache: createMemoryCache() });
 const equipment: EquipmentResolution = await createXivapiResolver().resolve({ models:[] });
 void equipment;
 void transport;
-import { getDyeName, DYE_METADATA } from 'ffxiv-chara/dyes';
+import { getDyeName, DYE_METADATA } from 'xivcharakit/dyes';
 const dyeName: string | null = getDyeName(3);
 void dyeName; void DYE_METADATA;
 `,
@@ -124,21 +158,21 @@ void dyeName; void DYE_METADATA;
     `${consumer}/worker.mjs`,
     `import { parentPort } from 'node:worker_threads';
 globalThis.fetch = () => { throw new Error('Unexpected network'); };
-const { readChara, inspectChara } = await import('ffxiv-chara');
+const { readChara, inspectChara } = await import('xivcharakit');
 const result = inspectChara(readChara('{"Body":{"ModelBase":361,"ModelVariant":5}}'));
-const { createDefaultPaletteProvider } = await import('ffxiv-chara/palettes');
+const { createDefaultPaletteProvider } = await import('xivcharakit/palettes');
 const color = await createDefaultPaletteProvider().getColor({ table:'shader', palette:'eyes', index:0 });
 if (color?.hex !== '#F7F7F7') throw new Error('Worker palette mismatch');
-const { resolveAppearance } = await import('ffxiv-chara/appearance');
+const { resolveAppearance } = await import('xivcharakit/appearance');
 const appearance = await resolveAppearance(inspectChara(readChara('{"LEyeColor":0}')), { palettes:createDefaultPaletteProvider() });
 if (appearance.slots.leftEye.displayHex !== '#F7F7F7') throw new Error('Worker appearance mismatch');
-const { createXivapiClient, createXivapiResolver } = await import('ffxiv-chara/xivapi');
+const { createXivapiClient, createXivapiResolver } = await import('xivcharakit/xivapi');
 const mockedFetch = async () => new Response(JSON.stringify({ version:'0123456789abcdef', schema:'exdschema@2:rev:' + 'a'.repeat(40), rows:[] }));
 const transport = createXivapiClient({ fetch:mockedFetch, version:'0123456789abcdef' });
 if ((await transport.getGlasses(8)).status !== 'complete') throw new Error('Worker transport mismatch');
 const equipment = await createXivapiResolver({ fetch:mockedFetch, version:'0123456789abcdef' }).resolve({ models:[], glassesId:8 });
 if (equipment.facewear?.status !== 'notFound') throw new Error('Worker resolution mismatch');
-const { getDyeName } = await import('ffxiv-chara/dyes');
+const { getDyeName } = await import('xivcharakit/dyes');
 if (getDyeName(3) !== 'Goobbue Grey' || getDyeName(126) !== null) throw new Error('Worker dye mismatch');
 parentPort.postMessage(result.equipment.Body.model);
 `,
@@ -148,19 +182,19 @@ parentPort.postMessage(result.equipment.Body.model);
     `import assert from 'node:assert/strict';
 import { Worker } from 'node:worker_threads';
 globalThis.fetch = () => { throw new Error('Unexpected network'); };
-const { readChara, inspectChara, modelKey } = await import('ffxiv-chara');
+const { readChara, inspectChara, modelKey } = await import('xivcharakit');
 assert.equal(inspectChara(readChara('{"Tribe":"Dunesfolk"}')).identity.canonicalRace, 'Lalafell');
 assert.equal(modelKey({ slot:'MainHand', set:634, base:19, variant:1 }), '4296213114');
-const { createDefaultPaletteProvider } = await import('ffxiv-chara/palettes');
+const { createDefaultPaletteProvider } = await import('xivcharakit/palettes');
 assert.equal((await createDefaultPaletteProvider().getColor({ table:'creator', palette:'hair', index:42, tribe:'Raen', gender:'Feminine' }))?.hex, '#FFDC98');
-const { resolveAppearance } = await import('ffxiv-chara/appearance');
+const { resolveAppearance } = await import('xivcharakit/appearance');
 const appearance = await resolveAppearance(inspectChara(readChara('{"LEyeColor":0}')), { palettes:createDefaultPaletteProvider() });
 assert.equal(appearance.slots.leftEye.displayHex, '#F7F7F7');
-const { createXivapiClient, createMemoryCache, createXivapiResolver } = await import('ffxiv-chara/xivapi');
+const { createXivapiClient, createMemoryCache, createXivapiResolver } = await import('xivcharakit/xivapi');
 const transport = createXivapiClient({ cache:createMemoryCache() });
 assert.equal((await transport.searchItems([])).status, 'complete');
 assert.deepEqual((await createXivapiResolver().resolve({ models:[] })).items, {});
-const { getDyeName, DYE_METADATA } = await import('ffxiv-chara/dyes');
+const { getDyeName, DYE_METADATA } = await import('xivcharakit/dyes');
 assert.equal(getDyeName(101), 'Pure White');
 assert.equal(getDyeName(65535), null);
 assert.equal(DYE_METADATA.table, 'Stain');
@@ -189,7 +223,7 @@ console.log('Installed tarball: JavaScript, TypeScript, Node Worker, and zero-I/
   // Check the absolute target before recursively removing the generated consumer.
   assert(
     dirname(resolve(consumer)) === resolve(tmpdir()) &&
-      basename(consumer).startsWith('ffxiv-chara-consumer-'),
+      basename(consumer).startsWith('xivcharakit-consumer-'),
     'Unexpected cleanup directory.',
   );
   await rm(consumer, { recursive: true, force: true });

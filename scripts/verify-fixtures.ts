@@ -45,5 +45,5 @@ for (const [example, source] of [
     throw new Error('Public example differs from reviewed synthetic fixture.');
 }
 console.log(
-  `Verified ${manifest.fixtures.length} synthetic character fixtures, equipment-row hash, and 3 exact public example copies; identity/facewear expectations checked.`,
+  `Verified ${manifest.fixtures.length} character fixtures, equipment-row hash, and 3 exact synthetic public example copies; identity/facewear expectations checked.`,
 );

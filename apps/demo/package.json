@@ -1,6 +1,7 @@
 {
-  "name": "@ffxiv-chara/demo",
+  "name": "@xivcharakit/demo",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -10,7 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "ffxiv-chara": "workspace:*"
+    "xivcharakit": "workspace:*"
   },
   "devDependencies": {
     "vite": "8.3.4",
