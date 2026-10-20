@@ -1,12 +1,14 @@
 # Source and data provenance
 
-The current package contains reader/inspection code, synthetic examples, and four repacked generated palette datasets. It contains no raw game files, item tables, or private sample files. The palette generator layout and appearance policy are adapted from the MIT-licensed XIV Dye Tools source; [third-party notices](../THIRD_PARTY_NOTICES.md) retain the code notice separately from game-derived data rights. Package identity is provisional, version 0.0.0 is private, and `UNLICENSED` remains a release hold for the project's original code. No public release has occurred.
+The current package contains reader/inspection code, synthetic examples, four repacked generated palette datasets, and a small English Stain-name snapshot. It contains no raw game files, item tables, or private sample files. The palette generator layout and appearance policy are adapted from the MIT-licensed XIV Dye Tools source; [third-party notices](../THIRD_PARTY_NOTICES.md) retain the code notice separately from game-derived data rights. Package identity is provisional, version 0.0.0 is private, and `UNLICENSED` remains a release hold for the project's original code. No public release has occurred.
 
 Format references and source SHA-256 values are in [fixtures/manifest.json](../fixtures/manifest.json), with human-readable coverage in [compatibility.md](compatibility.md). Ktisis and Brio advertise GPL-3.0 repository licenses; Anamnesis's reviewed format files carry MIT notices. Those references inform field contracts; this does not relicense upstream material or establish a license for this project's code. Review notices if future implementation copies upstream code.
 
 The private sample folder is an opt-in test input, never a build input. The local corpus checker logs only aggregate counts. Synthetic fixtures use invented metadata and combinations of public format fields, without embedded images or copied character data. Fixture release rights must be settled with the project license; shape compatibility is not producer-export verification.
 
 ## Palette baseline and regeneration
+
+See also the independent [English dye-name snapshot](#english-dye-name-snapshot); its revision is not the palette's game version.
 
 The planned extraction baseline remains XIV Dye Tools commit `b98c8584a85f5dc50b4b4392c508cc627ef004d6`, freshly verified as the public default-branch head on 2026-10-19. Its [palette index](https://github.com/FlashGalatine/xivdyetools/blob/b98c8584a85f5dc50b4b4392c508cc627ef004d6/packages/core/src/data/character_colors/index.json) SHA-256 is `026d62b28c72661cb4646fb7647dd1ba4ef6ea777f637ecdc6e8fc3e89366802`.
 
@@ -31,3 +33,18 @@ The generator checks file size/layout before reading, limits work to 16 MiB, wri
 The maintainer supplied a real `human.cmp`: 186,752 bytes, SHA-256 `958e90e635b756fff3e1b9c08b7c33fb08708258eee913b8ab57672b67d5e025`. The check-mode generator produced the exact recorded artifact hashes/counts for all four tables (26,208 colors). A subsequent write-mode regeneration with the existing dataset version left every palette data file unchanged; only `generatedFrom` metadata was added. An independent hash check confirmed the source file remained unchanged.
 
 This closes the real-source palette regeneration check for this binary and dataset. The raw file stays outside the repository/package, with `*.cmp` excluded from Git, and its local path is not recorded in metadata. The maintainer subsequently confirmed on 2026-10-19 that this exact file is from game version 7.57; `gameVersion` records that confirmation. The comparison covers the extracted palette regions, not the unused height/scale tables or every field in the binary, and does not settle redistribution rights.
+
+## English dye-name snapshot
+
+`ffxiv-chara/dyes` contains only English names keyed by `Stain` row ID, derived from [xivapi/ffxiv-datamining's Stain.csv](https://raw.githubusercontent.com/xivapi/ffxiv-datamining/ab3b961d58988b493283eb9fd28cb930ea07b169/csv/en/Stain.csv). The immutable source commit is `ab3b961d58988b493283eb9fd28cb930ea07b169`; source bytes have SHA-256 `0392c152bba1a3fbdeed89bc3e007e3b9e83d5a5ce618779f1a9439f009400bc`. The CSV and upstream revision metadata were checked on 2026-10-19. The upstream commit message says `7.50 followup`; this is not evidence of parity with the supplied 7.57 palette binary, so dye `gameVersion` remains null.
+
+The 129 source rows produce 126 names including row zero (`No Color`); blank rows 126–128 are omitted. Surrounding name whitespace is trimmed (including rows 99, 122 and 123). Neither item references, other Stain fields nor the raw CSV are shipped. The compact canonical name-object hash is `bfbfa3d0be3fd48d183ae62f9fb0de5e2a21b37cab99e57e6f5ec32bdaddc4ef`. All provenance travels with the optional entry's frozen `DYE_METADATA`. These names are game-derived data and retain the release/data-rights gate in [third-party notices](../THIRD_PARTY_NOTICES.md).
+
+Regeneration is explicit and offline after obtaining that pinned public CSV:
+
+```sh
+pnpm exec tsx scripts/build-dyes.ts <explicit-Stain.csv-path> --check
+pnpm exec tsx scripts/build-dyes.ts <explicit-Stain.csv-path>
+```
+
+The generator accepts at most 128 KiB and requires the exact baseline source hash before parsing its fixed unquoted column layout. It writes only the fixed generated JSON path. `--check` compares the generated output byte-for-byte without writing. Updating to a new source requires reviewing the source revision, hash, schema, generated names and expectations; ordinary builds never fetch or discover game data.

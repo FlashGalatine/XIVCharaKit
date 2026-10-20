@@ -79,10 +79,60 @@ test('supports partial equipment-only files and retains stored dye IDs', async (
   await expect(page.getByRole('row', { name: /Body/ })).toContainText(
     '361 / 5',
   );
-  await expect(page.getByRole('row', { name: /Body/ })).toContainText('0, 3');
+  await expect(page.getByRole('row', { name: /Body/ })).toContainText(
+    '1: No dye (0)',
+  );
+  await expect(page.getByRole('row', { name: /Body/ })).toContainText(
+    '2: Goobbue Grey (3)',
+  );
   await page.getByText('Stored values', { exact: true }).click();
   await page.getByText('Body — Object', { exact: true }).click();
   await expect(page.getByTestId('stored-values')).toContainText('DyeId2');
+});
+
+test('names both dye channels locally and preserves unknown, missing, null and invalid values', async ({
+  page,
+}) => {
+  const external: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).origin !== 'http://127.0.0.1:4173')
+      external.push(request.url());
+  });
+  await load(page, {
+    Body: { ModelBase: 361, ModelVariant: 5, DyeId: 10, DyeId2: 101 },
+    Hands: { ModelBase: 361, ModelVariant: 5, DyeId: 126, DyeId2: 65535 },
+    Feet: { ModelBase: 361, ModelVariant: 5, DyeId: null },
+    HeadGear: { ModelBase: 361, ModelVariant: 5, DyeId: '3', DyeId2: 0 },
+  });
+  const body = page.getByRole('row', { name: /Body/ });
+  await expect(body).toContainText('1: Dalamud Red (10)');
+  await expect(body).toContainText('2: Pure White (101)');
+  const hands = page.getByRole('row', { name: /Hands/ });
+  await expect(hands).toContainText('1: Unknown dye (126)');
+  await expect(hands).toContainText('2: Unknown dye (65535)');
+  const feet = page.getByRole('row', { name: /Feet/ });
+  await expect(feet).toContainText('1: null');
+  await expect(feet).toContainText('2: Not stored');
+  const head = page.getByRole('row', { name: /^Head/ });
+  await expect(head).toContainText('1: Invalid');
+  await expect(head).toContainText('2: No dye (0)');
+  await page.getByText('Stored values', { exact: true }).click();
+  await page.getByText('Body — Object', { exact: true }).click();
+  for (const [key, value] of [
+    ['DyeId', '10'],
+    ['DyeId2', '101'],
+  ]) {
+    await expect(
+      page
+        .getByTestId('stored-values')
+        .locator('.raw-entry')
+        .filter({
+          has: page.getByText(key ?? '', { exact: true }),
+        })
+        .locator(':scope > code'),
+    ).toHaveText(value ?? '');
+  }
+  expect(external).toEqual([]);
 });
 test('renders hostile names and values literally and omits embedded image payloads', async ({
   page,

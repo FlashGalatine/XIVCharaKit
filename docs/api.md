@@ -1,8 +1,16 @@
 # Library API
 
-The private development package exposes the main ESM entry plus optional `/palettes`, `/appearance`, and [`/xivapi`](xivapi.md) entries. Reading, inspection, model arithmetic, bundled palette lookup, and appearance interpretation perform no I/O and have no runtime dependencies. The optional XIVAPI client performs identifier-only requests when called. Bundles target ES2022 and include TypeScript declarations; installed JavaScript, TypeScript, and Node Worker consumers exercise all four entries locally. The [demo](demo.md) verifies built public exports in Chromium and a module Web Worker; installed-tarball browser/workerd coverage remains Task 8. Build metadata verifies that the main static dependency graph contains no optional modules or palette data. Bundled JSON tables become lazy ESM chunks, without requiring JSON import flags in installed consumers.
+The private development package exposes the main ESM entry plus optional `/palettes`, `/appearance`, `/dyes`, and [`/xivapi`](xivapi.md) entries. Reading, inspection, model arithmetic, bundled palette/dye lookup, and appearance interpretation perform no I/O and have no runtime dependencies. The optional XIVAPI client performs identifier-only requests when called. Bundles target ES2022 and include TypeScript declarations; installed JavaScript, TypeScript, and Node Worker consumers exercise all five entries locally. The [demo](demo.md) verifies built public exports in Chromium and a module Web Worker; installed-tarball browser/workerd coverage remains Task 8. Build metadata verifies that the main static dependency graph contains no optional modules or data. Palette JSON tables become lazy ESM chunks; the small dye table is bundled into its separate optional entry. Installed consumers do not require JSON import flags.
 
 The optional [equipment resolution contract](xivapi.md#equipment-candidate-resolution) covers candidates, off-hands, facewear, cancellation, and upstream evidence.
+
+## Dye names
+
+`import { getDyeName, DYE_METADATA } from 'ffxiv-chara/dyes'`
+
+`getDyeName(stainId: number): string | null` returns the English `Stain.Name`, with surrounding whitespace trimmed, from the [pinned snapshot](data-provenance.md#english-dye-name-snapshot). These are Stain row IDs, not dye consumable item IDs. Row zero returns its source name `No Color`; a host may label this `No dye`. Blank/unknown rows and invalid inputs (non-integer, non-number, negative or over uint16) return null without coercion. No file fields are changed or inferred, and no network/storage operation occurs.
+
+`DYE_METADATA` is frozen and identifies the format, language, source URL/commit/hash, name hash/count and normalization. Its `gameVersion` is null: the source revision is independently pinned rather than asserted to match the appearance palette's game version. The demo displays both channels with IDs and distinguishes valid zero, unknown ID, absent, explicit null and invalid fields. An unknown ID can be a newer or custom stain; it is not declared nonexistent or repaired.
 
 ## Read
 

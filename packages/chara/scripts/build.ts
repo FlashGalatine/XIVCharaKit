@@ -13,6 +13,7 @@ const result = await build({
     index: 'src/index.ts',
     palettes: 'src/palettes/index.ts',
     appearance: 'src/appearance/index.ts',
+    dyes: 'src/dyes/index.ts',
     xivapi: 'src/xivapi/index.ts',
   },
   outdir: 'dist',
@@ -38,7 +39,7 @@ function checkMain(name: string): void {
   if (!entry) throw new Error('Missing static dependency in build metadata.');
   if (
     Object.keys(entry.inputs).some((input) =>
-      /src\/(palettes|appearance|xivapi)\//.test(input),
+      /src\/(palettes|appearance|dyes|xivapi)\//.test(input),
     )
   )
     throw new Error('Optional code entered the main static dependency graph.');

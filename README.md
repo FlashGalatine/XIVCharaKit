@@ -8,6 +8,7 @@ The full MVP includes:
 
 - Typed inspection of character appearance, equipment, dye channels, and facewear.
 - Appearance swatches backed by versioned creator and shader palettes.
+- Local English dye names alongside both stored dye IDs, using a pinned Stain dataset.
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and anonymized examples.
 
@@ -55,6 +56,16 @@ const hair = appearance.slots.hair;
 ```
 
 These imports are available to a local consumer of the packed package; there is no public npm installation yet. Reading, inspection, bundled palette lookup, and appearance interpretation perform no network or storage operations. Main-entry imports exclude optional code/data; palette tables load only when requested. Embedded image fields are omitted; all remaining stored values are untrusted data.
+
+Dye names are also available without network requests:
+
+```ts
+import { getDyeName, DYE_METADATA } from 'ffxiv-chara/dyes';
+getDyeName(3); // "Goobbue Grey"; unknown/blank IDs return null
+// DYE_METADATA records the separate, pinned English Stain source revision.
+```
+
+The demo shows `No dye (0)` for a valid zero, names with IDs for known stains, and explicit unknown/missing/invalid states. It preserves the original stored fields. The name snapshot is separate from the game 7.57 appearance palettes; see [dye provenance](docs/data-provenance.md#english-dye-name-snapshot).
 
 Equipment lookup is an explicit optional action:
 

@@ -22,6 +22,10 @@
       "types": "./dist/appearance/index.d.ts",
       "import": "./dist/appearance.js"
     },
+    "./dyes": {
+      "types": "./dist/dyes/index.d.ts",
+      "import": "./dist/dyes.js"
+    },
     "./xivapi": {
       "types": "./dist/xivapi/index.d.ts",
       "import": "./dist/xivapi.js"

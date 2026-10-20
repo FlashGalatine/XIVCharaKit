@@ -26,11 +26,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## Game-derived palette data
+## Game-derived palette and dye-name data
 
 FINAL FANTASY XIV © 2010-2026 SQUARE ENIX CO., LTD. All Rights Reserved.
 
-The palette tables are generated color values derived from game data. No raw `human.cmp` file is distributed. The upstream MIT code notice does not establish a blanket license for game-derived data. Release/data-notice review remains a maintainer gate. This project is not affiliated with or endorsed by Square Enix.
+The palette tables are generated color values derived from game data. English dye names are extracted from the public `xivapi/ffxiv-datamining` Stain sheet at commit `ab3b961d58988b493283eb9fd28cb930ea07b169`; the source URL/hash and normalization are recorded in dye metadata and the data-provenance guide. No raw `human.cmp` file or full Stain CSV is distributed. The upstream MIT code notice does not establish a blanket license for game-derived data. Release/data-notice review remains a maintainer gate. This project is not affiliated with or endorsed by Square Enix.
 
 ## Color-difference formula
 

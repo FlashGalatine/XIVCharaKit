@@ -1,6 +1,7 @@
 import type { Field, JsonValue } from 'ffxiv-chara';
 import { EQUIPMENT_SLOTS } from 'ffxiv-chara';
 import type { AppearanceSlot } from 'ffxiv-chara/appearance';
+import { getDyeName } from 'ffxiv-chara/dyes';
 import type { EquipmentCandidate } from 'ffxiv-chara/xivapi';
 import { iconKey } from './icons.js';
 import type { DemoSession } from './state.js';
@@ -60,6 +61,12 @@ function field(value: Field<unknown> | undefined): string {
         : value.state === 'unsupported'
           ? 'Unsupported'
           : 'Invalid';
+}
+function dye(value: Field<number>): string {
+  if (value.state !== 'valid') return field(value);
+  const id = value.value;
+  const name = id === 0 ? 'No dye' : (getDyeName(id) ?? 'Unknown dye');
+  return `${name} (${id})`;
 }
 function disclosure(
   title: string,
@@ -524,7 +531,7 @@ export function render(root: HTMLElement, session: DemoSession): void {
     table.setAttribute('aria-label', 'Stored equipment and item candidates');
     const head = el('thead');
     const headings = el('tr');
-    for (const text of ['Slot', 'Stored model', 'Dye IDs', 'Item candidates']) {
+    for (const text of ['Slot', 'Stored model', 'Dyes', 'Item candidates']) {
       const th = el('th', '', text);
       th.scope = 'col';
       headings.append(th);
@@ -549,8 +556,13 @@ export function render(root: HTMLElement, session: DemoSession): void {
                 .join(' / ')
             : stored.status,
         ),
-        el('td', 'mono', `${field(stored.dye1)}, ${field(stored.dye2)}`),
       );
+      const dyeCell = el('td', 'dye-channels');
+      dyeCell.append(
+        el('div', '', `1: ${dye(stored.dye1)}`),
+        el('div', '', `2: ${dye(stored.dye2)}`),
+      );
+      row.append(dyeCell);
       const itemCell = el('td');
       const found = state.resolution?.items[slot];
       if (found)

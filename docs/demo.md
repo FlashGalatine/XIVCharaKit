@@ -36,6 +36,8 @@ Imported text uses text nodes. Names and scalar previews are bounded; JSON scala
 
 The three public examples are exact copies of reviewed synthetic fixtures, not redistributed private exports. Their manifest identifies the source fixtures; `pnpm verify-fixtures` checks byte equality. Producer labels describe compatible field shapes rather than real-export certification.
 
+Both stored dye channels show a local English name with the numeric ID, using the library's optional `/dyes` export. A valid zero is labelled `No dye (0)`; blank/unknown source IDs show `Unknown dye (ID)`. Missing, null and invalid fields remain distinct, and the raw values are unchanged. The [Stain snapshot](data-provenance.md#english-dye-name-snapshot) is versioned independently of appearance palettes. Names are available before equipment lookup and remain available during an API outage; dye IDs never enter requests.
+
 ## Network and storage boundary
 
 Selecting a file and computing swatches sends no character-dependent requests. Bundled JavaScript/palettes and selected public examples are ordinary same-origin static fetches. There is no telemetry, automatic persistence, or document use of browser storage.

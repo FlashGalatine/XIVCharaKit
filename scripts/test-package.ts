@@ -58,6 +58,9 @@ const transport: XivapiClient = createXivapiClient({ cache: createMemoryCache() 
 const equipment: EquipmentResolution = await createXivapiResolver().resolve({ models:[] });
 void equipment;
 void transport;
+import { getDyeName, DYE_METADATA } from 'ffxiv-chara/dyes';
+const dyeName: string | null = getDyeName(3);
+void dyeName; void DYE_METADATA;
 `,
 );
 execFileSync(
@@ -87,6 +90,8 @@ const transport = createXivapiClient({ fetch:mockedFetch, version:'0123456789abc
 if ((await transport.getGlasses(8)).status !== 'complete') throw new Error('Worker transport mismatch');
 const equipment = await createXivapiResolver({ fetch:mockedFetch, version:'0123456789abcdef' }).resolve({ models:[], glassesId:8 });
 if (equipment.facewear?.status !== 'notFound') throw new Error('Worker resolution mismatch');
+const { getDyeName } = await import('ffxiv-chara/dyes');
+if (getDyeName(3) !== 'Goobbue Grey' || getDyeName(126) !== null) throw new Error('Worker dye mismatch');
 parentPort.postMessage(result.equipment.Body.model);
 `,
 );
@@ -107,6 +112,11 @@ const { createXivapiClient, createMemoryCache, createXivapiResolver } = await im
 const transport = createXivapiClient({ cache:createMemoryCache() });
 assert.equal((await transport.searchItems([])).status, 'complete');
 assert.deepEqual((await createXivapiResolver().resolve({ models:[] })).items, {});
+const { getDyeName, DYE_METADATA } = await import('ffxiv-chara/dyes');
+assert.equal(getDyeName(101), 'Pure White');
+assert.equal(getDyeName(65535), null);
+assert.equal(DYE_METADATA.table, 'Stain');
+assert.equal(Object.isFrozen(DYE_METADATA), true);
 const worker = new Worker(new URL('./worker.mjs', import.meta.url));
 try {
   const result = await new Promise((resolve, reject) => {

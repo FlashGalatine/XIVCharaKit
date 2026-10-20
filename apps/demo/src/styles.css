@@ -362,6 +362,12 @@ tbody th {
   font-weight: 500;
   min-width: 100px;
 }
+.dye-channels {
+  min-width: 175px;
+}
+.dye-channels > div + div {
+  margin-top: 4px;
+}
 tr:last-child td,
 tr:last-child th {
   border-bottom: 0;
