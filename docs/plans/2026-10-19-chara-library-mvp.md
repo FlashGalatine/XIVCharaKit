@@ -1,6 +1,6 @@
 # ffxiv-chara MVP Implementation Plan
 
-**Status:** implementation reopened by the maintainer on 2026-10-19. Reader/inspection, palette/appearance, optional XIVAPI equipment resolution and the local demo (Tasks 1–7) are implemented with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for verification and unresolved release/compatibility gates. Task 8 remains pending. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
+**Status:** implementation reopened by the maintainer on 2026-10-19. Tasks 1–7, local dye names and Task 8 distribution/runtime tooling and CI configuration are implemented, with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for local/hosted verification and unresolved release/compatibility gates. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
 
 > **For agentic workers:** Execute the selected milestone inline using superpowers:executing-plans and test-driven development, with a final independent review. Checkboxes track implementation where complete; pending tasks do not authorize publication, deployment, or consumer migration.
 
@@ -247,15 +247,17 @@ Task 7 evidence: [demo validation](../demo.md). Direct localhost Chromium CORS, 
 
 **Future files:** `test/package.test.ts`, `test/runtime/*`, `scripts/test-package.ts`, `docs/api.md`, `migration.md`, root README/notices/contribution guidance, package exports, `.github/workflows/ci.yml`.
 
-**Interfaces:** Consumes all four public entry points. Produces an installable package artifact, static demo artifact, compatibility statement, and migration notes.
+**Interfaces:** Consumes all five public entry points, including the approved `/dyes` follow-up. Produces an installable package artifact, static demo artifact, compatibility statement, and migration notes.
 
-- [ ] Add installed-tarball tests for JavaScript and TypeScript consumers of all four entry points. Run parsing, bundled palette lookup, swatch interpretation, and mocked resolution in Node and a browser; run the same Worker smoke entry through local Wrangler/workerd without deployment. Check declarations and JSON-free ESM loading outside the workspace. Keep Node and Wrangler dependencies in development tooling only.
-- [ ] Assert the main-entry bundle contains neither palette tables nor network client code, importing any entry has no network side effects, and the package has no runtime dependency on this monorepo or server/browser-specific globals. Verify packed files exclude fixtures with private data, local paths, raw game files, and build credentials.
-- [ ] Run the complete proposed gates: `pnpm -r type-check`, `pnpm -r lint`, `pnpm --filter './packages/chara' test`, `pnpm -r build`, `pnpm --filter './apps/demo' exec playwright test`, and `pnpm exec tsx scripts/test-package.ts`. Record exact commands, runtime versions, pass counts, and live-smoke limitations.
-- [ ] Document minimal parse/inspect, swatches, and XIVAPI examples; supported producer snapshots; field/presence semantics; input-policy overrides; appearance interpretation; candidate ambiguity; upstream failure behavior; and palette regeneration. Carry code/source notices and separate data provenance.
-- [ ] Add a CI workflow for those local/mocked checks and artifact preparation, with no automatic publishing/deployment. Prepare a reviewable diff and changelog for the new project; the maintainer separately authorizes release destinations and publication.
+- [x] Add installed-tarball tests for JavaScript and TypeScript consumers of all five entry points. Run parsing, bundled palette lookup, swatch interpretation, and mocked resolution in Node and a browser; run the shared smoke through module Web Worker and local Wrangler/workerd without deployment. Check declarations and JSON-free ESM loading outside the workspace. Keep Node and Wrangler dependencies in development tooling only.
+- [x] Assert the main-entry bundle contains neither palette tables nor network client code, importing any entry has no network side effects, and the package has no runtime dependency on this monorepo or server/browser-specific globals. Verify packed files exclude fixtures with private data, local paths, raw game files, and build credentials.
+- [x] Run the complete gates using the actual root commands: `pnpm type-check`, `pnpm lint`, `pnpm test`, `pnpm test:package` (includes production builds, pack, installed consumers), `pnpm verify-fixtures`, `pnpm verify-palettes`, `pnpm verify-dyes`, and `pnpm audit`. Record exact commands, runtime versions, pass counts, and live-smoke limitations.
+- [x] Document minimal parse/inspect, swatches, and XIVAPI examples; supported producer snapshots; field/presence semantics; input-policy overrides; appearance interpretation; candidate ambiguity; upstream failure behavior; and palette regeneration. Carry code/source notices and separate data provenance.
+- [x] Add a CI workflow for those local/mocked checks and artifact preparation, with no automatic publishing/deployment. Prepare a reviewable diff and changelog for the new project; the maintainer separately authorizes release destinations and publication.
 
 **Exit:** A fresh consumer can install and use the package independently, and the demo can be built from public exports with documented compatibility and evidence.
+
+Task 8 evidence: [distribution/runtime validation](../security/distribution-validation.md). CI configuration is implemented and locally linted; hosted results must be recorded after the workflow is run on GitHub. Real producer ground truth, licensing/identity/reporting and release/hosting gates remain open.
 
 ## Later follow-up: migrate XIV Dye Tools consumers
 
@@ -271,12 +273,14 @@ This is outside the standalone MVP build and needs a refreshed, separately autho
 ## Completion criteria for a future MVP
 
 - [ ] Supported full and partial examples from all three producers have reviewed expected inspection results.
-- [ ] Appearance swatches identify their palette/extended source and surface inactive, ambiguous, and unresolved cases honestly.
-- [ ] Local parsing and swatches work without XIVAPI; equipment requests contain no character-identifying data.
-- [ ] Equipment resolution preserves candidates and distinguishes missing, partial, and unavailable answers.
-- [ ] The demo uses public package exports, handles stale work, and has a successful recorded live lookup through the verified direct transport or a separately approved alternative. Any unresolved transport limitation keeps this item open.
-- [ ] Installed-package and browser/Worker runtime checks pass; source/data provenance and compatibility limits are documented.
-- [ ] Editing/writing, full reader UI extraction, GPOSERS/acquisition export, public service hosting, and XIV Dye Tools migration remain outside this MVP unless separately added.
+- [x] Appearance swatches identify their palette/extended source and surface inactive, ambiguous, and unresolved cases honestly.
+- [x] Local parsing and swatches work without XIVAPI; equipment requests exclude document contents, names, appearance and dyes. Model identifiers and ordinary connection metadata can still be distinctive.
+- [x] Equipment resolution preserves candidates and distinguishes missing, partial, and unavailable answers.
+- [x] The demo uses public package exports, handles stale work, and has a successful recorded live lookup through the verified direct transport or a separately approved alternative. Any unresolved transport limitation keeps this item open.
+- [x] Installed-package and browser/Worker runtime checks pass; source/data provenance and compatibility limits are documented for the pinned matrix.
+- [x] Editing/writing, full reader UI extraction, GPOSERS/acquisition export, public service hosting, and XIV Dye Tools migration remain outside this MVP unless separately added.
+
+The remaining fixture criterion requires reviewed redistributable real producer exports; synthetic field-shape fixtures and private aggregate corpus admission do not close it.
 
 ## Resume checklist
 

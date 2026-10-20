@@ -1,0 +1,29 @@
+# Distribution and runtime validation
+
+Task 8 extends the installed-tarball harness rather than relying on workspace source imports. The local baseline is Windows x64, Node 22.21.0, pnpm 10.27.0, Playwright 1.64.1/Chromium, Wrangler 4.151.2 and workerd 1.20261019.1. The Worker compatibility date is pinned to 2026-10-19, supported by that workerd binary. These are bounded smoke checks, not exhaustive runtime or security guarantees.
+
+## Installed consumers
+
+`pnpm test:package` builds/locally packs the private package, admits only package metadata, notices, ESM and declarations, and unpacks it into a freshly created OS temporary directory outside the workspace. No dependency install or registry access occurs inside the consumer. TypeScript checks its declarations without ambient Node types. Installed JS and Node Worker consumers exercise every public export.
+
+The same `test/runtime/smoke.ts` cases then run in Node, Node Worker, Chromium, a module Web Worker, and Wrangler's local workerd test harness. They check inert parsed records, image omission, identity/model arithmetic, retained dyes, lazy palettes, swatch interpretation, local dye names, empty client/resolver behavior, mocked item/facewear lookup and upstream evidence. Global native fetch is replaced before dynamic imports, so imports and local operations must emit no native API requests. Only injected responses satisfy the model and facewear lookups. Browser requests are additionally restricted to the loopback artifact server.
+
+Browser bundling resolves package inputs only from the unpacked `node_modules/ffxiv-chara` directory and verifies that location in esbuild metadata. workerd loads that same installed package through its generated consumer config, with no Node compatibility flag, remote bindings, credentials, persistent data or deployment. Wrangler metrics are disabled. The optional workerd install script is not allowlisted; the installed official platform binary suffices. Browser/server/worker handles are closed and the exact temporary consumer path is checked before recursive removal.
+
+## Artifact policy
+
+The tarball admits 39 allowlisted files and zero runtime dependencies. The main-entry build graph rejects optional appearance, palettes, dyes or network modules. The static demo admits only its index, built JS/CSS, three reviewed synthetic character examples and manifest. Both outputs are scanned for common accidental local/private paths, source-map references, private canaries and credential markers; map/raw game/environment files are rejected. Fourteen tooling tests include eleven negative cases observed failing before the artifact policy was implemented. These checks reduce accidental disclosure; they are not general secret detection or redistribution clearance.
+
+The new runtime gate was observed failing against an explicit unimplemented harness after the original installed JS/TS/Node Worker checks passed. The implemented harness passes all five environments. A first unprivileged browser attempt could not access the user's installed Chromium cache; the approved local-process/socket run uses the actual installed runtime. No private samples or external security/load probes are used.
+
+Final local gates passed 14 tooling cases, 320 library cases and 20 browser scenarios (one intentional opt-in live skip), strict types/lint, fixture/palette/dye verification, production builds, all installed consumers and the dependency audit (zero known vulnerabilities). Actionlint 1.7.12 accepts the workflow. The fresh review found and corrected an upload-order issue: browser acceptance rebuilds the demo, so the final package/scan/runtime gate now immediately precedes artifact upload. The corrected final gate was rerun successfully.
+
+A nonblocking tooling limitation remains: browser-result evaluation and workerd startup/teardown lack an outer local-process deadline. A stalled runtime can require manual interruption; the hosted job has a 20-minute timeout. The smoke cases are bounded fixtures, but this harness is not a hard process-level resource sandbox.
+
+## CI and remaining gates
+
+`.github/workflows/ci.yml` uses full immutable action SHAs, frozen pnpm installation, read-only contents permission, nonpersistent checkout credentials and separate Ubuntu 24.04/Windows 2025 jobs. Each runs production/package/runtime, type, lint, data, unit/browser and dependency-audit checks. The live browser case is explicitly disabled. Only successful checked tarballs and static demo files are uploaded, with seven-day retention; no full workspace, logs, private corpus or temporary consumer is retained. No publication/deployment command or production secret is configured.
+
+The workflow is prepared for hosted execution; local success is not evidence of a GitHub CI run. Hosted outcomes must be recorded after an authorized push/PR. The matrix targets the pinned Node version and Chromium, not every engine/runtime version. The separate earlier ordinary synthetic live XIVAPI lookup is dated integration evidence; it is not rerun by these checks and does not establish a future deployed origin's CORS/headers.
+
+Release gates remain: package identity and code/data licensing, reviewed redistributable producer fixtures/expectations, a verified confidential reporting route (currently disabled), a protected release path, and production-host headers/behavior. Editing, publication, deployment and existing-product migration remain outside this milestone.

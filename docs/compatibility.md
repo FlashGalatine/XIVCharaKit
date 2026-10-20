@@ -44,5 +44,5 @@ These are aggregate compatibility observations, not independently reviewed expec
 
 - Real producer-generated fixtures with explicit redistribution rights and independently reviewed complete expectations.
 - Broader independent visual/producer swatch expectations; real-source regeneration now matches the baseline exactly. See [appearance validation](security/appearance-validation.md) for implemented Tasks 3–4 and corpus observations.
-- Browser/Worker installed-package behavior and full demo validation (Tasks 7–8).
+- Additional browser engines/runtime versions beyond the [installed-package and demo matrix](security/distribution-validation.md). Chromium, module Web Worker, Node/Node Worker and local workerd now pass the pinned smoke cases; this does not establish exhaustive platform/version compatibility.
 - Code/fixture licensing and package identity before any distribution.

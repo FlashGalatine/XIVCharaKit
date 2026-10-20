@@ -1,7 +1,18 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertPublicArtifact } from './package-policy.js';
+import { runRuntimeChecks } from './runtime-runner.js';
 
 const root = new URL('../', import.meta.url);
 const scratch = new URL('.superpowers/package-smoke/', root);
@@ -18,32 +29,69 @@ for (const entry of entries) {
     'Unexpected package file.',
   );
 }
-const consumer = await mkdtemp(fileURLToPath(new URL('consumer-', scratch)));
-const installed = `${consumer}/node_modules/ffxiv-chara`;
-await mkdir(installed, { recursive: true });
-execFileSync('tar', ['-xzf', tarball, '-C', installed, '--strip-components=1']);
-const metadata = JSON.parse(
-  await readFile(`${installed}/package.json`, 'utf8'),
-);
-assert.equal(metadata.type, 'module');
-assert.equal(Object.keys(metadata.dependencies ?? {}).length, 0);
-await writeFile(`${consumer}/package.json`, '{"private":true,"type":"module"}');
-await writeFile(
-  `${consumer}/tsconfig.json`,
-  JSON.stringify({
-    compilerOptions: {
-      strict: true,
-      noEmit: true,
-      target: 'ES2022',
-      module: 'NodeNext',
-      types: [],
-    },
-    files: ['consumer.ts'],
-  }),
-);
-await writeFile(
-  `${consumer}/consumer.ts`,
-  `import { readChara, inspectChara, modelKey, type CharaInspection } from 'ffxiv-chara';
+const consumer = await mkdtemp(join(tmpdir(), 'ffxiv-chara-consumer-'));
+try {
+  const installed = `${consumer}/node_modules/ffxiv-chara`;
+  await mkdir(installed, { recursive: true });
+  execFileSync('tar', [
+    '-xzf',
+    tarball,
+    '-C',
+    installed,
+    '--strip-components=1',
+  ]);
+  for (const entry of entries) {
+    assertPublicArtifact(
+      entry,
+      await readFile(join(installed, entry.slice('package/'.length)), 'utf8'),
+    );
+  }
+  async function checkDemo(directory: URL, prefix = ''): Promise<void> {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const path = `${prefix}${entry.name}`;
+      assert(!entry.isSymbolicLink(), 'Unexpected artifact symlink.');
+      if (entry.isDirectory())
+        await checkDemo(new URL(`${entry.name}/`, directory), `${path}/`);
+      else {
+        assert(
+          /^(?:index\.html|assets\/[a-zA-Z0-9_-]+\.(?:js|css)|examples\/(?:anamnesis|ktisis|brio)\.chara|examples\/manifest\.json)$/.test(
+            path,
+          ),
+          'Unexpected demo artifact.',
+        );
+        assertPublicArtifact(
+          `apps/demo/dist/${path}`,
+          await readFile(new URL(entry.name, directory), 'utf8'),
+        );
+      }
+    }
+  }
+  await checkDemo(new URL('apps/demo/dist/', root));
+  const metadata = JSON.parse(
+    await readFile(`${installed}/package.json`, 'utf8'),
+  );
+  assert.equal(metadata.type, 'module');
+  assert.equal(Object.keys(metadata.dependencies ?? {}).length, 0);
+  await writeFile(
+    `${consumer}/package.json`,
+    '{"private":true,"type":"module"}',
+  );
+  await writeFile(
+    `${consumer}/tsconfig.json`,
+    JSON.stringify({
+      compilerOptions: {
+        strict: true,
+        noEmit: true,
+        target: 'ES2022',
+        module: 'NodeNext',
+        types: [],
+      },
+      files: ['consumer.ts'],
+    }),
+  );
+  await writeFile(
+    `${consumer}/consumer.ts`,
+    `import { readChara, inspectChara, modelKey, type CharaInspection } from 'ffxiv-chara';
 const result: CharaInspection = inspectChara(readChara('{"HairTone":0}'));
 const key: string = modelKey({ slot: 'MainHand', set: 634, base: 19, variant: 1 });
 import { createDefaultPaletteProvider, type PaletteProvider } from 'ffxiv-chara/palettes';
@@ -62,19 +110,19 @@ import { getDyeName, DYE_METADATA } from 'ffxiv-chara/dyes';
 const dyeName: string | null = getDyeName(3);
 void dyeName; void DYE_METADATA;
 `,
-);
-execFileSync(
-  process.execPath,
-  [
-    fileURLToPath(new URL('node_modules/typescript/bin/tsc', root)),
-    '--project',
-    'tsconfig.json',
-  ],
-  { cwd: consumer, stdio: 'pipe' },
-);
-await writeFile(
-  `${consumer}/worker.mjs`,
-  `import { parentPort } from 'node:worker_threads';
+  );
+  execFileSync(
+    process.execPath,
+    [
+      fileURLToPath(new URL('node_modules/typescript/bin/tsc', root)),
+      '--project',
+      'tsconfig.json',
+    ],
+    { cwd: consumer, stdio: 'pipe' },
+  );
+  await writeFile(
+    `${consumer}/worker.mjs`,
+    `import { parentPort } from 'node:worker_threads';
 globalThis.fetch = () => { throw new Error('Unexpected network'); };
 const { readChara, inspectChara } = await import('ffxiv-chara');
 const result = inspectChara(readChara('{"Body":{"ModelBase":361,"ModelVariant":5}}'));
@@ -94,10 +142,10 @@ const { getDyeName } = await import('ffxiv-chara/dyes');
 if (getDyeName(3) !== 'Goobbue Grey' || getDyeName(126) !== null) throw new Error('Worker dye mismatch');
 parentPort.postMessage(result.equipment.Body.model);
 `,
-);
-await writeFile(
-  `${consumer}/consumer.mjs`,
-  `import assert from 'node:assert/strict';
+  );
+  await writeFile(
+    `${consumer}/consumer.mjs`,
+    `import assert from 'node:assert/strict';
 import { Worker } from 'node:worker_threads';
 globalThis.fetch = () => { throw new Error('Unexpected network'); };
 const { readChara, inspectChara, modelKey } = await import('ffxiv-chara');
@@ -128,11 +176,21 @@ try {
 } finally { await worker.terminate(); }
 console.log('Installed tarball: JavaScript, TypeScript, Node Worker, and zero-I/O imports passed.');
 `,
-);
-execFileSync(process.execPath, ['consumer.mjs'], {
-  cwd: consumer,
-  stdio: 'inherit',
-});
-console.log(
-  `Package allowlist verified: ${entries.length} files; no runtime dependencies.`,
-);
+  );
+  execFileSync(process.execPath, ['consumer.mjs'], {
+    cwd: consumer,
+    stdio: 'inherit',
+  });
+  console.log(
+    `Package allowlist verified: ${entries.length} files; no runtime dependencies.`,
+  );
+  await runRuntimeChecks(consumer);
+} finally {
+  // Check the absolute target before recursively removing the generated consumer.
+  assert(
+    dirname(resolve(consumer)) === resolve(tmpdir()) &&
+      basename(consumer).startsWith('ffxiv-chara-consumer-'),
+    'Unexpected cleanup directory.',
+  );
+  await rm(consumer, { recursive: true, force: true });
+}
