@@ -72,7 +72,7 @@ Equipment models carry a supported slot, uint16 `base` and `variant`, plus uint1
 
 Armor packs `base + variant × 65536`. Weapons pack `set + base × 65536 + variant × 4294967296` using internal bigint arithmetic. Results are decimal strings and inspections remain JSON-serializable. These identifiers represent model identity, not a unique inventory item.
 
-`EquipmentResolveInput` currently defines the future transport boundary as `{ models: readonly EquipmentModel[], glassesId?: number }`. No resolver implementation is exported yet. It has no character metadata, appearance, or stain fields.
+`EquipmentResolveInput` defines the input to `createXivapiResolver().resolve` as `{ models: readonly EquipmentModel[], glassesId?: number }`. The optional [`ffxiv-chara/xivapi`](xivapi.md#equipment-candidate-resolution) export implements this resolver. Its input has no character metadata, appearance, or stain fields.
 
 ## Palette provider (`ffxiv-chara/palettes`)
 
