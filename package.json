@@ -1,14 +1,15 @@
 {
-  "name": "ffxiv-chara-workspace",
+  "name": "xivcharakit-workspace",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.27.0",
   "engines": {
     "node": ">=22.12.0 <23 || >=24"
   },
   "scripts": {
-    "dev": "pnpm --filter ffxiv-chara build && pnpm --filter @ffxiv-chara/demo dev",
-    "preview": "pnpm --filter @ffxiv-chara/demo preview",
+    "dev": "pnpm --filter xivcharakit build && pnpm --filter @xivcharakit/demo dev",
+    "preview": "pnpm --filter @xivcharakit/demo preview",
     "test": "pnpm run test:tooling && pnpm -r test",
     "test:tooling": "vitest run --config test/vitest.config.ts",
     "build": "pnpm -r build",

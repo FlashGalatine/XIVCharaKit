@@ -1,5 +1,7 @@
 # ffxiv-chara MVP Implementation Plan
 
+Current identity: **XIVCharaKit**, npm package `xivcharakit`, repository `FlashGalatine/XIVCharaKit`. The original plan title, filename and earlier repository references below are historical; see the [rename record](../rename-preparation.md) for the completed GitHub operation and current local changes.
+
 **Status:** implementation reopened by the maintainer on 2026-10-19. Tasks 1–7, local dye names and Task 8 distribution/runtime tooling and CI configuration are implemented, with initial Task 0 evidence. See [implementation progress](../implementation-progress.md) for local/hosted verification and unresolved release/compatibility gates. Original planning-only language below describes the earlier baseline and is superseded by this authorization.
 
 > **For agentic workers:** Execute the selected milestone inline using superpowers:executing-plans and test-driven development, with a final independent review. Checkboxes track implementation where complete; pending tasks do not authorize publication, deployment, or consumer migration.

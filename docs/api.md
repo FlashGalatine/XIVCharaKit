@@ -6,7 +6,7 @@ The optional [equipment resolution contract](xivapi.md#equipment-candidate-resol
 
 ## Dye names
 
-`import { getDyeName, DYE_METADATA } from 'ffxiv-chara/dyes'`
+`import { getDyeName, DYE_METADATA } from 'xivcharakit/dyes'`
 
 `getDyeName(stainId: number): string | null` returns the English `Stain.Name`, with surrounding whitespace trimmed, from the [pinned snapshot](data-provenance.md#english-dye-name-snapshot). These are Stain row IDs, not dye consumable item IDs. Row zero returns its source name `No Color`; a host may label this `No dye`. Blank/unknown rows and invalid inputs (non-integer, non-number, negative or over uint16) return null without coercion. No file fields are changed or inferred, and no network/storage operation occurs.
 
@@ -72,9 +72,9 @@ Equipment models carry a supported slot, uint16 `base` and `variant`, plus uint1
 
 Armor packs `base + variant × 65536`. Weapons pack `set + base × 65536 + variant × 4294967296` using internal bigint arithmetic. Results are decimal strings and inspections remain JSON-serializable. These identifiers represent model identity, not a unique inventory item.
 
-`EquipmentResolveInput` defines the input to `createXivapiResolver().resolve` as `{ models: readonly EquipmentModel[], glassesId?: number }`. The optional [`ffxiv-chara/xivapi`](xivapi.md#equipment-candidate-resolution) export implements this resolver. Its input has no character metadata, appearance, or stain fields.
+`EquipmentResolveInput` defines the input to `createXivapiResolver().resolve` as `{ models: readonly EquipmentModel[], glassesId?: number }`. The optional [`xivcharakit/xivapi`](xivapi.md#equipment-candidate-resolution) export implements this resolver. Its input has no character metadata, appearance, or stain fields.
 
-## Palette provider (`ffxiv-chara/palettes`)
+## Palette provider (`xivcharakit/palettes`)
 
 `createDefaultPaletteProvider(): PaletteProvider`
 
@@ -95,7 +95,7 @@ Loading/validation failure throws `PaletteDataError` with code `PALETTE_LOAD_FAI
 
 See [data provenance and regeneration](data-provenance.md#palette-baseline-and-regeneration) for source rights, explicit local-file tooling, and the verified supplied-source regeneration result.
 
-## Appearance interpretation (`ffxiv-chara/appearance`)
+## Appearance interpretation (`xivcharakit/appearance`)
 
 `resolveAppearance(inspection: CharaInspection, options: AppearanceOptions): Promise<AppearanceInspection>`
 

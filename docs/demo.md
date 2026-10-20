@@ -8,19 +8,19 @@ Use the repository's pinned Node and pnpm versions:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm --filter @ffxiv-chara/demo exec playwright install chromium
+pnpm --filter @xivcharakit/demo exec playwright install chromium
 pnpm dev
 ```
 
 For the production artifact, run `pnpm build`, then `pnpm preview` at `http://127.0.0.1:4173`. The preview supplies restrictive CSP, no-referrer, nosniff, and disabled camera/microphone/geolocation headers. Development HMR is not the header acceptance environment. A future static host must configure and verify these headers itself; the Vite preview configuration does not deploy them anywhere.
 
-`pnpm test` runs the library suite and production-preview Chromium scenarios. All default API responses are mocked; the live case is deliberately skipped. Run only the demo tests with `pnpm --filter @ffxiv-chara/demo test`. Playwright owns port 4173 during its run; stop any separate preview on that port first. Reports are ignored local artifacts under `.superpowers`.
+`pnpm test` runs the library suite and production-preview Chromium scenarios. All default API responses are mocked; the live case is deliberately skipped. Run only the demo tests with `pnpm --filter @xivcharakit/demo test`. Playwright owns port 4173 during its run; stop any separate preview on that port first. Reports are ignored local artifacts under `.superpowers`.
 
 The separately invoked, low-volume live check uses only the public synthetic Ktisis example:
 
 ```powershell
 $env:CHARA_LIVE_SMOKE = '1'
-pnpm --filter @ffxiv-chara/demo exec playwright test e2e/live.spec.ts
+pnpm --filter @xivcharakit/demo exec playwright test e2e/live.spec.ts
 Remove-Item Env:CHARA_LIVE_SMOKE
 ```
 
@@ -48,6 +48,8 @@ Icons are optional. The demo derives fixed XIVAPI asset paths from validated num
 
 ## Verification recorded on 2026-10-19
 
+The subsequent MIT adoption adds a persistent Square Enix attribution/non-affiliation footer. The MIT code license excludes game-derived materials. Footer links serve the complete `LICENSE.txt` and `THIRD_PARTY_NOTICES.txt`, generated from the repository's canonical legal files during production builds and served directly in development. These legal files are allowlisted static outputs; real producer test exports remain excluded.
+
 The Task 7 default run passed 295 library tests and 19 Chromium browser tests, with one intentional live-test skip. Strict type checks, lint, fixture/palette verification, production builds, locked offline installation, and installed JS/TS/Node Worker package consumers passed. That tarball retained 37 allowlisted files and zero runtime dependencies. Dependency audits reported zero known vulnerabilities. The later dye and distribution milestones are recorded in [implementation progress](implementation-progress.md) and the [installed-runtime evidence](security/distribution-validation.md); this paragraph preserves Task 7's historical counts.
 
 Browser cases cover all three examples, partial files, hostile literal text, image omission, actual canvas pixels, keyboard selection/clear, invalid replacements, pre-read limits, worker timeout, unavailable palettes, raw scalar types/paging, long names, API failure, all candidate pages, overlapping files/clear during lookup, request minimization and storage canaries. Cancellation and late-response handling were verified against controlled upstream responses, without security probes against production.
@@ -66,7 +68,7 @@ A generated 1374 by 1145 desktop concept served as the styling reference. The im
 
 | Reference point | Render comparison and disposition |
 | --- | --- |
-| Wordmark, title, primary action and example copy | Preserved the `ffxiv-chara` / `Library demo` hierarchy, character inspector heading, Choose/Resolve/Clear actions and three producer examples. Dynamic states add factual status copy. |
+| Wordmark, title, primary action and example copy | The wordmark is now `XIVCharaKit`, replacing the original `ffxiv-chara` name. The `Library demo` hierarchy, character inspector heading, Choose/Resolve/Clear actions and three producer examples remain. Dynamic states add factual status copy. |
 | Desktop structure | Retained the 296-pixel pale rail, white content area, teal actions, thin borders and small corner radii. |
 | Typography | Preserved large page title, section hierarchy and monospaced evidence. System fonts avoid external requests; exact generated glyph shapes are not reproduced. |
 | Appearance cards | Retained the two-by-four desktop grid and source disclosures. Added a thin canvas border after inspection showed white swatches disappearing against white. Actual library colors/availability replace illustrative concept values. |

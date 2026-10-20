@@ -14,7 +14,7 @@ Collect default exports from each producer and selective exports only where the 
 
 Use deliberately created test characters with invented metadata and no embedded image where the producer supports that option. Keep original exports unchanged for provenance. If sanitization is necessary, record the exact transformation and hashes of both versions privately, then review the sanitized copy separately. Do not describe an edited fixture as an untouched producer export.
 
-Existing private samples may be inspected locally under the supplied testing authorization. They must not be copied to public fixtures or uploaded without explicit selection and redistribution permission. Permission to test is separate from permission to redistribute. Record the contributor's rights statement and intended fixture license before committing any export; the project's code license remains a separate decision.
+Existing private samples may be inspected locally under the supplied testing authorization. They must not be copied to public fixtures or uploaded without explicit selection and redistribution permission. Permission to test is separate from permission to redistribute. Record the contributor's rights statement and intended fixture license before committing any export; the project's original code is MIT-licensed, separately from fixture permissions.
 
 ## Independent expectations
 

@@ -45,4 +45,4 @@ These are aggregate compatibility observations, not independently reviewed expec
 - Real producer-generated fixtures with explicit redistribution rights and independently reviewed complete expectations. See the [fixture validation checklist](producer-fixture-validation.md) for supported export modes and review requirements; purely equipment-only producer exports are not required.
 - Broader independent visual/producer swatch expectations; real-source regeneration now matches the baseline exactly. See [appearance validation](security/appearance-validation.md) for implemented Tasks 3–4 and corpus observations.
 - Additional browser engines/runtime versions beyond the [installed-package and demo matrix](security/distribution-validation.md). Chromium, module Web Worker, Node/Node Worker and local workerd now pass the pinned smoke cases; this does not establish exhaustive platform/version compatibility.
-- Code/fixture licensing and package identity before any distribution.
+- General fixture licensing, game-data rights and npm publishing configuration before release; original code is MIT-licensed and the selected package name is `xivcharakit`.

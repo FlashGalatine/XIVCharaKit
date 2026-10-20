@@ -1,6 +1,6 @@
-import type { CharaInspection } from 'ffxiv-chara';
-import type { AppearanceInspection } from 'ffxiv-chara/appearance';
-import type { EquipmentResolution } from 'ffxiv-chara/xivapi';
+import type { CharaInspection } from 'xivcharakit';
+import type { AppearanceInspection } from 'xivcharakit/appearance';
+import type { EquipmentResolution } from 'xivcharakit/xivapi';
 
 export type WorkerReply =
   | { type: 'inspection'; inspection: CharaInspection }

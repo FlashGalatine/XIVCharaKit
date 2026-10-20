@@ -1,4 +1,4 @@
-import type { EquipmentModel } from 'ffxiv-chara';
+import type { EquipmentModel } from 'xivcharakit';
 import { loadIcons } from './icons.js';
 import type { DemoState, WorkerReply } from './types.js';
 
@@ -170,7 +170,7 @@ export class DemoSession {
     this.state.resolution = null;
     this.changed();
     try {
-      const { createXivapiResolver } = await import('ffxiv-chara/xivapi');
+      const { createXivapiResolver } = await import('xivcharakit/xivapi');
       if (!current()) return;
       const models: EquipmentModel[] = Object.values(inspection.equipment)
         .filter((e) => e.status === 'worn')

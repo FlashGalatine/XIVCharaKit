@@ -49,6 +49,10 @@ function checkMain(name: string): void {
 }
 checkMain(main);
 await cp(
+  new URL('../../../LICENSE', import.meta.url),
+  resolve(output, 'LICENSE'),
+);
+await cp(
   new URL('../../../THIRD_PARTY_NOTICES.md', import.meta.url),
   resolve(output, 'THIRD_PARTY_NOTICES.md'),
 );

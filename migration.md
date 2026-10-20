@@ -4,14 +4,14 @@ The standalone package and reference demo are implemented here. Migrating XIV Dy
 
 ## Try a local artifact
 
-Run `pnpm test:package` to build and validate `.superpowers/package-smoke/ffxiv-chara-0.0.0.tgz`. A fresh local consumer can install that tarball with `pnpm add <absolute-tarball-path>`; this is not an instruction to install a public npm package with the provisional name.
+Run `pnpm test:package` to build and validate `.superpowers/package-smoke/xivcharakit-0.0.0.tgz`. A fresh local consumer can install that tarball with `pnpm add <absolute-tarball-path>`; `xivcharakit` is the selected name, but no public npm package has been published.
 
 ```ts
-import { readChara, inspectChara } from 'ffxiv-chara';
-import { createDefaultPaletteProvider } from 'ffxiv-chara/palettes';
-import { resolveAppearance } from 'ffxiv-chara/appearance';
-import { getDyeName } from 'ffxiv-chara/dyes';
-import { createXivapiResolver } from 'ffxiv-chara/xivapi';
+import { readChara, inspectChara } from 'xivcharakit';
+import { createDefaultPaletteProvider } from 'xivcharakit/palettes';
+import { resolveAppearance } from 'xivcharakit/appearance';
+import { getDyeName } from 'xivcharakit/dyes';
+import { createXivapiResolver } from 'xivcharakit/xivapi';
 
 const inspection = inspectChara(readChara('{"LEyeColor":0}'));
 const appearance = await resolveAppearance(inspection, {
