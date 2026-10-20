@@ -4,7 +4,7 @@ Status: four maintainer-supplied default exports have redistribution permission 
 
 ## Required evidence
 
-Collect a full and a selective/partial export from each producer. Record the actual application version or commit, export settings, game version if known, and confirmation that the file was exported by that application. A stored producer label alone is not provenance.
+Collect default exports from each producer and selective exports only where the application supports those settings. A selective export can still include identity and other character-specific fields; a purely equipment-only file is not required. The maintainer clarified this limitation on 2026-10-20. Record the actual application version or commit, export settings, game version if known, and confirmation that the file was exported by that application. A stored producer label alone is not provenance.
 
 | Producer | Full export | Partial export | Reviewed expectations | Redistribution permission |
 | --- | --- | --- | --- | --- |
@@ -26,7 +26,7 @@ Record expected values from producer controls/export settings and a manual revie
 - Equipment: all twelve slot states, each model lane, packed model key, both independent dye channels and facewear shape/ID. Empty, missing and malformed records remain distinct.
 - Metadata, unknown fields and images: preserved evidence, omitted image payload and expected diagnostics. No equipment service or private corpus upload is required.
 
-Choose partial exports that establish actual producer omission/null/default behavior. Include dual dye channels, supported facewear representations and extended-color validity cases across the reviewed set where the producer supports them. Record unsupported combinations instead of fabricating producer output.
+Where selective export settings exist, use them to establish actual producer omission/null/default behavior, allowing any accompanying character fields. Otherwise record that coverage as unsupported or unverified; do not require a fabricated equipment-only producer export. Synthetic partial fixtures continue to verify the library's selective-document contract. Include dual dye channels, supported facewear representations and extended-color validity cases where the producer supports them.
 
 ## Acceptance and integration
 
@@ -34,7 +34,7 @@ Choose partial exports that establish actual producer omission/null/default beha
 2. Review the independent expectations and map them to the documented field contract in [compatibility](compatibility.md).
 3. Add only approved fixtures and explicit expectations to the fixture manifest and verification/tests. Keep private originals and unapproved evidence outside tracked/public outputs.
 4. Run fixture verification, focused inspection/appearance tests and the normal package/demo artifact gates. A mismatch needs investigation; neither fixture nor expectation should be changed merely to match current output.
-5. Record producer versions, coverage, limitations and review evidence, then update the MVP completion criterion only when all six exports have reviewed expectations and redistribution clearance.
+5. Record producer versions, supported export modes, limitations and review evidence. Close supported producer coverage when reviewed expectations and redistribution clearance are recorded; document unavailable selective modes separately. There is no fixed six-file requirement.
 
 ## Current local evidence
 

@@ -272,7 +272,7 @@ This is outside the standalone MVP build and needs a refreshed, separately autho
 
 ## Completion criteria for a future MVP
 
-- [ ] Supported full and partial examples from all three producers have reviewed expected inspection results.
+- [ ] Default exports and any supported selective export modes from all three producers have reviewed expected inspection results; unavailable modes are documented. A purely equipment-only producer export is not required. Synthetic partial-document tests remain separate contract coverage.
 - [x] Appearance swatches identify their palette/extended source and surface inactive, ambiguous, and unresolved cases honestly.
 - [x] Local parsing and swatches work without XIVAPI; equipment requests exclude document contents, names, appearance and dyes. Model identifiers and ordinary connection metadata can still be distinctive.
 - [x] Equipment resolution preserves candidates and distinguishes missing, partial, and unavailable answers.
