@@ -12,9 +12,11 @@ export interface ItemRules {
   wear: Partial<Record<string, boolean>>;
   grandCompany: number | null;
 }
-export interface GlassesRow {
+export interface StainRow {
   rowId: number;
   names: Partial<Record<Language, string>>;
+}
+export interface GlassesRow extends StainRow {
   iconId: number | null;
 }
 export interface ItemRow extends GlassesRow {
@@ -25,7 +27,7 @@ export interface ItemRow extends GlassesRow {
   uiCategory: number | null;
   rules: ItemRules;
 }
-export type PublicRow = ItemRow | GlassesRow;
+export type PublicRow = ItemRow | GlassesRow | StainRow;
 export interface LookupResult<R extends PublicRow = PublicRow> {
   status: 'complete' | 'partial' | 'unavailable' | 'cancelled';
   rows: R[];
@@ -57,6 +59,10 @@ export interface XivapiOptions {
   cache?: ResolutionCache;
 }
 export interface XivapiClient {
+  getStains(
+    ids: readonly number[],
+    options?: { signal?: AbortSignal },
+  ): Promise<LookupResult<StainRow>>;
   searchItems(
     models: readonly EquipmentModel[],
     options?: { signal?: AbortSignal },

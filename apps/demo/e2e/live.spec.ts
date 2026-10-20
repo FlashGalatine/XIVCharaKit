@@ -43,11 +43,17 @@ test('manual live browser lookup', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Ktisis', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: 'Resolve equipment', exact: true }),
+    page.getByRole('button', {
+      name: 'Resolve equipment and dye names',
+      exact: true,
+    }),
   ).toBeEnabled();
   expect(requests).toEqual([]);
   await page
-    .getByRole('button', { name: 'Resolve equipment', exact: true })
+    .getByRole('button', {
+      name: 'Resolve equipment and dye names',
+      exact: true,
+    })
     .click();
   await expect(page.getByTestId('lookup-evidence')).toContainText(
     /[a-f0-9]{16}/,

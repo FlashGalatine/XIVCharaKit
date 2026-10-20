@@ -47,10 +47,16 @@ try {
     '--strip-components=1',
   ]);
   for (const entry of entries) {
-    assertPublicArtifact(
-      entry,
-      await readFile(join(installed, entry.slice('package/'.length)), 'utf8'),
+    const content = await readFile(
+      join(installed, entry.slice('package/'.length)),
+      'utf8',
     );
+    assertPublicArtifact(entry, content);
+    if (entry.endsWith('.js'))
+      assert(
+        !content.includes('namesSha256'),
+        'Legacy dye-name snapshot entered the package.',
+      );
   }
   async function checkDemo(directory: URL, prefix = ''): Promise<void> {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -69,6 +75,13 @@ try {
           `apps/demo/dist/${path}`,
           await readFile(new URL(entry.name, directory), 'utf8'),
         );
+        if (path.endsWith('.js'))
+          assert(
+            !(await readFile(new URL(entry.name, directory), 'utf8')).includes(
+              'namesSha256',
+            ),
+            'Legacy dye-name snapshot entered the demo.',
+          );
       }
     }
   }
@@ -140,9 +153,9 @@ const transport: XivapiClient = createXivapiClient({ cache: createMemoryCache() 
 const equipment: EquipmentResolution = await createXivapiResolver().resolve({ models:[] });
 void equipment;
 void transport;
-import { getDyeName, DYE_METADATA } from 'xivcharakit/dyes';
-const dyeName: string | null = getDyeName(3);
-void dyeName; void DYE_METADATA;
+import { createDyeNameResolver, type DyeNameResolver } from 'xivcharakit/dyes';
+const dyes: DyeNameResolver = createDyeNameResolver();
+await dyes.resolve([]);
 `,
   );
   execFileSync(
@@ -172,8 +185,8 @@ const transport = createXivapiClient({ fetch:mockedFetch, version:'0123456789abc
 if ((await transport.getGlasses(8)).status !== 'complete') throw new Error('Worker transport mismatch');
 const equipment = await createXivapiResolver({ fetch:mockedFetch, version:'0123456789abcdef' }).resolve({ models:[], glassesId:8 });
 if (equipment.facewear?.status !== 'notFound') throw new Error('Worker resolution mismatch');
-const { getDyeName } = await import('xivcharakit/dyes');
-if (getDyeName(3) !== 'Goobbue Grey' || getDyeName(126) !== null) throw new Error('Worker dye mismatch');
+const { createDyeNameResolver } = await import('xivcharakit/dyes');
+if ((await createDyeNameResolver().resolve([])).status !== 'complete') throw new Error('Worker dye mismatch');
 parentPort.postMessage(result.equipment.Body.model);
 `,
   );
@@ -194,11 +207,10 @@ const { createXivapiClient, createMemoryCache, createXivapiResolver } = await im
 const transport = createXivapiClient({ cache:createMemoryCache() });
 assert.equal((await transport.searchItems([])).status, 'complete');
 assert.deepEqual((await createXivapiResolver().resolve({ models:[] })).items, {});
-const { getDyeName, DYE_METADATA } = await import('xivcharakit/dyes');
-assert.equal(getDyeName(101), 'Pure White');
-assert.equal(getDyeName(65535), null);
-assert.equal(DYE_METADATA.table, 'Stain');
-assert.equal(Object.isFrozen(DYE_METADATA), true);
+const dyes = await import('xivcharakit/dyes');
+assert.equal((await dyes.createDyeNameResolver().resolve([])).status, 'complete');
+assert.equal('getDyeName' in dyes, false);
+assert.equal('DYE_METADATA' in dyes, false);
 const worker = new Worker(new URL('./worker.mjs', import.meta.url));
 try {
   const result = await new Promise((resolve, reject) => {

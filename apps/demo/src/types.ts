@@ -1,5 +1,6 @@
 import type { CharaInspection } from 'xivcharakit';
 import type { AppearanceInspection } from 'xivcharakit/appearance';
+import type { LookupResult, StainRow } from 'xivcharakit/dyes';
 import type { EquipmentResolution } from 'xivcharakit/xivapi';
 
 export type WorkerReply =
@@ -12,6 +13,7 @@ export interface DemoState {
   appearance: AppearanceInspection | null;
   appearanceStatus: 'idle' | 'loading' | 'ready' | 'unavailable';
   resolution: EquipmentResolution | null;
+  dyeNames: LookupResult<StainRow> | null;
   error: string | null;
   localStatus: string;
   reading: boolean;

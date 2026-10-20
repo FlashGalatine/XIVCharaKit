@@ -10,7 +10,6 @@ pnpm type-check
 pnpm lint
 pnpm verify-fixtures
 pnpm verify-palettes
-pnpm verify-dyes
 pnpm test
 pnpm audit
 pnpm test:package

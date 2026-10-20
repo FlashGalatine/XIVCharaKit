@@ -1,18 +1,18 @@
 # Source and data provenance
 
-The current package contains reader/inspection code, synthetic examples, four repacked generated palette datasets, and a small English Stain-name snapshot. It contains no raw game files, item tables, or private sample files. The palette generator layout and appearance policy are adapted from the MIT-licensed XIV Dye Tools source; [third-party notices](../THIRD_PARTY_NOTICES.md) retain the code notice separately from game-derived data rights. The maintainer selected MIT for the project's original library, demo and tooling code on 2026-10-20; the full [license](../LICENSE) is included in the package. The unpublished candidate is `xivcharakit@0.1.0-beta.1` for `next`; only the library is publishable, while the workspace root and demo remain private. No public release has occurred; game-derived data rights remain separate from code licensing.
+The current package contains reader/inspection code, synthetic examples, four repacked generated palette datasets, and optional API dye-name lookup. It contains no raw game files, item tables, or private sample files. The palette generator layout and appearance policy are adapted from the MIT-licensed XIV Dye Tools source; [third-party notices](../THIRD_PARTY_NOTICES.md) retain the code notice separately from game-derived data rights. The maintainer selected MIT for the project's original library, demo and tooling code on 2026-10-20; the full [license](../LICENSE) is included in the package. The unpublished candidate is `xivcharakit@0.1.0-beta.1` for `next`; only the library is publishable, while the workspace root and demo remain private. No public release has occurred; game-derived data rights remain separate from code licensing.
 
 Format references and source SHA-256 values are in [fixtures/manifest.json](../fixtures/manifest.json), with human-readable coverage in [compatibility.md](compatibility.md). Ktisis and Brio advertise GPL-3.0 repository licenses; Anamnesis's reviewed format files carry MIT notices. Those references inform field contracts; this does not relicense upstream material or establish a license for this project's code. Review notices if future implementation copies upstream code.
 
 The [licensing review](licensing-review.md) verifies the three upstream license texts, records compatibility boundaries and documents the maintainer's subsequent MIT choice for original code.
 
-The private sample folder is an opt-in test input, never a build input. The local corpus checker logs only aggregate counts. Synthetic fixtures use invented metadata and combinations of public format fields, without embedded images or copied character data. Fixture release rights must be settled with the project license; shape compatibility is not producer-export verification.
+The private sample folder is an opt-in test input, never a build input. The local corpus checker logs only aggregate counts. Synthetic fixtures use invented metadata and combinations of public format fields, without embedded images or copied character data. Original synthetic fixture contributions follow the selected project MIT license; producer exports retain their separate recorded permission. Shape compatibility is not producer-export verification. The [beta redistribution review](data-redistribution-review.md) records shipped data, applicable notices and the remaining bundled-data release decision.
 
 Separately, on 2026-10-20 the maintainer supplied four default-setting exports from Anamnesis, Ktisis and Brio and confirmed ownership of the player character and permission for redistribution. Byte-identical copies are retained as test-only [producer fixtures](../fixtures/producer-exports/README.md), with hashes and the contributor permission statement in the manifest. These approved exports retain their supplied metadata and are not anonymized examples. They are excluded from the packed library and static demo. This permission does not select a general project/fixture license or settle game-derived data rights. Exact app versions, selective-export coverage and independent visual/control expectations remain open in [fixture validation](producer-fixture-validation.md).
 
 ## Palette baseline and regeneration
 
-See also the independent [English dye-name snapshot](#english-dye-name-snapshot); its revision is not the palette's game version.
+See also the independent [dye-name lookup](#dye-names-through-xivapi); its revision is not the palette's game version.
 
 The planned extraction baseline remains XIV Dye Tools commit `b98c8584a85f5dc50b4b4392c508cc627ef004d6`, freshly verified as the public default-branch head on 2026-10-19. Its [palette index](https://github.com/FlashGalatine/xivdyetools/blob/b98c8584a85f5dc50b4b4392c508cc627ef004d6/packages/core/src/data/character_colors/index.json) SHA-256 is `026d62b28c72661cb4646fb7647dd1ba4ef6ea777f637ecdc6e8fc3e89366802`.
 
@@ -38,17 +38,12 @@ The maintainer supplied a real `human.cmp`: 186,752 bytes, SHA-256 `958e90e635b7
 
 This closes the real-source palette regeneration check for this binary and dataset. The raw file stays outside the repository/package, with `*.cmp` excluded from Git, and its local path is not recorded in metadata. The maintainer subsequently confirmed on 2026-10-19 that this exact file is from game version 7.57; `gameVersion` records that confirmation. The comparison covers the extracted palette regions, not the unused height/scale tables or every field in the binary, and does not settle redistribution rights.
 
-## English dye-name snapshot
+## Dye names through XIVAPI
 
-`xivcharakit/dyes` contains only English names keyed by `Stain` row ID, derived from [xivapi/ffxiv-datamining's Stain.csv](https://raw.githubusercontent.com/xivapi/ffxiv-datamining/ab3b961d58988b493283eb9fd28cb930ea07b169/csv/en/Stain.csv). The immutable source commit is `ab3b961d58988b493283eb9fd28cb930ea07b169`; source bytes have SHA-256 `0392c152bba1a3fbdeed89bc3e007e3b9e83d5a5ce618779f1a9439f009400bc`. The CSV and upstream revision metadata were checked on 2026-10-19. The upstream commit message says `7.50 followup`; this is not evidence of parity with the supplied 7.57 palette binary, so dye `gameVersion` remains null.
+Dye names are requested from XIVAPI's Stain sheet only after an explicit host action. The resolver batches the selected IDs, requests chosen language fields, and retains canonical version/schema from each successful response. Successful complete responses can be cached; raw file values remain unchanged and available without network access. No dye-name table or full Stain CSV is bundled. See [API semantics](api.md#cached-dye-names) and the [dated feasibility probes](xivapi-dye-feasibility.md).
 
-The 129 source rows produce 126 names including row zero (`No Color`); blank rows 126–128 are omitted. Surrounding name whitespace is trimmed (including rows 99, 122 and 123). Neither item references, other Stain fields nor the raw CSV are shipped. The compact canonical name-object hash is `bfbfa3d0be3fd48d183ae62f9fb0de5e2a21b37cab99e57e6f5ec32bdaddc4ef`. All provenance travels with the optional entry's frozen `DYE_METADATA`. These names are game-derived data and retain the release/data-rights gate in [third-party notices](../THIRD_PARTY_NOTICES.md).
+### Former English dye-name snapshot
 
-Regeneration is explicit and offline after obtaining that pinned public CSV:
+The initial implementation bundled 126 English names derived from [xivapi/ffxiv-datamining's Stain.csv](https://raw.githubusercontent.com/xivapi/ffxiv-datamining/ab3b961d58988b493283eb9fd28cb930ea07b169/csv/en/Stain.csv). The source commit was `ab3b961d58988b493283eb9fd28cb930ea07b169`, CSV SHA-256 `0392c152bba1a3fbdeed89bc3e007e3b9e83d5a5ce618779f1a9439f009400bc`, and normalized name-object hash `bfbfa3d0be3fd48d183ae62f9fb0de5e2a21b37cab99e57e6f5ec32bdaddc4ef`. Its revision did not establish parity with the appearance palette's game version. These are historical provenance records, not current packaged metadata.
 
-```sh
-pnpm exec tsx scripts/build-dyes.ts <explicit-Stain.csv-path> --check
-pnpm exec tsx scripts/build-dyes.ts <explicit-Stain.csv-path>
-```
-
-The generator accepts at most 128 KiB and requires the exact baseline source hash before parsing its fixed unquoted column layout. It writes only the fixed generated JSON path. `--check` compares the generated output byte-for-byte without writing. Updating to a new source requires reviewing the source revision, hash, schema, generated names and expectations; ordinary builds never fetch or discover game data.
+At the maintainer's request, the bundled table, synchronous lookup/metadata exports and CSV build/verify scripts were removed before first publication. Character palette tables remain unchanged and have their own provenance/rights disposition. Runtime lookup does not grant new rights to upstream material; Square Enix attribution and the separate notices remain.

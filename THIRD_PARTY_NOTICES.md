@@ -28,13 +28,39 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+## Vite browser helpers
+
+The built reference demo includes module-preload and dynamic-import preload helpers from Vite 8.3.4. Vite's build tooling and its complete dependency tree are not included in the npm library. The following Vite core notice applies to those browser helpers:
+
+MIT License
+
+Copyright (c) 2019-present, VoidZero Inc. and Vite contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 ## Game-derived palette and dye-name data
 
 FINAL FANTASY XIV © SQUARE ENIX. All Rights Reserved.
 
 This is an independent community project and is not affiliated with, sponsored by, or endorsed by Square Enix. FINAL FANTASY XIV and related names and materials belong to Square Enix and their respective rights holders.
 
-The palette tables are generated color values derived from game data. English dye names are extracted from the public `xivapi/ffxiv-datamining` Stain sheet at commit `ab3b961d58988b493283eb9fd28cb930ea07b169`; the source URL/hash and normalization are recorded in dye metadata and the data-provenance guide. No raw `human.cmp` file or full Stain CSV is distributed. Neither the project's MIT license nor the upstream MIT code notice grants rights to game-derived data, artwork, names or trademarks. Release/data-notice review remains a maintainer gate. Attribution does not itself grant permission. See the official [FINAL FANTASY XIV Materials Usage Policy](https://support.na.square-enix.com/rule.php?id=5382&policy=update&tag=authc) for Square Enix's stated terms; this notice does not claim those terms authorize every dataset or use in this project.
+The palette tables are generated color values derived from game data. Dye names are requested from XIVAPI only when explicitly resolved; no dye-name snapshot is bundled. Runtime results retain the upstream version/schema and selected language names. The former snapshot source is recorded as historical evidence in the data-provenance guide. No raw `human.cmp` file or full Stain CSV is distributed. Neither the project's MIT license nor the upstream MIT code notice grants rights to game-derived data, artwork, names or trademarks. Release/data-notice review remains a maintainer gate. Attribution does not itself grant permission. See the official [FINAL FANTASY XIV Materials Usage Policy](https://support.na.square-enix.com/rule.php?id=5382&policy=update&tag=authc) for Square Enix's stated terms; this notice does not claim those terms authorize every dataset or use in this project.
 
 ## Color-difference formula
 

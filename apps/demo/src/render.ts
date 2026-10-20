@@ -1,7 +1,6 @@
 import type { Field, JsonValue } from 'xivcharakit';
 import { EQUIPMENT_SLOTS } from 'xivcharakit';
 import type { AppearanceSlot } from 'xivcharakit/appearance';
-import { getDyeName } from 'xivcharakit/dyes';
 import type { EquipmentCandidate } from 'xivcharakit/xivapi';
 import { iconKey } from './icons.js';
 import type { DemoSession } from './state.js';
@@ -62,10 +61,21 @@ function field(value: Field<unknown> | undefined): string {
           ? 'Unsupported'
           : 'Invalid';
 }
-function dye(value: Field<number>): string {
+function dye(value: Field<number>, state: DemoState): string {
   if (value.state !== 'valid') return field(value);
   const id = value.value;
-  const name = id === 0 ? 'No dye' : (getDyeName(id) ?? 'Unknown dye');
+  const result = state.dyeNames;
+  const row = result?.rows.find((row) => row.rowId === id);
+  const name =
+    id === 0
+      ? 'No dye'
+      : row
+        ? row.names.en || 'Blank name'
+        : !result
+          ? 'Name not looked up'
+          : result.status === 'complete'
+            ? 'Name not found'
+            : 'Name unavailable';
   return `${name} (${id})`;
 }
 function disclosure(
@@ -362,7 +372,7 @@ export function render(root: HTMLElement, session: DemoSession): void {
     el(
       'p',
       'privacy',
-      'Your file stays in this browser. Equipment lookup sends model IDs to XIVAPI only when you choose.',
+      'Your file stays in this browser. Lookup sends equipment and dye IDs to XIVAPI only when you choose.',
     ),
   );
   const main = el('main', 'workspace');
@@ -503,7 +513,7 @@ export function render(root: HTMLElement, session: DemoSession): void {
     top.append(el('h2', '', 'Equipment'));
     const actions = el('div', 'actions');
     const resolve = button(
-      'Resolve equipment',
+      'Resolve equipment and dye names',
       () => {
         void session.resolve();
       },
@@ -519,7 +529,11 @@ export function render(root: HTMLElement, session: DemoSession): void {
     top.append(actions);
     equipment.append(
       top,
-      el('p', 'section-note', 'Optional lookup sends equipment IDs to XIVAPI.'),
+      el(
+        'p',
+        'section-note',
+        'Optional lookup sends equipment and dye IDs to XIVAPI. Successful dye-name responses are cached in memory for this page session.',
+      ),
     );
     if (state.lookupMessage) {
       const status = el('p', 'lookup-status', state.lookupMessage);
@@ -559,8 +573,8 @@ export function render(root: HTMLElement, session: DemoSession): void {
       );
       const dyeCell = el('td', 'dye-channels');
       dyeCell.append(
-        el('div', '', `1: ${dye(stored.dye1)}`),
-        el('div', '', `2: ${dye(stored.dye2)}`),
+        el('div', '', `1: ${dye(stored.dye1, state)}`),
+        el('div', '', `2: ${dye(stored.dye2, state)}`),
       );
       row.append(dyeCell);
       const itemCell = el('td');
@@ -661,6 +675,15 @@ export function render(root: HTMLElement, session: DemoSession): void {
               `${scope}: ${identity.version ?? 'unknown version'} · ${identity.schema ?? 'unknown schema'}`,
             ),
           );
+      equipment.append(evidence);
+    }
+    if (state.dyeNames?.version || state.dyeNames?.schema) {
+      const evidence = el(
+        'p',
+        'lookup-evidence mono',
+        `Dye names: version ${state.dyeNames.version ?? 'unknown'} · schema ${state.dyeNames.schema ?? 'unknown'}`,
+      );
+      evidence.dataset.testid = 'dye-lookup-evidence';
       equipment.append(evidence);
     }
     main.append(equipment);
