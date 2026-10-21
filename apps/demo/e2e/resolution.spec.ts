@@ -28,7 +28,10 @@ test('clear discards a pending response and resets lookup permission', async ({
   await load(page, { Body: { ModelBase: 361, ModelVariant: 5 } });
   await expect(page.getByTestId('identity')).toBeVisible();
   await page
-    .getByRole('button', { name: 'Resolve equipment', exact: true })
+    .getByRole('button', {
+      name: 'Resolve equipment and dye names',
+      exact: true,
+    })
     .click();
   await expect.poll(() => Boolean(release)).toBe(true);
   await page.getByRole('button', { name: 'Clear file', exact: true }).click();
@@ -54,7 +57,10 @@ test('pages candidate lists in bounded reversible groups', async ({ page }) => {
   await load(page, { Body: { ModelBase: 361, ModelVariant: 5 } });
   await expect(page.getByTestId('identity')).toBeVisible();
   await page
-    .getByRole('button', { name: 'Resolve equipment', exact: true })
+    .getByRole('button', {
+      name: 'Resolve equipment and dye names',
+      exact: true,
+    })
     .click();
   await page.getByText('25 candidates', { exact: true }).click();
   await expect(page.locator('.candidate-list li')).toHaveCount(10);
@@ -114,14 +120,23 @@ test('requires an explicit lookup, shows every candidate and sends only identifi
   await expect(page.getByTestId('identity')).toBeVisible();
   expect(urls).toEqual([]);
   await page
-    .getByRole('button', { name: 'Resolve equipment', exact: true })
+    .getByRole('button', {
+      name: 'Resolve equipment and dye names',
+      exact: true,
+    })
     .click();
   await expect(page.getByTestId('equipment')).toContainText('2 candidates');
   await page.getByText('2 candidates', { exact: true }).click();
   await expect(page.getByTestId('equipment')).toContainText(
     '<img src=x onerror=alert(1)>',
   );
-  expect(urls.join(' ')).not.toMatch(/PRIVATE_|DyeId|88|77/);
+  expect(urls.join(' ')).not.toMatch(/PRIVATE_|DyeId|HairTone|Nickname|Author/);
+  expect(
+    new URL(
+      urls.find((url) => url.includes('/sheet/Stain')) ??
+        'https://invalid.invalid',
+    ).searchParams.get('rows'),
+  ).toBe('77,88');
   await expect(page.getByTestId('lookup-evidence')).toContainText(V);
 });
 test('keeps local inspection usable during upstream failure', async ({

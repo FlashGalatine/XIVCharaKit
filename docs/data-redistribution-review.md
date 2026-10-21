@@ -1,0 +1,36 @@
+# Beta data redistribution review
+
+Reviewed on 2026-10-20 for `xivcharakit@0.1.0-beta.1`. The release candidate from merged commit `682cededd34c8e31e82ffb7aeec0779425599088` passed the [hosted dry run](https://github.com/FlashGalatine/XIVCharaKit/actions/runs/39488195133). Its downloaded tarball matched the prepare-log SHA-512 and contained 41 allowlisted files. This review records the material actually shipped, its sources and the limits of the available permissions. It does not grant third-party rights or conclude that distribution is unlawful.
+
+This review adds Vite browser-helper attribution to canonical notices. Those changed legal bytes must be rebuilt and checked in a fresh candidate after the final source is reviewed and merged; the older dry-run tarball is not the final artifact for publication.
+
+## Inventory and disposition
+
+| Material | Distributed where | Source and recorded rights | Review result |
+| --- | --- | --- | --- |
+| Original reader, inspector, appearance/dye/resolver code and tooling | npm library; applicable code in demo/repository | Maintainer-selected MIT; complete root license copied into package/demo | Code license and distribution notices recorded |
+| Adapted palette layout, appearance and query conventions | Library and demo | XIV Dye Tools commit `b98c8584a85f5dc50b4b4392c508cc627ef004d6`; upstream MIT notice retained | Upstream code notice checked; it is not a grant for Square Enix materials |
+| Four generated palette tables, 26,208 color entries | Optional palette chunks in npm package and demo | Pinned XIV Dye Tools inputs; regenerated exactly from the maintainer-supplied game 7.57 binary; source/output hashes in palette metadata | Provenance verified; no explicit redistribution grant covering extracted palette tables was established by the reviewed sources |
+| Stain names keyed by row ID | Requested at runtime after an explicit action; no bundled name table | XIVAPI responses retain canonical version/schema and selected languages; former CSV provenance is historical | Bundled snapshot removed at maintainer request; runtime results remain game-derived material with separate notices |
+| Original synthetic character examples and expectations | Repository tests; three synthetic examples in demo; excluded from npm | Authored in this project; project MIT applies to original fixture contributions | Synthetic fixture licensing follows the selected project license |
+| Four approved real producer exports | Repository tests only; excluded from npm and demo | Maintainer's recorded permission to redistribute their own character exports for project testing | Contributor permission retained; no new license for underlying third-party materials is claimed |
+| Vite browser preload helpers | Built demo, not the npm library | Vite 8.3.4 MIT core license; installed package copyright/permission text reviewed | Include the core MIT notice in the demo's copied third-party notices |
+
+The raw `human.cmp`, full Stain CSV, private sample corpus, game images/audio, producer application binaries and real character exports are not included in npm or static demo output. GPL producer licenses were reviewed as format-reference context; no new producer source was imported by this review. See [provenance](data-provenance.md), [licensing review](licensing-review.md) and [third-party notices](../THIRD_PARTY_NOTICES.md) for exact boundaries.
+
+## Primary-source checks
+
+- The pinned [XIV Dye Tools license](https://github.com/FlashGalatine/xivdyetools/blob/b98c8584a85f5dc50b4b4392c508cc627ef004d6/LICENSE) contains the MIT grant for its software and a separate Square Enix notice. The current project retains the applicable MIT copyright and permission text.
+- The pinned [datamining README](https://github.com/xivapi/ffxiv-datamining/blob/ab3b961d58988b493283eb9fd28cb930ea07b169/README.md) describes sharing findings for community use and identifies its CSVs as extracted game data. The pinned repository root contains no standalone license file. That observation is limited to the inspected root and README; it does not determine the legal status of every individual name or value.
+- Square Enix's North America [Materials Usage Policy](https://support.na.square-enix.com/rule.php?id=5382&policy=update&tag=authc), effective October 14, 2026, addresses specified official-site materials, in-game text/screenshots/videos and music. Its permission is conditional, revocable and generally noncommercial, with stated exceptions. It requires attribution and compliance with related agreements. It does not expressly name extracted palette tables or grant them a permissive software/data license. Whether a particular use falls within those terms is not established by this review; other account regions have their own policies.
+- The installed Vite 8.3.4 core license is MIT, copyright VoidZero Inc. and Vite contributors. The built demo contains module-preload and dynamic-import preload support identifiable in Vite's installed source and demo bundle. The notice addition covers that browser helper code; it does not assert that all Vite build-time dependencies are shipped to users.
+
+## Remaining release decision
+
+MIT is the selected license for original code and original synthetic fixtures. Square Enix attribution, hashes, public availability and contributor character permission do not create a new third-party data license. Conversely, the reviewed sources do not establish that each numeric color or brief name requires copyright permission. No broader legal conclusion is made here.
+
+The maintainer subsequently requested investigating external dye-name lookup before bundling names. The [XIVAPI feasibility check](xivapi-dye-feasibility.md) confirms small Stain requests can resolve localized names, including batched IDs. At the maintainer's subsequent implementation request, optional cached remote name resolution replaced the snapshot, preserving local parsing and stored IDs. The old synchronous name/metadata exports and CSV generation/verification scripts were removed before publication.
+
+Character appearance palettes are a separate dataset: the generated creator/shader color lookup tables from `human.cmp`, not the equipment dye-name snapshot. Their release disposition remains open independently of the implemented dye-name change. Character palette values/exports remain unchanged; no rights holder was contacted.
+
+Confidential security reporting is now configured separately through [GitHub's private reporting route](https://github.com/FlashGalatine/XIVCharaKit/security/advisories/new). Release protection, npm bootstrap/trust and production hosting remain separate setup; no npm publication was performed.

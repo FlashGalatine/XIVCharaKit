@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace the bundled English dye-name snapshot with optional cached XIVAPI Stain-name requests. Preserve local parsing/raw IDs and require explicit demo lookup. Remove the unpublished synchronous name/metadata API and snapshot-generation commands.
+
 - Prepare `xivcharakit@0.1.0-beta.1` for `next`, with a package README and manual, dry-run-by-default publishing workflow that checks and publishes the same tarball.
 
 - Adopt the XIVCharaKit identity, `xivcharakit` package imports and demo branding; rename the GitHub repository to `FlashGalatine/XIVCharaKit`.

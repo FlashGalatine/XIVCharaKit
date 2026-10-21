@@ -10,14 +10,12 @@ npm install xivcharakit@next
 
 ```ts
 import { readChara, inspectChara, modelKey } from 'xivcharakit';
-import { getDyeName } from 'xivcharakit/dyes';
 
 const inspection = inspectChara(readChara(
   '{"Body":{"ModelBase":361,"ModelVariant":5,"DyeId":3}}',
 ));
 const body = inspection.equipment.Body;
 if (body.model) console.log(modelKey(body.model)); // "328041"
-console.log(getDyeName(3)); // "Goobbue Grey"
 ```
 
 ## Exports
@@ -27,7 +25,7 @@ console.log(getDyeName(3)); // "Goobbue Grey"
 | `xivcharakit` | Bounded reading, typed inspection and model identifiers |
 | `xivcharakit/palettes` | Lazy creator/shader palette provider |
 | `xivcharakit/appearance` | Source-labelled appearance interpretation |
-| `xivcharakit/dyes` | Local English dye names and source metadata |
+| `xivcharakit/dyes` | Optional cached XIVAPI dye-name lookup |
 | `xivcharakit/xivapi` | Optional equipment candidates, transport and caching |
 
 ```ts
@@ -40,9 +38,21 @@ const appearance = await resolveAppearance(inspection, {
 console.log(appearance.slots.hair);
 ```
 
-Reading, inspection and bundled appearance/dye lookup perform no network or storage operations. Embedded image fields are omitted. Remaining file values are untrusted; hosts must set suitable resource limits and should use a Worker for browser parsing. The optional XIVAPI resolver sends equipment identifiers when explicitly called. Matching candidates do not identify a unique inventory item.
+Reading, inspection and bundled appearance lookup perform no network or storage operations. Embedded image fields are omitted. Remaining file values are untrusted; hosts must set suitable resource limits and should use a Worker for browser parsing. The optional equipment and dye-name resolvers send their respective identifiers when explicitly called. Matching candidates do not identify a unique inventory item.
 
-Bundles target ES2022. Installed-package checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports, including declarations in an external consumer. This is evidence for tested environments, not all browsers or game versions. CommonJS, editing and writing character files are not provided. Appearance palettes record game version 7.57; English dye names use a separate pinned snapshot. See the [API](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/api.md), [compatibility evidence](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/compatibility.md), [data provenance](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/data-provenance.md), [equipment/privacy contract](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/xivapi.md) and [security policy](https://github.com/FlashGalatine/XIVCharaKit/blob/main/SECURITY.md).
+Bundles target ES2022. Installed-package checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports, including declarations in an external consumer. This is evidence for tested environments, not all browsers or game versions. CommonJS, editing and writing character files are not provided. Appearance palettes record game version 7.57; dye-name results record their own upstream version/schema. See the [API](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/api.md), [compatibility evidence](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/compatibility.md), [data provenance](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/data-provenance.md), [equipment/privacy contract](https://github.com/FlashGalatine/XIVCharaKit/blob/main/docs/xivapi.md) and [security policy](https://github.com/FlashGalatine/XIVCharaKit/blob/main/SECURITY.md).
+
+Resolve names after an explicit host action:
+
+```ts
+import { createDyeNameResolver } from 'xivcharakit/dyes';
+const dyes = createDyeNameResolver({ languages: ['en'] });
+const result = await dyes.resolve([3, 10]);
+// result.rows: { rowId, names }; result.status/version/schema/issues retain evidence.
+// Reuse this resolver for its bounded default memory cache.
+```
+
+No dye-name snapshot is bundled. Names require API availability or a successful cached response; stored IDs remain usable offline. The former synchronous `getDyeName` and `DYE_METADATA` exports were removed before publication. Blank names, missing rows and failed lookups remain distinct.
 
 ## License and attribution
 

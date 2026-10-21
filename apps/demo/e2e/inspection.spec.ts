@@ -7,7 +7,10 @@ test('terminates an overdue worker and preserves the previous valid inspection',
   await load(page, { Tribe: 'Midlander' });
   await expect(page.getByTestId('identity')).toContainText('Hyur');
   await expect(
-    page.getByRole('button', { name: 'Resolve equipment', exact: true }),
+    page.getByRole('button', {
+      name: 'Resolve equipment and dye names',
+      exact: true,
+    }),
   ).toBeEnabled();
   let release: (() => void) | undefined;
   await page.route('**/assets/worker-*.js', async (route) => {
@@ -83,14 +86,14 @@ test('supports partial equipment-only files and retains stored dye IDs', async (
     '1: No dye (0)',
   );
   await expect(page.getByRole('row', { name: /Body/ })).toContainText(
-    '2: Goobbue Grey (3)',
+    '2: Name not looked up (3)',
   );
   await page.getByText('Stored values', { exact: true }).click();
   await page.getByText('Body — Object', { exact: true }).click();
   await expect(page.getByTestId('stored-values')).toContainText('DyeId2');
 });
 
-test('names both dye channels locally and preserves unknown, missing, null and invalid values', async ({
+test('retains both dye IDs locally and preserves missing, null and invalid values', async ({
   page,
 }) => {
   const external: string[] = [];
@@ -105,11 +108,11 @@ test('names both dye channels locally and preserves unknown, missing, null and i
     HeadGear: { ModelBase: 361, ModelVariant: 5, DyeId: '3', DyeId2: 0 },
   });
   const body = page.getByRole('row', { name: /Body/ });
-  await expect(body).toContainText('1: Dalamud Red (10)');
-  await expect(body).toContainText('2: Pure White (101)');
+  await expect(body).toContainText('1: Name not looked up (10)');
+  await expect(body).toContainText('2: Name not looked up (101)');
   const hands = page.getByRole('row', { name: /Hands/ });
-  await expect(hands).toContainText('1: Unknown dye (126)');
-  await expect(hands).toContainText('2: Unknown dye (65535)');
+  await expect(hands).toContainText('1: Name not looked up (126)');
+  await expect(hands).toContainText('2: Name not looked up (65535)');
   const feet = page.getByRole('row', { name: /Feet/ });
   await expect(feet).toContainText('1: null');
   await expect(feet).toContainText('2: Not stored');

@@ -38,14 +38,14 @@ The repository's documented provenance describes original reader/inspection code
 
 Choose GPLv3 instead if the maintainer wants distributed derivative/combined software to preserve GPL source-sharing obligations, or if GPL-covered implementation is incorporated and no separate permission is obtained. For a browser demo, shipping compiled JavaScript is distribution of code; public hosting should not be assumed to avoid the corresponding-source obligations of a GPL choice. GPLv3 is not the AGPL's network-use licensing model.
 
-This recommendation is about code. Neither MIT nor GPL grants Square Enix rights to generated palettes, dye names, artwork or other game-derived material. The existing data notices/release review remain separate. The approved player-character fixtures have recorded contributor redistribution permission, but a general fixture license still needs an explicit maintainer choice; permission does not relicense underlying third-party material.
+This recommendation is about code. Neither MIT nor GPL grants Square Enix rights to generated palettes, dye names, artwork or other game-derived material. Original synthetic fixture contributions follow the maintainer-selected project MIT license. The approved player-character fixtures retain recorded contributor redistribution permission; this does not relicense underlying third-party material. The [beta redistribution review](data-redistribution-review.md) records the exact shipped data and remaining bundled-data decision.
 
 ## Adoption and remaining release work
 
 - [x] Add the full MIT license and copyright attribution at the repository root; update package license metadata and current status documents.
 - [x] Include the full license and required project notices in the installed tarball and static demo; verify exact file contents and allowlists.
 - [x] State the scope of code licensing separately from fixture permissions and game-derived data notices.
-- [ ] Check relevant dependency notices for the distributed demo and retain any required attributions; zero library runtime dependencies does not mean zero bundled third-party demo/tooling code.
+- [x] Check the demo's Vite browser preload helpers and retain the Vite 8.3.4 core MIT notice in distributed notices. This is not a claim that all build-time dependencies ship in the demo.
 - [ ] Verify publishing configuration for the selected `xivcharakit` name, security reporting and Cloudflare deployment separately. Name selection does not publish or reserve an npm package.
 
 MIT adoption adds the root license, package metadata, the installed `dist/LICENSE`, complete license/notices files in the static demo, and visible Square Enix attribution/non-affiliation copy in the README and demo footer. The notice uses the official North America policy's `© SQUARE ENIX` wording, checked on 2026-10-20 against the [policy effective October 14, 2026](https://support.na.square-enix.com/rule.php?id=5382&policy=update&tag=authc). Neither attribution nor the MIT grant establishes permission for every game-derived dataset. No publication setting was changed.

@@ -10,14 +10,15 @@ Run `pnpm test:package` to build and validate `.superpowers/package-smoke/xivcha
 import { readChara, inspectChara } from 'xivcharakit';
 import { createDefaultPaletteProvider } from 'xivcharakit/palettes';
 import { resolveAppearance } from 'xivcharakit/appearance';
-import { getDyeName } from 'xivcharakit/dyes';
+import { createDyeNameResolver } from 'xivcharakit/dyes';
 import { createXivapiResolver } from 'xivcharakit/xivapi';
 
 const inspection = inspectChara(readChara('{"LEyeColor":0}'));
 const appearance = await resolveAppearance(inspection, {
   palettes: createDefaultPaletteProvider(),
 });
-const dye = getDyeName(3); // Goobbue Grey
+const dyes = createDyeNameResolver({ languages: ['en'] });
+// After an explicit lookup action: await dyes.resolve([3]);
 // Only call the resolver after an explicit host action, with validated model IDs.
 const resolver = createXivapiResolver();
 ```
@@ -29,7 +30,7 @@ See [API semantics](docs/api.md) and [candidate resolution](docs/xivapi.md) befo
 - Preserve each host's admission policy. The library's default is 8 MiB; adopting it must not silently replace XIV Dye Tools' existing 8 KiB host limit.
 - Keep session state, authentication, localization, themes, collections, community submission, acquisition/regional enrichment and caches in their current hosts. Do not create a dependency cycle through `@xivdyetools/core`.
 - Retain published core API compatibility until an explicit semver/migration decision. This package provides inspection, not editing or writing.
-- Pass only validated worn model identifiers and optional facewear IDs to lookup. Never forward the source document, nickname/author, file name, appearance or dyes.
+- Pass only validated worn model identifiers and optional facewear IDs to lookup. The separate dye-name resolver accepts validated Stain IDs after an explicit action. Never forward the source document, nickname/author, file name or unrelated appearance values.
 - Enforce worker/process isolation, concurrency limits, safe rendering and cancellation in the host. The synchronous library is not a hard CPU or memory sandbox.
 - Run fixture parity and affected web/bot integration checks, review intentional color/partial-document policy differences, and handle every candidate/failure status before replacing a consumer.
 

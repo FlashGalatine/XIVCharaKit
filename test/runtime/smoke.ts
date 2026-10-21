@@ -39,10 +39,9 @@ export async function smoke() {
     });
     check(interpreted.slots.leftEye.displayHex === '#F7F7F7', 'appearance');
     check(
-      dyes.getDyeName(3) === 'Goobbue Grey' && dyes.getDyeName(65535) === null,
-      'dye names',
+      (await dyes.createDyeNameResolver().resolve([])).status === 'complete',
+      'empty dye lookup',
     );
-    check(Object.isFrozen(dyes.DYE_METADATA), 'immutable metadata');
     const idleClient = xivapi.createXivapiClient();
     const idleResolver = xivapi.createXivapiResolver();
     check(
@@ -57,6 +56,33 @@ export async function smoke() {
     const version = '0123456789abcdef';
     const schema = `exdschema@2:rev:${'a'.repeat(40)}`;
     const requests: string[] = [];
+    let dyeRequests = 0;
+    const dyeResolver = dyes.createDyeNameResolver({
+      version,
+      schema,
+      languages: ['en'],
+      fetch: async (input, init) => {
+        const url = new URL(String(input));
+        check(
+          url.pathname === '/api/sheet/Stain' &&
+            url.searchParams.get('rows') === '3',
+          'Stain-only request',
+        );
+        check(init?.credentials === 'omit', 'dye credentials omitted');
+        dyeRequests++;
+        return new Response(
+          JSON.stringify({
+            version,
+            schema,
+            rows: [{ row_id: 3, fields: { 'Name@lang(en)': 'Synthetic dye' } }],
+          }),
+        );
+      },
+    });
+    const dyeResult = await dyeResolver.resolve([3]);
+    check(dyeResult.rows[0]?.names.en === 'Synthetic dye', 'mocked dye name');
+    await dyeResolver.resolve([3, 3]);
+    check(dyeRequests === 1, 'cached dye lookup');
     const resolver = xivapi.createXivapiResolver({
       version,
       cache: xivapi.createMemoryCache(),
@@ -109,7 +135,7 @@ export async function smoke() {
       identity: 'Hyur',
       model: '328041',
       eye: '#F7F7F7',
-      dye: 'Goobbue Grey',
+      dye: 'Synthetic dye',
       mockedRequests: requests.length,
       unexpectedNetwork,
     };

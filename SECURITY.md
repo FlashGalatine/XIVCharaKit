@@ -4,9 +4,17 @@ The unpublished npm candidate is version 0.1.0-beta.1. No stable release is supp
 
 ## Reporting
 
-As checked on 2026-10-20, this repository's GitHub private vulnerability reporting is disabled, and no confidential reporting address has been verified for this project. Establishing and documenting that route remains a release gate. Do not assume that a public issue or PR is confidential, or attach private character exports, credentials or exploit payloads there.
+Report suspected vulnerabilities through [GitHub private vulnerability reporting](https://github.com/FlashGalatine/XIVCharaKit/security/advisories/new). Sign in to GitHub, or open the repository's [security advisories page](https://github.com/FlashGalatine/XIVCharaKit/security/advisories) and select **Report a vulnerability**. This is the project's confidential reporting route; do not disclose vulnerabilities in public issues or pull requests.
 
-Maintainers must choose and verify a confidential reporting route before a public package release, then update this policy with that route, supported versions and response expectations. This development milestone does not enable account settings or invent a contact address.
+Private reporting was enabled and read back as enabled on 2026-10-20. The public advisories page was also checked for its reporting button. No test report was submitted. Confidentiality depends on GitHub's advisory access controls and the participants in the report.
+
+Include the affected commit or package version, runtime, impact and minimal reproduction steps. Prefer a small synthetic character document; remove real player metadata, embedded images, credentials and other unrelated private information. Do not send an entire private sample collection. Do not probe XIVAPI or another third-party service to demonstrate a library issue.
+
+## Versions and response expectations
+
+Reports are accepted for current `main` and the unpublished `0.1.0-beta.1` candidate. No stable npm release is supported yet. Include the exact revision because the prerelease code can change. Older development snapshots should first be checked against current `main`.
+
+This is a community-maintained project with best-effort triage; there is no guaranteed response or remediation deadline. Maintainers will use the private advisory discussion to assess impact, request reproduction details and coordinate a fix and disclosure. Maintainers should ensure their GitHub notification preferences include this repository's security alerts; enabling the repository setting does not configure personal notifications.
 
 ## Release boundaries
 

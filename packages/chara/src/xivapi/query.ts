@@ -52,6 +52,27 @@ export interface SlotLookup {
   slot: EquipmentSlot;
   key: string;
 }
+export interface StainLookup {
+  stains: readonly number[];
+}
+export type LookupSelection = readonly SlotLookup[] | number | StainLookup;
+export const isStainLookup = (
+  selection: LookupSelection,
+): selection is StainLookup =>
+  typeof selection === 'object' && 'stains' in selection;
+
+export function stainsFrom(ids: readonly number[]): number[] {
+  if (!Array.isArray(ids) || ids.length > 64)
+    throw new XivapiInputError('INVALID_LOOKUP');
+  const selected: number[] = [];
+  for (let index = 0; index < ids.length; index++) {
+    const id = ids[index];
+    if (typeof id !== 'number' || !Number.isInteger(id) || id < 0 || id > 65535)
+      throw new XivapiInputError('INVALID_LOOKUP');
+    selected.push(id);
+  }
+  return [...new Set(selected)].sort((a, b) => a - b);
+}
 export function lookupsFrom(models: readonly EquipmentModel[]): SlotLookup[] {
   if (!Array.isArray(models) || models.length > 24)
     throw new XivapiInputError('INVALID_LOOKUP');

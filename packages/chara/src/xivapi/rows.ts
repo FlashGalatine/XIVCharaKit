@@ -1,12 +1,13 @@
 import { isRecord } from '../field-spec.js';
 import type { EquipmentSlot } from '../types.js';
 import {
+  isStainLookup,
   LANGUAGES,
+  type LookupSelection,
   SLOT_COLUMNS,
-  type SlotLookup,
   WEAR_COLUMNS,
 } from './query.js';
-import type { GlassesRow, Language, PublicRow } from './types.js';
+import type { GlassesRow, Language, PublicRow, StainRow } from './types.js';
 
 const uint = (v: unknown, max = 0xffffffff): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 && v <= max;
@@ -73,16 +74,52 @@ export function normalizeRow(
     },
   };
 }
-export function associated(
-  row: PublicRow,
-  lookups: readonly SlotLookup[] | number,
-): boolean {
+export function associated(row: PublicRow, lookups: LookupSelection): boolean {
+  if (isStainLookup(lookups))
+    return (
+      lookups.stains.includes(row.rowId) &&
+      !('iconId' in row) &&
+      !('modelMain' in row)
+    );
   return typeof lookups === 'number'
-    ? row.rowId === lookups && !('modelMain' in row)
+    ? row.rowId === lookups && 'iconId' in row && !('modelMain' in row)
     : 'modelMain' in row &&
         lookups.some(
           (l) => row.modelMain === l.key && row.slots.includes(l.slot),
         );
+}
+
+export function normalizeStainRow(
+  raw: unknown,
+  languages: readonly Language[],
+): StainRow | null {
+  if (
+    !isRecord(raw) ||
+    !uint(raw.row_id, 65535) ||
+    !isRecord(raw.fields) ||
+    (raw.sheet !== undefined && raw.sheet !== 'Stain')
+  )
+    return null;
+  const names: StainRow['names'] = {};
+  for (const language of languages) {
+    const name = raw.fields[`Name@lang(${language})`];
+    if (typeof name !== 'string' || name.length > 1024) return null;
+    names[language] = name.trim();
+  }
+  return { rowId: raw.row_id, names };
+}
+
+export function cachedStainRow(
+  raw: unknown,
+  languages: readonly Language[],
+): StainRow | null {
+  if (!isRecord(raw) || !isRecord(raw.names)) return null;
+  const names = raw.names;
+  const fields = Object.fromEntries(
+    languages.map((language) => [`Name@lang(${language})`, names[language]]),
+  );
+  const row = normalizeStainRow({ row_id: raw.rowId, fields }, languages);
+  return row && sameData(row, raw) ? row : null;
 }
 
 /** Reconstruct the exact public shape when validating normalized cache rows. */

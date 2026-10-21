@@ -8,12 +8,21 @@ import {
   canonicalSchema,
   canonicalVersion,
   fieldsFor,
+  isStainLookup,
   LANGUAGES,
+  type LookupSelection,
   lookupsFrom,
   type SlotLookup,
+  stainsFrom,
   XivapiInputError,
 } from './query.js';
-import { associated, cachedRow, normalizeRow } from './rows.js';
+import {
+  associated,
+  cachedRow,
+  cachedStainRow,
+  normalizeRow,
+  normalizeStainRow,
+} from './rows.js';
 import type {
   CachedRows,
   GlassesRow,
@@ -21,6 +30,7 @@ import type {
   Language,
   LookupResult,
   PublicRow,
+  StainRow,
   XivapiClient,
   XivapiOptions,
 } from './types.js';
@@ -321,7 +331,7 @@ export function createTransport(options: XivapiOptions = {}): Transport {
   }
 
   async function lookup(
-    selection: readonly SlotLookup[] | number,
+    selection: LookupSelection,
     budget: Budget,
   ): Promise<LookupResult> {
     const { signal } = budget;
@@ -330,8 +340,11 @@ export function createTransport(options: XivapiOptions = {}): Transport {
     let upstreamVersion: string | null = null;
     let upstreamSchema: string | null = null;
     let complete = true;
-    const items = typeof selection !== 'number';
-    const fields = fieldsFor(languages, items);
+    const stains = isStainLookup(selection);
+    const items = typeof selection !== 'number' && !stains;
+    const fields = stains
+      ? languages.map((language) => `Name@lang(${language})`).join(',')
+      : fieldsFor(languages, items);
     const keyFor = (v: string, s: string) =>
       JSON.stringify([1, base.href, v, s, fields, selection]);
     try {
@@ -363,7 +376,9 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           ) {
             const normalized: PublicRow[] = [];
             for (const raw of data.rows) {
-              const row = cachedRow(raw, languages, items);
+              const row = stains
+                ? cachedStainRow(raw, languages)
+                : cachedRow(raw, languages, items);
               if (!row || !associated(row, selection)) break;
               normalized.push(row);
             }
@@ -389,7 +404,10 @@ export function createTransport(options: XivapiOptions = {}): Transport {
       let cursor: string | undefined;
       const cursors = new Set<string>();
       for (let page = 0; page < maxPages; page++) {
-        const url = new URL(items ? 'search' : 'sheet/Glasses', base);
+        const url = new URL(
+          stains ? 'sheet/Stain' : items ? 'search' : 'sheet/Glasses',
+          base,
+        );
         url.search = new URLSearchParams({
           fields,
           version: pin ?? version,
@@ -401,9 +419,16 @@ export function createTransport(options: XivapiOptions = {}): Transport {
                 limit: '500',
                 ...(cursor
                   ? { cursor }
-                  : { sheets: 'Item', query: buildQuery(selection) }),
+                  : {
+                      sheets: 'Item',
+                      query: buildQuery(selection as readonly SlotLookup[]),
+                    }),
               }
-            : { rows: String(selection) }),
+            : {
+                rows: isStainLookup(selection)
+                  ? selection.stains.join(',')
+                  : String(selection),
+              }),
         }).toString();
         const response = await request(url, budget);
         const data = response.data;
@@ -425,7 +450,9 @@ export function createTransport(options: XivapiOptions = {}): Transport {
         budget.rows += results.length;
         if (budget.rows > 5000) throw new Failure('ROW_LIMIT');
         for (const raw of results) {
-          const row = normalizeRow(raw, languages, items);
+          const row = stains
+            ? normalizeStainRow(raw, languages)
+            : normalizeRow(raw, languages, items);
           if (!row || !associated(row, selection)) {
             complete = false;
             diagnostics.add('INVALID_ROW', [], 'An upstream row was rejected.');
@@ -441,6 +468,8 @@ export function createTransport(options: XivapiOptions = {}): Transport {
             );
           } else rows.set(row.rowId, row);
         }
+        if (stains && data.next !== null && data.next !== undefined)
+          throw new Failure('UNEXPECTED_PAGINATION');
         if (!items || data.next === null || data.next === undefined) break;
         if (
           typeof data.next !== 'string' ||
@@ -495,7 +524,13 @@ export function createTransport(options: XivapiOptions = {}): Transport {
     } catch (error) {
       complete = false;
       const code = error instanceof Failure ? error.code : 'NETWORK_ERROR';
-      diagnostics.add(code, [], 'Equipment lookup could not complete.');
+      diagnostics.add(
+        code,
+        [],
+        stains
+          ? 'Dye-name lookup could not complete.'
+          : 'Equipment lookup could not complete.',
+      );
       if (code === 'CANCELLED')
         return {
           ...failureResult(code, true),
@@ -602,6 +637,37 @@ export function createTransport(options: XivapiOptions = {}): Transport {
     });
   }
   return {
+    async getStains(ids, requestOptions = {}) {
+      const stains = stainsFrom(ids);
+      if (!stains.length)
+        return {
+          status: 'complete',
+          rows: [],
+          version: null,
+          schema: null,
+          issues: [],
+        };
+      const failure = (
+        code: string,
+        cancelled = false,
+      ): LookupResult<StainRow> => ({
+        ...failureResult(code, cancelled),
+        issues: [
+          {
+            code,
+            severity: 'warning',
+            path: [],
+            message: 'Dye-name lookup could not complete.',
+          },
+        ],
+      });
+      return (await subscribe(
+        JSON.stringify(['stains', stains]),
+        (signal) => lookup({ stains }, newBudget(signal)),
+        failure,
+        requestOptions.signal,
+      )) as LookupResult<StainRow>;
+    },
     async searchItems(models, requestOptions = {}) {
       const selection = lookupsFrom(models);
       if (!selection.length)
@@ -669,6 +735,6 @@ export function createTransport(options: XivapiOptions = {}): Transport {
 }
 
 export function createXivapiClient(options: XivapiOptions = {}): XivapiClient {
-  const { searchItems, getGlasses } = createTransport(options);
-  return { searchItems, getGlasses };
+  const { searchItems, getGlasses, getStains } = createTransport(options);
+  return { searchItems, getGlasses, getStains };
 }

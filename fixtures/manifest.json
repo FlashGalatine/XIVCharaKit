@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "reviewed": "2026-10-19",
-  "releaseLicense": "Pending maintainer decision",
+  "releaseLicense": "MIT for original synthetic fixture contributions; producer exports retain recorded maintainer redistribution permission; third-party game-derived rights remain separate",
   "equipmentRows": {
     "path": "expected/equipment-rows.json",
     "kind": "synthetic",

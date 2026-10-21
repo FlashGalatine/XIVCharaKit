@@ -8,7 +8,7 @@ The full MVP includes:
 
 - Typed inspection of character appearance, equipment, dye channels, and facewear.
 - Appearance swatches backed by versioned creator and shader palettes.
-- Local English dye names alongside both stored dye IDs, using a pinned Stain dataset.
+- Optional cached XIVAPI dye names alongside both stored dye IDs, without a bundled name dataset.
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and anonymized examples.
 
@@ -30,7 +30,6 @@ pnpm type-check
 pnpm lint
 pnpm verify-fixtures
 pnpm verify-palettes
-pnpm verify-dyes
 pnpm test:package
 ```
 
@@ -62,15 +61,17 @@ const hair = appearance.slots.hair;
 
 These imports are available to a local consumer of the packed package; there is no public npm installation yet. Reading, inspection, bundled palette lookup, and appearance interpretation perform no network or storage operations. Main-entry imports exclude optional code/data; palette tables load only when requested. Embedded image fields are omitted; all remaining stored values are untrusted data.
 
-Dye names are also available without network requests:
+Dye names use an explicit optional lookup, separate from local inspection:
 
 ```ts
-import { getDyeName, DYE_METADATA } from 'xivcharakit/dyes';
-getDyeName(3); // "Goobbue Grey"; unknown/blank IDs return null
-// DYE_METADATA records the separate, pinned English Stain source revision.
+import { createDyeNameResolver } from 'xivcharakit/dyes';
+const dyes = createDyeNameResolver({ languages: ['en'] });
+const names = await dyes.resolve([3, 10]);
+// names.rows: { rowId, names }; status/version/schema/issues retain evidence.
+// Reuse the resolver for its bounded default memory cache.
 ```
 
-The demo shows `No dye (0)` for a valid zero, names with IDs for known stains, and explicit unknown/missing/invalid states. It preserves the original stored fields. The name snapshot is separate from the game 7.57 appearance palettes; see [dye provenance](docs/data-provenance.md#english-dye-name-snapshot).
+The demo shows `No dye (0)` for valid zero and raw IDs before lookup. **Resolve equipment and dye names** requests names; blank, missing and unavailable results remain distinct. Original stored fields are preserved. No name snapshot is bundled; see [dye provenance](docs/data-provenance.md#dye-names-through-xivapi). The synchronous `getDyeName` and `DYE_METADATA` exports were removed before publication.
 
 Equipment lookup is an explicit optional action:
 
@@ -85,7 +86,7 @@ const result = await resolver.resolve({
 // and ambiguity; result.facewear and upstream evidence are separate.
 ```
 
-Only equipment identifiers are sent. Matching candidates do not establish which inventory item was saved. See [equipment resolution](docs/xivapi.md#equipment-candidate-resolution) for off-hand matching, incomplete results, privacy, and resource limits. A recorded synthetic browser lookup verified direct CORS from localhost on 2026-10-19; a future public host still needs its own acceptance check.
+This equipment resolver sends only equipment identifiers; the separate dye-name resolver accepts Stain IDs. Matching candidates do not establish which inventory item was saved. See [equipment resolution](docs/xivapi.md#equipment-candidate-resolution) for off-hand matching, incomplete results, privacy, and resource limits. A recorded synthetic browser lookup verified direct CORS from localhost on 2026-10-19; a future public host still needs its own acceptance check.
 
 The local sample checker accepts `--appearance` to include aggregate swatch results. It never copies samples or records per-character values. Regeneration from the maintainer-supplied `human.cmp` exactly matches all four committed palette tables; source hashes and the maintainer-confirmed game version 7.57 are recorded.
 

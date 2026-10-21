@@ -1,4 +1,5 @@
 import type { EquipmentModel } from 'xivcharakit';
+import type { DyeNameResolver } from 'xivcharakit/dyes';
 import { loadIcons } from './icons.js';
 import type { DemoState, WorkerReply } from './types.js';
 
@@ -10,6 +11,7 @@ export class DemoSession {
     appearance: null,
     appearanceStatus: 'idle',
     resolution: null,
+    dyeNames: null,
     error: null,
     localStatus: 'Choose a file or try a synthetic example.',
     reading: false,
@@ -23,6 +25,7 @@ export class DemoSession {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private controller: AbortController | null = null;
   private exampleController: AbortController | null = null;
+  private dyeResolver: DyeNameResolver | undefined;
   constructor(private readonly changed: (kind?: 'icons') => void) {}
   private stopWorker(): void {
     this.worker?.terminate();
@@ -43,6 +46,7 @@ export class DemoSession {
     this.stopLookup();
     this.exampleController?.abort();
     this.state.resolution = null;
+    this.state.dyeNames = null;
     this.state.lookupMessage = '';
     this.state.error = null;
     return this.generation;
@@ -60,6 +64,7 @@ export class DemoSession {
   cancelLookup(): void {
     this.stopLookup();
     this.state.resolution = null;
+    this.state.dyeNames = null;
     this.state.lookupMessage = 'Lookup cancelled.';
     this.changed();
   }
@@ -166,12 +171,27 @@ export class DemoSession {
     const control = new AbortController();
     this.controller = control;
     this.state.lookingUp = true;
-    this.state.lookupMessage = 'Looking up equipment IDs…';
+    this.state.lookupMessage = 'Looking up equipment and dye IDs…';
     this.state.resolution = null;
+    this.state.dyeNames = null;
     this.changed();
     try {
       const { createXivapiResolver } = await import('xivcharakit/xivapi');
+      const { createDyeNameResolver } = await import('xivcharakit/dyes');
       if (!current()) return;
+      this.dyeResolver ??= createDyeNameResolver({ languages: ['en'] });
+      const dyeIds = Object.values(inspection.equipment).flatMap((equipment) =>
+        [equipment.dye1, equipment.dye2].flatMap((dye) =>
+          dye.state === 'valid' && dye.value > 0 ? [dye.value] : [],
+        ),
+      );
+      // Sequential components preserve the demo's existing request concurrency bound.
+      const dyeNames = await this.dyeResolver.resolve(dyeIds, {
+        signal: control.signal,
+      });
+      if (!current()) return;
+      this.state.dyeNames = dyeNames;
+      this.changed();
       const models: EquipmentModel[] = Object.values(inspection.equipment)
         .filter((e) => e.status === 'worn')
         .flatMap((e) => (e.model ? [{ ...e.model }] : []));
@@ -187,7 +207,10 @@ export class DemoSession {
       this.state.resolution = result;
       this.state.lookingUp = false;
       this.state.lookupMessage =
-        'Lookup finished. Candidate matches do not establish the original item.';
+        (this.state.dyeNames.status === 'complete'
+          ? 'Lookup finished. '
+          : 'Lookup finished. Some dye names are unavailable. ') +
+        'Candidate matches do not establish the original item.';
       this.changed();
       await loadIcons(result, control.signal, (key, url) => {
         if (!current()) {

@@ -13,7 +13,7 @@ const expected = {
   identity: 'Hyur',
   model: '328041',
   eye: '#F7F7F7',
-  dye: 'Goobbue Grey',
+  dye: 'Synthetic dye',
   mockedRequests: 2,
   unexpectedNetwork: 0,
 };
