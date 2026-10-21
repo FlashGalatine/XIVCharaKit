@@ -12,7 +12,7 @@ The full MVP includes:
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and anonymized examples.
 
-The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. The first npm beta is published; the demo has not been deployed.
+The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. The first npm beta is published; the demo has not been deployed. The next candidate, `0.1.0-beta.2`, prepares the first GitHub Actions publication with the same library API and behavior as beta.1. It requires review, merge, a fresh dry run and protected release approval before publication.
 
 ## License and attribution
 
