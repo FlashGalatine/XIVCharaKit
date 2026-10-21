@@ -1,6 +1,6 @@
 # Security policy
 
-The unpublished npm candidate is version 0.1.0-beta.1. No stable release is supported yet. The [threat model](docs/security/THREAT_MODEL.md) and [validation evidence](docs/implementation-progress.md) describe implemented controls, tested environments and remaining limits; they are not a security certification.
+The published npm beta is version 0.1.0-beta.1. No stable release is supported yet. The [threat model](docs/security/THREAT_MODEL.md) and [validation evidence](docs/implementation-progress.md) describe implemented controls, tested environments and remaining limits; they are not a security certification.
 
 ## Reporting
 
@@ -12,7 +12,7 @@ Include the affected commit or package version, runtime, impact and minimal repr
 
 ## Versions and response expectations
 
-Reports are accepted for current `main` and the unpublished `0.1.0-beta.1` candidate. No stable npm release is supported yet. Include the exact revision because the prerelease code can change. Older development snapshots should first be checked against current `main`.
+Reports are accepted for current `main` and the published `0.1.0-beta.1` package. No stable npm release is supported yet. Include the exact package version or main revision; published package versions are immutable, while development code can change. Older development snapshots should first be checked against current `main`.
 
 This is a community-maintained project with best-effort triage; there is no guaranteed response or remediation deadline. Maintainers will use the private advisory discussion to assess impact, request reproduction details and coordinate a fix and disclosure. Maintainers should ensure their GitHub notification preferences include this repository's security alerts; enabling the repository setting does not configure personal notifications.
 
