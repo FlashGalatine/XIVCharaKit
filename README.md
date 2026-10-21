@@ -2,7 +2,7 @@
 
 A TypeScript library in development for reading and inspecting Final Fantasy XIV `.chara` files used by Anamnesis, Ktisis, and Brio.
 
-**Status: library MVP and local demo implemented; npm candidate prepared.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. The unpublished candidate is `xivcharakit@0.1.0-beta.1` for the `next` tag. Release/data-rights checks remain pending; see the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
+**Status: library MVP and local demo implemented; npm candidate prepared.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. The unpublished candidate is `xivcharakit@0.1.0-beta.1` for the `next` tag. The maintainer elected to retain bundled appearance palettes with separate notices and provenance. GitHub release protections are configured; first publication and npm trusted-publisher setup remain pending. See the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
 
 The full MVP includes:
 
