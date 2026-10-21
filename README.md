@@ -2,7 +2,7 @@
 
 A TypeScript library in development for reading and inspecting Final Fantasy XIV `.chara` files used by Anamnesis, Ktisis, and Brio.
 
-**Status: library MVP and local demo implemented; npm candidate prepared.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. The unpublished candidate is `xivcharakit@0.1.0-beta.1` for the `next` tag. The maintainer elected to retain bundled appearance palettes with separate notices and provenance. GitHub release protections are configured; first publication and npm trusted-publisher setup remain pending. See the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
+**Status: library MVP and local demo implemented; first npm beta published.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. `xivcharakit@0.1.0-beta.1` is published, with `next` and `latest` currently pointing to it. The maintainer elected to retain bundled appearance palettes with separate notices and provenance. GitHub release protections and npm trusted publishing are configured; future releases remain manual and require approval. See the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
 
 The full MVP includes:
 
@@ -12,7 +12,7 @@ The full MVP includes:
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and anonymized examples.
 
-The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. No package has been published and no demo has been deployed.
+The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. The first npm beta is published; the demo has not been deployed.
 
 ## License and attribution
 
@@ -59,7 +59,7 @@ const hair = appearance.slots.hair;
 // creatorHex, shaderHex, extendedHex, interpretation, displayHex, and issues
 ```
 
-These imports are available to a local consumer of the packed package; there is no public npm installation yet. Reading, inspection, bundled palette lookup, and appearance interpretation perform no network or storage operations. Main-entry imports exclude optional code/data; palette tables load only when requested. Embedded image fields are omitted; all remaining stored values are untrusted data.
+Install the public beta with `npm install xivcharakit@next`, or use the checked tarball in a local consumer. Reading, inspection, bundled palette lookup, and appearance interpretation perform no network or storage operations. Main-entry imports exclude optional code/data; palette tables load only when requested. Embedded image fields are omitted; all remaining stored values are untrusted data.
 
 Dye names use an explicit optional lookup, separate from local inspection:
 
