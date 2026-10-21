@@ -38,7 +38,7 @@ The repository's documented provenance describes original reader/inspection code
 
 Choose GPLv3 instead if the maintainer wants distributed derivative/combined software to preserve GPL source-sharing obligations, or if GPL-covered implementation is incorporated and no separate permission is obtained. For a browser demo, shipping compiled JavaScript is distribution of code; public hosting should not be assumed to avoid the corresponding-source obligations of a GPL choice. GPLv3 is not the AGPL's network-use licensing model.
 
-This recommendation is about code. Neither MIT nor GPL grants Square Enix rights to generated palettes, dye names, artwork or other game-derived material. Original synthetic fixture contributions follow the maintainer-selected project MIT license. The approved player-character fixtures retain recorded contributor redistribution permission; this does not relicense underlying third-party material. The [beta redistribution review](data-redistribution-review.md) records the exact shipped data and remaining bundled-data decision.
+This recommendation is about code. Neither MIT nor GPL grants Square Enix rights to generated palettes, dye names, artwork or other game-derived material. Original synthetic fixture contributions follow the maintainer-selected project MIT license. The approved player-character fixtures retain recorded contributor redistribution permission; this does not relicense underlying third-party material. The [beta redistribution review](data-redistribution-review.md) records the exact shipped data and the maintainer's 2026-10-21 decision to retain bundled appearance palettes with separate notices and provenance.
 
 ## Adoption and remaining release work
 

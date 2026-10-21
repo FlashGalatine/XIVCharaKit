@@ -45,4 +45,13 @@ These are aggregate compatibility observations, not independently reviewed expec
 - Real producer-generated fixtures with explicit redistribution rights and independently reviewed complete expectations. See the [fixture validation checklist](producer-fixture-validation.md) for supported export modes and review requirements; purely equipment-only producer exports are not required.
 - Broader independent visual/producer swatch expectations; real-source regeneration now matches the baseline exactly. See [appearance validation](security/appearance-validation.md) for implemented Tasks 3–4 and corpus observations.
 - Additional browser engines/runtime versions beyond the [installed-package and demo matrix](security/distribution-validation.md). Chromium, module Web Worker, Node/Node Worker and local workerd now pass the pinned smoke cases; this does not establish exhaustive platform/version compatibility.
-- Appearance-data rights and npm publishing configuration before release; original code and original synthetic fixtures follow MIT, approved producer exports retain recorded permission, and the dye-name snapshot has been replaced by optional API lookup.
+- npm publishing configuration before release; the maintainer elected to ship the bundled appearance palettes on 2026-10-21, as recorded in the [data review](data-redistribution-review.md#recorded-release-decision). Original code and original synthetic fixtures follow MIT, approved producer exports retain recorded permission, and dye names use optional API lookup. Separate game-derived rights notices remain applicable.
+
+## Evercold color-picker follow-up
+
+On 2026-10-21 the maintainer identified free color pickers for eyes, hair and skin as an anticipated Evercold change in 2027. This is a maintainer-supplied planning requirement, not verified support for a released game or producer format. It does not block the current beta or remove palette support for existing exports.
+
+- Retain indexed appearance palettes for legacy documents and any future exports that still store palette indices.
+- Review actual Anamnesis, Ktisis and Brio exports when available. Establish new field names, color encoding/ranges, presence and activation rules, and precedence when both indices and direct colors exist; do not assume the current extended-color fields are the new format.
+- Add permissioned producer fixtures for eye, hair and skin free colors, including mixed legacy/new fields, and verify swatches against producer controls before claiming support.
+- Keep stored values distinguishable from interpretation. Existing extended-color handling is useful infrastructure, but unknown future values must not be forced onto the nearest palette entry or given invented semantics.

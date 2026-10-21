@@ -4,6 +4,8 @@ Reviewed on 2026-10-20 for `xivcharakit@0.1.0-beta.1`. The release candidate fro
 
 This review adds Vite browser-helper attribution to canonical notices. Those changed legal bytes must be rebuilt and checked in a fresh candidate after the final source is reviewed and merged; the older dry-run tarball is not the final artifact for publication.
 
+**Disposition update — 2026-10-21:** the maintainer elected to ship the four bundled appearance-palette tables with the existing provenance and separate Square Enix notices. The raw `human.cmp` remains excluded. This closes the maintainer's retain/remove decision; it does not change the rights observations below or claim a new third-party license. The subsequent [fresh dry run](https://github.com/FlashGalatine/XIVCharaKit/actions/runs/39541256961) passed for merged source `90abb4721b35b3c8d564e8c1a6855fd8c9de0e8a`; its 42-file candidate and manifest matched the independent prepare-log SHA-512, and publication was skipped.
+
 ## Inventory and disposition
 
 | Material | Distributed where | Source and recorded rights | Review result |
@@ -25,12 +27,12 @@ The raw `human.cmp`, full Stain CSV, private sample corpus, game images/audio, p
 - Square Enix's North America [Materials Usage Policy](https://support.na.square-enix.com/rule.php?id=5382&policy=update&tag=authc), effective October 14, 2026, addresses specified official-site materials, in-game text/screenshots/videos and music. Its permission is conditional, revocable and generally noncommercial, with stated exceptions. It requires attribution and compliance with related agreements. It does not expressly name extracted palette tables or grant them a permissive software/data license. Whether a particular use falls within those terms is not established by this review; other account regions have their own policies.
 - The installed Vite 8.3.4 core license is MIT, copyright VoidZero Inc. and Vite contributors. The built demo contains module-preload and dynamic-import preload support identifiable in Vite's installed source and demo bundle. The notice addition covers that browser helper code; it does not assert that all Vite build-time dependencies are shipped to users.
 
-## Remaining release decision
+## Recorded release decision
 
 MIT is the selected license for original code and original synthetic fixtures. Square Enix attribution, hashes, public availability and contributor character permission do not create a new third-party data license. Conversely, the reviewed sources do not establish that each numeric color or brief name requires copyright permission. No broader legal conclusion is made here.
 
 The maintainer subsequently requested investigating external dye-name lookup before bundling names. The [XIVAPI feasibility check](xivapi-dye-feasibility.md) confirms small Stain requests can resolve localized names, including batched IDs. At the maintainer's subsequent implementation request, optional cached remote name resolution replaced the snapshot, preserving local parsing and stored IDs. The old synchronous name/metadata exports and CSV generation/verification scripts were removed before publication.
 
-Character appearance palettes are a separate dataset: the generated creator/shader color lookup tables from `human.cmp`, not the equipment dye-name snapshot. Their release disposition remains open independently of the implemented dye-name change. Character palette values/exports remain unchanged; no rights holder was contacted.
+Character appearance palettes are a separate dataset: the generated creator/shader color lookup tables from `human.cmp`, not the equipment dye-name snapshot. On 2026-10-21 the maintainer chose to retain them in the npm library and demo. Character palette values/exports and existing legal notices remain unchanged; no rights holder was contacted. The [Evercold compatibility follow-up](compatibility.md#evercold-color-picker-follow-up) preserves legacy palette support while tracking anticipated free-color exports.
 
-Confidential security reporting is now configured separately through [GitHub's private reporting route](https://github.com/FlashGalatine/XIVCharaKit/security/advisories/new). Release protection, npm bootstrap/trust and production hosting remain separate setup; no npm publication was performed.
+Confidential security reporting is configured separately through [GitHub's private reporting route](https://github.com/FlashGalatine/XIVCharaKit/security/advisories/new). GitHub branch/environment protections were configured and verified on 2026-10-21 in the [runbook](npm-publication-readiness.md#github-protections-configured-2026-10-21). npm bootstrap/trust and production hosting remain separate setup; no npm publication was performed.
