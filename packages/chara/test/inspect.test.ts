@@ -61,6 +61,48 @@ describe('field evidence and identity', () => {
     if ('Race' in fields) expect(result.identity.race.raw).toBe(fields.Race);
   });
 
+  it.each(['Helion', 'Helions', 13])(
+    'normalizes the Helions tribe from %j without rewriting stored evidence',
+    (tribe) => {
+      const result = inspect({ Tribe: tribe });
+      expect(result.identity.tribe).toEqual({
+        state: 'valid',
+        raw: tribe,
+        value: 'Helions',
+      });
+      expect(result.identity.canonicalRace).toBe('Hrothgar');
+      expect(result.identity.raceSource).toBe('tribe');
+      expect(result.document.fields.Tribe).toBe(tribe);
+      expect(result.issues).toEqual([]);
+    },
+  );
+
+  it.each([
+    [14, 'TheLost', 'Hrothgar'],
+    [15, 'Rava', 'Viera'],
+    [16, 'Veena', 'Viera'],
+  ])('retains numeric tribe %s as %s', (id, tribe, race) => {
+    const result = inspect({ Tribe: id });
+    expect(result.identity.tribe).toEqual({
+      state: 'valid',
+      raw: id,
+      value: tribe,
+    });
+    expect(result.identity.canonicalRace).toBe(race);
+  });
+
+  it.each(['helion', 'HELION', 'Helion '])(
+    'keeps undocumented tribe spelling %j unsupported',
+    (tribe) => {
+      const result = inspect({ Tribe: tribe });
+      expect(result.identity.tribe).toEqual({
+        state: 'unsupported',
+        raw: tribe,
+      });
+      expect(result.identity.canonicalRace).toBeNull();
+    },
+  );
+
   it('retains producer text without using it to select a parser', () => {
     const result = inspect({
       TypeName: '<script>hostile()</script>',

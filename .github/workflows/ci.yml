@@ -46,6 +46,8 @@ jobs:
       - run: pnpm verify-fixtures
       - run: pnpm verify-palettes
       - run: pnpm test
+      - name: Verify demo serving with Cloudflare security headers
+        run: pnpm test:demo:cloudflare
       - run: pnpm audit
       - name: Build, pack and verify the final upload artifacts and runtimes
         run: pnpm test:package

@@ -66,7 +66,7 @@ try {
         await checkDemo(new URL(`${entry.name}/`, directory), `${path}/`);
       else {
         assert(
-          /^(?:index\.html|LICENSE\.txt|THIRD_PARTY_NOTICES\.txt|assets\/[a-zA-Z0-9_-]+\.(?:js|css)|examples\/(?:anamnesis|ktisis|brio)\.chara|examples\/manifest\.json)$/.test(
+          /^(?:index\.html|_headers|LICENSE\.txt|THIRD_PARTY_NOTICES\.txt|assets\/[a-zA-Z0-9_-]+\.(?:js|css)|examples\/(?:anamnesis|ktisis|brio)\.chara|examples\/manifest\.json)$/.test(
             path,
           ),
           'Unexpected demo artifact.',

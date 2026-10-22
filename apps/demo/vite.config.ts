@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 
 const headers = {
+  'Cache-Control': 'public, max-age=0, must-revalidate, no-transform',
   'Content-Security-Policy':
     "default-src 'none'; script-src 'self'; style-src 'self'; worker-src 'self'; connect-src 'self' https://v2.xivapi.com; img-src 'self' blob:; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'",
   'Referrer-Policy': 'no-referrer',
@@ -15,7 +16,7 @@ const legalFiles = [
 export default defineConfig({
   plugins: [
     {
-      name: 'project-legal-notices',
+      name: 'demo-public-artifacts',
       configureServer(server) {
         server.middlewares.use((request, response, next) => {
           const file = legalFiles.find(
@@ -32,6 +33,17 @@ export default defineConfig({
         });
       },
       generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: '_headers',
+          source: [
+            '/*',
+            ...Object.entries(headers).map(
+              ([name, value]) => `  ${name}: ${value}`,
+            ),
+            '',
+          ].join('\n'),
+        });
         for (const [source, target] of legalFiles)
           this.emitFile({
             type: 'asset',

@@ -3,5 +3,6 @@ dist/
 coverage/
 .superpowers/
 .pnpm-store/
+.wrangler/
 *.tgz
 *.cmp

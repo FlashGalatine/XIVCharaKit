@@ -2,7 +2,7 @@
 
 A TypeScript library in development for reading and inspecting Final Fantasy XIV `.chara` files used by Anamnesis, Ktisis, and Brio.
 
-**Status: library MVP and local demo implemented; first npm beta published.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. `xivcharakit@0.1.0-beta.1` is published, with `next` and `latest` currently pointing to it. The maintainer elected to retain bundled appearance palettes with separate notices and provenance. GitHub release protections and npm trusted publishing are configured; future releases remain manual and require approval. See the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
+**Status: npm beta.2 published; beta.3 prepared for review.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. `xivcharakit@0.1.0-beta.2` was published through GitHub Actions with verified trusted-publisher provenance. The beta.3 candidate adds legacy `Helion` tribe normalization; preparing or merging its PR does not publish it. The maintainer elected to retain bundled appearance palettes with separate notices and provenance. GitHub release protections and npm trusted publishing are configured; releases remain manual and require approval. See the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
 
 The full MVP includes:
 
@@ -12,7 +12,7 @@ The full MVP includes:
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and anonymized examples.
 
-The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. The first npm beta is published; the demo has not been deployed. The next candidate, `0.1.0-beta.2`, prepares the first GitHub Actions publication with the same library API and behavior as beta.1. It requires review, merge, a fresh dry run and protected release approval before publication.
+The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. Try the [live demo](https://charakit.projectgalatine.com), hosted with Workers Static Assets; see [Cloudflare hosting and deployment](docs/cloudflare-hosting.md). Beta.2 retains the same library API and behavior as beta.1.
 
 ## License and attribution
 
@@ -86,7 +86,7 @@ const result = await resolver.resolve({
 // and ambiguity; result.facewear and upstream evidence are separate.
 ```
 
-This equipment resolver sends only equipment identifiers; the separate dye-name resolver accepts Stain IDs. Matching candidates do not establish which inventory item was saved. See [equipment resolution](docs/xivapi.md#equipment-candidate-resolution) for off-hand matching, incomplete results, privacy, and resource limits. A recorded synthetic browser lookup verified direct CORS from localhost on 2026-10-19; a future public host still needs its own acceptance check.
+This equipment resolver sends only equipment identifiers; the separate dye-name resolver accepts Stain IDs. Matching candidates do not establish which inventory item was saved. See [equipment resolution](docs/xivapi.md#equipment-candidate-resolution) for off-hand matching, incomplete results, privacy, and resource limits. A synthetic browser lookup verified direct CORS from the public demo hostname on 2026-10-22.
 
 The local sample checker accepts `--appearance` to include aggregate swatch results. It never copies samples or records per-character values. Regeneration from the maintainer-supplied `human.cmp` exactly matches all four committed palette tables; source hashes and the maintainer-confirmed game version 7.57 are recorded.
 

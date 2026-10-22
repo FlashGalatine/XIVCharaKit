@@ -2,10 +2,18 @@
 
 ## Unreleased
 
-### 0.1.0-beta.2 candidate
+### 0.1.0-beta.3 candidate
 
-- Prepare the first GitHub Actions publication through the existing manual workflow, using `next` and protected environment approval. Publication remains a separate action.
-- Update release metadata, package documentation and dispatch instructions; distinguish the published beta.1 from the next candidate.
+- Normalize legacy tribe `Helion` to `Helions` while preserving stored evidence, Hrothgar race derivation and palette interpretation. Keep numeric tribe IDs unchanged. This fix is not included in published beta.2.
+- Refresh official Anamnesis, Ktisis and Brio release/export/serialization references and record their unchanged format contracts.
+- Configure manual demo deployment to `charakit.projectgalatine.com` with shared generated security headers, a `no-transform` response policy and Cloudflare hosting checks in CI.
+- Record the verified initial demo deployment and draft the separate XIV Dye Tools integration plan.
+- Prepare beta.3 metadata and manual publication instructions with the existing `next` tag and protected approval workflow. Publication remains a separate action.
+
+## 0.1.0-beta.2 — 2026-10-22
+
+- Publish through the existing manual GitHub Actions workflow, using `next`, protected environment approval and verified trusted-publisher provenance.
+- Update release metadata, package documentation and dispatch instructions.
 - No library API, runtime behavior, palette data or dependency changes from beta.1.
 
 ## 0.1.0-beta.1 — 2026-10-21

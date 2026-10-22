@@ -2,6 +2,8 @@
 
 The private `apps/demo` application consumes only the library's built public exports. It demonstrates local inspection and swatches, stored-value evidence, and a separate optional equipment lookup. It does not edit or write character files.
 
+Try the [public demo](https://charakit.projectgalatine.com). HTTPS, deployed security headers and an ordinary synthetic XIVAPI lookup were verified on 2026-10-22; see the [hosting record](cloudflare-hosting.md#deployment-verified-on-2026-10-22).
+
 ## Run and test
 
 Use the repository's pinned Node and pnpm versions:
@@ -12,7 +14,7 @@ pnpm --filter @xivcharakit/demo exec playwright install chromium
 pnpm dev
 ```
 
-For the production artifact, run `pnpm build`, then `pnpm preview` at `http://127.0.0.1:4173`. The preview supplies restrictive CSP, no-referrer, nosniff, and disabled camera/microphone/geolocation headers. Development HMR is not the header acceptance environment. A future static host must configure and verify these headers itself; the Vite preview configuration does not deploy them anywhere.
+For the production artifact, run `pnpm build`, then `pnpm preview` at `http://127.0.0.1:4173`. The preview supplies restrictive CSP, no-referrer, nosniff, and disabled camera/microphone/geolocation headers. The build also emits Cloudflare's `_headers` file from the same policy. Use `pnpm preview:cloudflare` at `http://127.0.0.1:4175` or `pnpm test:demo:cloudflare` to verify Cloudflare asset serving. Development HMR is not the header acceptance environment. See [Cloudflare deployment and hosted-origin acceptance](cloudflare-hosting.md) for `charakit.projectgalatine.com`.
 
 `pnpm test` runs the library suite and production-preview Chromium scenarios. All default API responses are mocked; the live case is deliberately skipped. Run only the demo tests with `pnpm --filter @xivcharakit/demo test`. Playwright owns port 4173 during its run; stop any separate preview on that port first. Reports are ignored local artifacts under `.superpowers`.
 
