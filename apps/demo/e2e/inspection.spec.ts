@@ -38,9 +38,9 @@ for (const [producer, race] of [
 ] as const)
   test(`locally inspects ${producer}`, async ({ page }) => {
     const external: string[] = [];
+    const origin = new URL(page.url()).origin;
     page.on('request', (r) => {
-      if (new URL(r.url()).origin !== 'http://127.0.0.1:4173')
-        external.push(r.url());
+      if (new URL(r.url()).origin !== origin) external.push(r.url());
     });
     await page.getByRole('button', { name: producer, exact: true }).click();
     await expect(page.getByTestId('identity')).toContainText(race ?? '');
@@ -97,9 +97,9 @@ test('retains both dye IDs locally and preserves missing, null and invalid value
   page,
 }) => {
   const external: string[] = [];
+  const origin = new URL(page.url()).origin;
   page.on('request', (request) => {
-    if (new URL(request.url()).origin !== 'http://127.0.0.1:4173')
-      external.push(request.url());
+    if (new URL(request.url()).origin !== origin) external.push(request.url());
   });
   await load(page, {
     Body: { ModelBase: 361, ModelVariant: 5, DyeId: 10, DyeId2: 101 },

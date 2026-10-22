@@ -10,6 +10,9 @@
   "scripts": {
     "dev": "pnpm --filter xivcharakit build && pnpm --filter @xivcharakit/demo dev",
     "preview": "pnpm --filter @xivcharakit/demo preview",
+    "preview:cloudflare": "pnpm --filter @xivcharakit/demo preview:cloudflare",
+    "test:demo:cloudflare": "pnpm --filter @xivcharakit/demo exec playwright test --config playwright.cloudflare.config.ts",
+    "deploy:demo": "pnpm test:demo:cloudflare && pnpm test:package && wrangler deploy --config apps/demo/wrangler.jsonc --autoconfig=false",
     "test": "pnpm run test:tooling && pnpm -r test",
     "test:tooling": "vitest run --config test/vitest.config.ts",
     "build": "pnpm -r build",

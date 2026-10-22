@@ -4,13 +4,23 @@ The reader foundation reads and inspects JSON `.chara` documents. Optional palet
 
 ## Reviewed format snapshots
 
-Sources were refreshed on 2026-10-19. These are format references, not producer binaries run by this project. Source hashes are recorded in [the fixture manifest](../fixtures/manifest.json); no upstream implementation is included. Four maintainer-supplied real default exports were subsequently added as test-only fixtures with permission; see [producer fixture validation](producer-fixture-validation.md).
+Sources were refreshed on **2026-10-22** through the official GitHub release APIs and release-tag/default-branch sources. These are format references, not producer binaries run by this project. Source hashes and release commits are recorded in [the fixture manifest](../fixtures/manifest.json); no upstream implementation is included. Four previously supplied real default exports remain test-only fixtures with permission; their exact application versions are unconfirmed. See [producer fixture validation](producer-fixture-validation.md).
 
-| Producer | Commit | Format source |
-| --- | --- | --- |
-| Anamnesis | `f97c9808185fd9af24d3dd9101e4e87466d65fc4` | [CharacterFile.cs](https://github.com/imchillin/Anamnesis/blob/f97c9808185fd9af24d3dd9101e4e87466d65fc4/Anamnesis/Files/CharacterFile.cs), [glasses converter](https://github.com/imchillin/Anamnesis/blob/f97c9808185fd9af24d3dd9101e4e87466d65fc4/Anamnesis/Serialization/Converters/GlassesSaveConverter.cs), [customization enums](https://github.com/imchillin/Anamnesis/blob/f97c9808185fd9af24d3dd9101e4e87466d65fc4/Anamnesis/Memory/ActorCustomizeMemory.cs) |
-| Ktisis | `551bb23f5726ecffd1426ee3b540caf34feab18a` | [CharaFile.cs](https://github.com/ktisis-tools/Ktisis/blob/551bb23f5726ecffd1426ee3b540caf34feab18a/Ktisis/Data/Files/CharaFile.cs) |
-| Brio | `5213bd81cf5bacee430548d4aff96500298dcc21` | [AnamnesisCharaFile.cs](https://github.com/Etheirys/Brio/blob/5213bd81cf5bacee430548d4aff96500298dcc21/Brio/Files/AnamnesisCharaFile.cs) |
+| Producer | Latest stable release | Default-branch source commit | Format source |
+| --- | --- | --- | --- |
+| Anamnesis | [v7.57.0.3](https://github.com/imchillin/Anamnesis/releases/tag/v7.57.0.3), release/source `3d635757758ea9bd4e6d6d515cd6724bfabaa299` | `3d635757758ea9bd4e6d6d515cd6724bfabaa299` | [CharacterFile.cs](https://github.com/imchillin/Anamnesis/blob/3d635757758ea9bd4e6d6d515cd6724bfabaa299/Anamnesis/Files/CharacterFile.cs), [glasses converter](https://github.com/imchillin/Anamnesis/blob/3d635757758ea9bd4e6d6d515cd6724bfabaa299/Anamnesis/Serialization/Converters/GlassesSaveConverter.cs), [customization enums](https://github.com/imchillin/Anamnesis/blob/3d635757758ea9bd4e6d6d515cd6724bfabaa299/Anamnesis/Memory/ActorCustomizeMemory.cs) |
+| Ktisis | [v0.4.1.2](https://github.com/ktisis-tools/Ktisis/releases/tag/v0.4.1.2), release `6f0fcf04fef28119d00645e253e6fbe3eb65d337` | `551bb23f5726ecffd1426ee3b540caf34feab18a` | [CharaFile.cs](https://github.com/ktisis-tools/Ktisis/blob/551bb23f5726ecffd1426ee3b540caf34feab18a/Ktisis/Data/Files/CharaFile.cs) |
+| Brio | [v0.8.0.12](https://github.com/Etheirys/Brio/releases/tag/v0.8.0.12), release `b510c82f60dd5cd0d85b64ef88e33878a6ef496a` | `3f6f8e174ea447916c3ea4b86fdbedf56689f9c1` | [AnamnesisCharaFile.cs](https://github.com/Etheirys/Brio/blob/3f6f8e174ea447916c3ea4b86fdbedf56689f9c1/Brio/Files/AnamnesisCharaFile.cs) |
+
+The listed export definitions are byte-identical to the previous 2026-10-19 references. Serializer settings and relevant vector/color converters were also compared with those previous commits: Anamnesis `SerializerService` and vector/color converters; Ktisis `JsonFile`, `JsonFileSerializer` and numeric converters; Brio `JsonSerializer`, `JsonDocumentBase` and actor enums. The reviewed release-tag and default-branch files match. Their field names/types, save modes, enum declarations, version markers and serialization behavior require no additional format revision adoption in this change. Ktisis still declares its own `CurrentVersion = 1`; this is not a shared revision number for all three producers.
+
+This is a source comparison, not new testing of these producer binaries or export modes. No newer prerelease appeared after the latest stable release in the recent official release listings checked. Existing real-export fixtures retain their recorded provenance; regression tests for the alias below use authored input. Additional binary or export behavior remains unverified.
+
+### Legacy `Helion` alias
+
+The beta.3 candidate accepts the exact tribe spelling `Helion` as an alias for canonical `Helions` (tribe ID 13), preserving `raw: "Helion"` and the original document. Canonical race becomes Hrothgar, so existing skin/hair palettes and fur-pattern interpretation work through the normalized tribe. Canonical `Helions`, numeric tribe IDs and case-sensitive unknown-value handling are unchanged.
+
+This alias preserves a legacy spelling already supported by XIV Dye Tools; it does not claim that the latest producers export it or introduce a new `.chara` revision. Published `0.1.0-beta.2` does not contain the fix. Publish and verify beta.3 before adopting that exact version in XIV Dye Tools.
 
 ## Field and presence matrix
 
@@ -19,7 +29,7 @@ Field names are case-sensitive, except the decoded `Base64Image` key is discarde
 | Group | Fields / shapes | Interpretation |
 | --- | --- | --- |
 | Metadata | `TypeName`, `$type`, `FileExtension`, `FileVersion`, `Author`, `Description`, `Version`, `Nickname`, `SaveMode`, `ObjectKind` | Stored strings; version/save/object-kind fields also accept unsigned 32-bit integers. No type instantiation, save-section filtering, or producer dispatch. Unknown save flag names remain stored evidence. |
-| Identity | `Race`, `Tribe`, `Gender`, `Age`, `ModelType` | Known enum names or numeric IDs; `Lalafel`, `Miqote`, and `AuRa` have canonical aliases. Supported Tribe determines canonical race; absent/null Tribe permits Race fallback, an unsupported/invalid Tribe does not. Declared Race remains independently visible. Age IDs 0/1/3/4 mean None/Normal/Old/Young. ModelType is uint32. |
+| Identity | `Race`, `Tribe`, `Gender`, `Age`, `ModelType` | Known enum names or numeric IDs; `Lalafel`, `Miqote`, and `AuRa` have canonical race aliases. Legacy tribe `Helion` normalizes to `Helions` in the beta.3 candidate; raw evidence is preserved. Supported Tribe determines canonical race; absent/null Tribe permits Race fallback, an unsupported/invalid Tribe does not. Declared Race remains independently visible. Age IDs 0/1/3/4 mean None/Normal/Old/Young. ModelType is uint32. |
 | Byte customization | `Height`, `Head`, `Hair`, `Skintone`, `REyeColor`, `HairTone`, `Highlights`, `LimbalEyes`, `Eyebrows`, `LEyeColor`, `Eyes`, `Nose`, `Jaw`, `Mouth`, `LipsToneFurPattern`, `EarMuscleTailSize`, `TailEarsType`, `Bust`, `FacePaint`, `FacePaintColor` | Integers 0–255; no palette interpretation or bit masking. |
 | Customization flags | `EnableHighlights`, `FacialFeatures` | Strict boolean; facial features accept a byte or known comma-separated enum names. |
 | Extended colors | `SkinColor`, `SkinGloss`, `LeftEyeColor`, `RightEyeColor`, `LimbalRingColor`, `HairColor`, `HairGloss`, `HairHighlight`, `MouthColor` | Finite three-component vectors, four for mouth: comma-separated decimal strings, arrays, RGB(A) or XYZ(W) records. Stored source shape is retained. Components are not gamma converted, clamped, swapped, or declared active. Object/array shapes are admitted extensions; exact converter coverage remains a future compatibility gate. |

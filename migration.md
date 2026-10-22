@@ -1,10 +1,22 @@
-# Future consumer migration
+# XIV Dye Tools consumer migration
 
 The standalone package and reference demo are implemented here. Migrating XIV Dye Tools applications remains a separately authorized follow-up; no existing application is changed by this repository's implementation.
 
+The [XIV Dye Tools integration implementation plan](docs/superpowers/plans/2026-10-22-xivdyetools-integration.md) is a draft grounded in the target's sources reviewed on 2026-10-22. It covers a shared core adapter, host-backed palettes, browser worker/session integration, bot consumers, compatibility gates and release validation. API-worker transport replacement and broader XIVAPI offloading remain separate follow-ups.
+
+## Recommended integration boundary
+
+Use XIVCharaKit for bounded reading, typed inspection and appearance interpretation. Keep existing creator/shader data behind a host `PaletteProvider`, retain offline dye names and nearest-dye matching, and preserve the enriched API-worker equipment boundary. Add new core facade exports and an explicit application projection while keeping old published parser/resolver contracts available. The web and bot migrations consume the shared facade; UI/session/telemetry and output privacy remain host responsibilities.
+
+The library's richer partial-file and unresolved-state behavior is not a drop-in replacement for the old host model. The plan records intentional differences, including inactive lip alpha and missing shader evidence, and gates existing producer aliases before consumer adoption. Future eye/hair/skin free colors require actual game/producer format evidence rather than assuming current extended fields will represent them.
+
+The legacy `Helion` → `Helions` compatibility fix is implemented and regression-tested in the beta.3 candidate. Published beta.2 still lacks it; consumer adoption requires a published and verified version containing the fix. The integration plan retains this release gate.
+
 ## Try a local artifact
 
-Run `pnpm test:package` to build and validate `.superpowers/package-smoke/xivcharakit-0.1.0-beta.1.tgz`. A fresh local consumer can install that tarball with `pnpm add <absolute-tarball-path>`; no public npm package has been published. The artifact name follows the committed library version.
+`xivcharakit@0.1.0-beta.2` is published; its registry integrity and trusted-publisher provenance were verified on 2026-10-22. The integration target is exactly `xivcharakit@0.1.0-beta.3` once it is published and verified, including the alias fix. Do not install a moving dist-tag for a reproducible migration. XIV Dye Tools' existing 24-hour release-age policy still applies.
+
+For local development, run `pnpm test:package` to build and validate `.superpowers/package-smoke/xivcharakit-0.1.0-beta.3.tgz`. A fresh local consumer can install that tarball with `pnpm add <absolute-tarball-path>`. The artifact name follows the committed library version; a local tarball is not a replacement for reviewing the registry dependency used in the target's release.
 
 ```ts
 import { readChara, inspectChara } from 'xivcharakit';
@@ -34,4 +46,4 @@ See [API semantics](docs/api.md) and [candidate resolution](docs/xivapi.md) befo
 - Enforce worker/process isolation, concurrency limits, safe rendering and cancellation in the host. The synchronous library is not a hard CPU or memory sandbox.
 - Run fixture parity and affected web/bot integration checks, review intentional color/partial-document policy differences, and handle every candidate/failure status before replacing a consumer.
 
-Source/data notices, licensing, package identity and production release paths must be resolved before distribution. No package publication, app deployment, migration or removal of old APIs is authorized by these notes.
+Preserve the published package's complete MIT license, third-party/data notices and Square Enix disclaimer in consumer distributions. The library's manual release path is established; target package publication and app deployment still follow XIV Dye Tools' own release process. No target publication, deployment, implementation or removal of old APIs is authorized by these planning notes.

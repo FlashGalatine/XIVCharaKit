@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reviewed": "2026-10-19",
+  "reviewed": "2026-10-22",
   "releaseLicense": "MIT for original synthetic fixture contributions; producer exports retain recorded maintainer redistribution permission; third-party game-derived rights remain separate",
   "equipmentRows": {
     "path": "expected/equipment-rows.json",
@@ -14,7 +14,10 @@
       "source": "Maintainer-supplied Brio default export; latest installed version as reported on 2026-10-20; exact app version unconfirmed",
       "redistribution": "Maintainer confirmed ownership of the player character and permitted redistribution for project test fixtures on 2026-10-20",
       "sha256": "31c3948259bed215728564678eeb6d4420c8c08b856123ee20d0b97cd25a8ecc",
-      "expected": { "canonicalRace": "Elezen", "facewear": 0 }
+      "expected": {
+        "canonicalRace": "Elezen",
+        "facewear": 0
+      }
     },
     {
       "path": "producer-exports/anamnesis-default.chara",
@@ -22,7 +25,10 @@
       "source": "Maintainer-supplied Anamnesis default export; latest installed version as reported on 2026-10-20; exact app version unconfirmed",
       "redistribution": "Maintainer confirmed ownership of the player character and permitted redistribution for project test fixtures on 2026-10-20",
       "sha256": "4a413e0fe79fbd83dcf7b052f22d92e87662c5ea8c03bb0196eae5bb68dd5e8d",
-      "expected": { "canonicalRace": "Elezen", "facewear": 0 }
+      "expected": {
+        "canonicalRace": "Elezen",
+        "facewear": 0
+      }
     },
     {
       "path": "producer-exports/anamnesis-default-metadata.chara",
@@ -30,7 +36,10 @@
       "source": "Maintainer-supplied Anamnesis default export with metadata; latest installed version as reported on 2026-10-20; exact app version unconfirmed",
       "redistribution": "Maintainer confirmed ownership of the player character and permitted redistribution for project test fixtures on 2026-10-20",
       "sha256": "401dd03877ef806c31bfd1c84aea117f30312ee250ce528798b3437f07f7f17b",
-      "expected": { "canonicalRace": "Elezen", "facewear": 0 }
+      "expected": {
+        "canonicalRace": "Elezen",
+        "facewear": 0
+      }
     },
     {
       "path": "producer-exports/ktisis-default.chara",
@@ -38,7 +47,10 @@
       "source": "Maintainer-supplied Ktisis default export; latest installed version as reported on 2026-10-20; exact app version unconfirmed",
       "redistribution": "Maintainer confirmed ownership of the player character and permitted redistribution for project test fixtures on 2026-10-20",
       "sha256": "c03b93bcc6e23de135ef9e45a5ec867e8c308df2cd82ca0ecafd192fd893ec99",
-      "expected": { "canonicalRace": "Elezen", "facewear": 0 }
+      "expected": {
+        "canonicalRace": "Elezen",
+        "facewear": 0
+      }
     },
     {
       "path": "anamnesis/full.chara",
@@ -94,9 +106,45 @@
   "sources": [
     {
       "repository": "imchillin/Anamnesis",
-      "commit": "f97c9808185fd9af24d3dd9101e4e87466d65fc4",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
       "path": "Anamnesis/Files/CharacterFile.cs",
       "sha256": "72864a57ac15db8a0056adba7f021bbe3090fc7c9303d9d337d3fd5db42247b1"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Serialization/Converters/GlassesSaveConverter.cs",
+      "sha256": "d1f7e77572fc2908099cff8994745cf3fac1db86cfb2e2e4d3371e2524cca332"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Memory/ActorCustomizeMemory.cs",
+      "sha256": "f0f8d86ec7b59ec4450b74f139fbe1c0919994bd225030fdcd023fb50e94b17e"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Serialization/SerializerService.cs",
+      "sha256": "a143bbbccdb6b0d92b653df502cb1edfaaa788551c78eb07a6ac5d284801f8db"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Serialization/Converters/VectorConverter.cs",
+      "sha256": "3f1e46c3f47ed9e0ab1a3efbb7a7988b27f4fb7fe71ce4de22852c48a9e55949"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Serialization/Converters/ColorConverter.cs",
+      "sha256": "fedb3c635919957c56930b698e8c88038c9da10dfcde2abac587db29234cc474"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Serialization/Converters/Color4Converter.cs",
+      "sha256": "c1b0a0d27efe60cb7f42a2ce964ad1c1a01cb21c12114e2ac6f32df49a6b14bc"
     },
     {
       "repository": "ktisis-tools/Ktisis",
@@ -105,22 +153,77 @@
       "sha256": "622a3acc8095d016274b4062024505ad6ef4ca22aac34542ae2fdf7e0bec65df"
     },
     {
+      "repository": "ktisis-tools/Ktisis",
+      "commit": "551bb23f5726ecffd1426ee3b540caf34feab18a",
+      "path": "Ktisis/Data/Files/JsonFile.cs",
+      "sha256": "6694e47022ef9d4abef1020910d51a777f7d83d781bc7b38540b9068069f6d73"
+    },
+    {
+      "repository": "ktisis-tools/Ktisis",
+      "commit": "551bb23f5726ecffd1426ee3b540caf34feab18a",
+      "path": "Ktisis/Data/Json/JsonFileSerializer.cs",
+      "sha256": "fdc9692090da947755da83889eebe36153e63295c88d199fc57994c0dadc6959"
+    },
+    {
+      "repository": "ktisis-tools/Ktisis",
+      "commit": "551bb23f5726ecffd1426ee3b540caf34feab18a",
+      "path": "Ktisis/Data/Json/Converters/NumericConverters.cs",
+      "sha256": "96ce65cf7574145e6a3b87deb6c94fc99cfa1f4d9ccbf9b43a15df67eb72dc13"
+    },
+    {
       "repository": "Etheirys/Brio",
-      "commit": "5213bd81cf5bacee430548d4aff96500298dcc21",
+      "commit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
       "path": "Brio/Files/AnamnesisCharaFile.cs",
       "sha256": "9b86c89367931d2071ae96e3698ca8e3db5fb997abf2157d2bae43a2c0ab7bd8"
     },
     {
-      "repository": "imchillin/Anamnesis",
-      "commit": "f97c9808185fd9af24d3dd9101e4e87466d65fc4",
-      "path": "Anamnesis/Serialization/Converters/GlassesSaveConverter.cs",
-      "sha256": "d1f7e77572fc2908099cff8994745cf3fac1db86cfb2e2e4d3371e2524cca332"
+      "repository": "Etheirys/Brio",
+      "commit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
+      "path": "Brio/Core/JsonSerializer.cs",
+      "sha256": "a54fc162bf4591177538cd661c2e35cf6f42c2efc23b13fb1492f8ab21b08cbb"
     },
     {
-      "repository": "imchillin/Anamnesis",
-      "commit": "f97c9808185fd9af24d3dd9101e4e87466d65fc4",
-      "path": "Anamnesis/Memory/ActorCustomizeMemory.cs",
-      "sha256": "f0f8d86ec7b59ec4450b74f139fbe1c0919994bd225030fdcd023fb50e94b17e"
+      "repository": "Etheirys/Brio",
+      "commit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
+      "path": "Brio/Files/JsonDocumentBase.cs",
+      "sha256": "c984ea5e85aed8c8240531ecc99f099db3c286d807c36d01bcd9ddcda123d1c5"
+    },
+    {
+      "repository": "Etheirys/Brio",
+      "commit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
+      "path": "Brio/Game/Actor/Appearance/ActorEnums.cs",
+      "sha256": "0db1ffde1545590f820017d7d5c0859fe1e294e1c20b96d57ed38d14fa62a2d7"
     }
-  ]
+  ],
+  "producerCompatibilityReview": {
+    "date": "2026-10-22",
+    "scope": "Official stable/recent release listings, release-tag and default-branch export/serialization sources; source review only, no producer binaries or new producer exports tested",
+    "findings": "Reviewed export definitions and serializer sources are byte-identical to the previous reference commits. Helion is an additional legacy import alias, not a new producer format revision.",
+    "producers": [
+      {
+        "repository": "imchillin/Anamnesis",
+        "latestRelease": "v7.57.0.3",
+        "releaseCommit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+        "releaseUrl": "https://github.com/imchillin/Anamnesis/releases/tag/v7.57.0.3",
+        "sourceCommit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+        "releaseAndHeadSourcesIdentical": true
+      },
+      {
+        "repository": "ktisis-tools/Ktisis",
+        "latestRelease": "v0.4.1.2",
+        "releaseCommit": "6f0fcf04fef28119d00645e253e6fbe3eb65d337",
+        "releaseUrl": "https://github.com/ktisis-tools/Ktisis/releases/tag/v0.4.1.2",
+        "sourceCommit": "551bb23f5726ecffd1426ee3b540caf34feab18a",
+        "releaseAndHeadSourcesIdentical": true
+      },
+      {
+        "repository": "Etheirys/Brio",
+        "latestRelease": "v0.8.0.12",
+        "releaseCommit": "b510c82f60dd5cd0d85b64ef88e33878a6ef496a",
+        "releaseUrl": "https://github.com/Etheirys/Brio/releases/tag/v0.8.0.12",
+        "sourceCommit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
+        "releaseAndHeadSourcesIdentical": true
+      }
+    ]
+  }
 }

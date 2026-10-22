@@ -40,6 +40,38 @@ const resolve = (
   });
 
 describe('appearance arbitration and evidence', () => {
+  it('resolves legacy Helion skin and hair through the canonical Helions palettes', async () => {
+    const inspection = inspectChara(
+      readChara(
+        JSON.stringify({
+          Tribe: 'Helion',
+          Gender: 'Feminine',
+          Skintone: 0,
+          HairTone: 0,
+          LipsToneFurPattern: 1,
+        }),
+      ),
+    );
+    const result = await resolveAppearance(inspection, {
+      palettes: createDefaultPaletteProvider(),
+    });
+    expect(result.slots.skin).toMatchObject({
+      interpretation: 'palette',
+      displayHex: '#7A5E40',
+    });
+    expect(result.slots.hair).toMatchObject({
+      interpretation: 'palette',
+      displayHex: '#FFFFFF',
+    });
+    expect(result.slots.lip).toMatchObject({
+      interpretation: 'inactive',
+      reason: 'furPattern',
+      displayHex: null,
+    });
+    expect(inspection.identity.tribe.raw).toBe('Helion');
+    expect(inspection.document.fields.Tribe).toBe('Helion');
+  });
+
   it('compares extended color to shader while displaying the creator swatch', async () => {
     const result = await resolve(
       {

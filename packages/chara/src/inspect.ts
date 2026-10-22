@@ -63,6 +63,9 @@ const raceAliases: ReadonlyMap<string, Race> = new Map([
   ['Miqote', "Miqo'te"],
   ['AuRa', 'Au Ra'],
 ]);
+const tribeAliases: ReadonlyMap<string, string> = new Map([
+  ['Helion', 'Helions'],
+]);
 const finite = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 const numericToken = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
@@ -213,7 +216,7 @@ export function inspectChara(document: CharaDocument): CharaInspection {
   for (const issue of document.issues)
     reader.issues.add(issue.code, issue.path, issue.message, issue.severity);
   const race = reader.enumeration('Race', RACES, 1, raceAliases);
-  const tribe = reader.enumeration('Tribe', TRIBES);
+  const tribe = reader.enumeration('Tribe', TRIBES, 1, tribeAliases);
   const gender = reader.enumeration(
     'Gender',
     ['Masculine', 'Feminine'] as const,
