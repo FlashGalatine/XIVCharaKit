@@ -2,7 +2,7 @@
 
 Read and inspect Final Fantasy XIV `.chara` files from Anamnesis, Ktisis and Brio. A portable TypeScript library with ESM exports, declarations and zero runtime dependencies.
 
-This is the **0.1.0-beta.1 release candidate**. The API and compatibility coverage may change. Installation after publication:
+This package is **0.1.0-beta.2**. The API and compatibility coverage may change. Install the beta selected by the `next` tag:
 
 ```sh
 npm install xivcharakit@next

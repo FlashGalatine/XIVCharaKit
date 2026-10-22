@@ -1,6 +1,6 @@
 # Contributing
 
-Use Node 22.21.0 and pnpm 10.27.0, as pinned in the repository. The library is an unpublished beta candidate; the workspace root and demo remain private. Do not publish or deploy as part of an ordinary contribution. Releases follow the separate [manual publication runbook](docs/npm-publication-readiness.md).
+Use Node 22.21.0 and pnpm 10.27.0, as pinned in the repository. The first library beta is published; `main` prepares the next candidate. The workspace root and demo remain private. Do not publish or deploy as part of an ordinary contribution. Releases follow the separate [manual publication runbook](docs/npm-publication-readiness.md).
 
 ```sh
 pnpm install --frozen-lockfile

@@ -1,6 +1,6 @@
 # Security policy
 
-The published npm beta is version 0.1.0-beta.1. No stable release is supported yet. The [threat model](docs/security/THREAT_MODEL.md) and [validation evidence](docs/implementation-progress.md) describe implemented controls, tested environments and remaining limits; they are not a security certification.
+The published npm beta is version 0.1.0-beta.1; development prepares 0.1.0-beta.2. No stable release is supported yet. The [threat model](docs/security/THREAT_MODEL.md) and [validation evidence](docs/implementation-progress.md) describe implemented controls, tested environments and remaining limits; they are not a security certification.
 
 ## Reporting
 
