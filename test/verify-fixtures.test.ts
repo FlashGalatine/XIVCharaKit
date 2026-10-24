@@ -1,9 +1,11 @@
 import {
   appendFileSync,
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -59,6 +61,18 @@ describe('fixture verification', () => {
   it('fails for a .chara file the manifest does not list', async () => {
     writeFileSync(join(fixtures, 'partial', 'unlisted.chara'), '{"Hair":1}');
     await expect(run()).rejects.toThrow(/unlisted/i);
+  });
+  it('fails for an unlisted file whose extension is in another case', async () => {
+    writeFileSync(join(fixtures, 'brio', 'Export.CHARA'), '{"Hair":1}');
+    await expect(run()).rejects.toThrow(/Export.CHARA/);
+  });
+  it('fails for a link under fixtures, which could hide .chara files from the check', async () => {
+    const outside = join(temp, `outside-${n}`);
+    mkdirSync(outside);
+    writeFileSync(join(outside, 'hidden.chara'), '{"Hair":1}');
+    // A directory junction (a plain symlink on Linux).
+    symlinkSync(outside, join(fixtures, 'linked'), 'junction');
+    await expect(run()).rejects.toThrow(/link/i);
   });
   it('fails for a listed fixture that is missing', async () => {
     rmSync(join(fixtures, 'partial', 'equipment.chara'));

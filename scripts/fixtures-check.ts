@@ -26,9 +26,12 @@ async function charaFiles(root: URL, prefix = ''): Promise<string[]> {
     withFileTypes: true,
   })) {
     const path = `${prefix}${entry.name}`;
+    // A link could point at .chara files outside this tree, which would never be listed or hashed.
+    if (entry.isSymbolicLink())
+      throw new Error(`Fixtures must not be reached through a link: ${path}.`);
     if (entry.isDirectory())
       found.push(...(await charaFiles(root, `${path}/`)));
-    else if (entry.name.endsWith('.chara')) found.push(path);
+    else if (/\.chara$/i.test(entry.name)) found.push(path);
   }
   return found;
 }

@@ -32,8 +32,9 @@ describe('running a tool whose output explains its failure', () => {
     expect(message).toContain('NOTE-ON-STDERR');
   });
   it('does not hide the exit status', () => {
+    // The status must be in the message itself, not only on the error's cause.
     expect(() => runTool(process.execPath, ['-e', 'process.exit(3)'])).toThrow(
-      /status 3|Command failed/,
+      /exit status 3/,
     );
   });
 });

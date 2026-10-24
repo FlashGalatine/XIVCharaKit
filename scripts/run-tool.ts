@@ -17,8 +17,21 @@ export function runTool(
       encoding: 'utf8',
     });
   } catch (error) {
-    const failure = error as Error & { stdout?: unknown; stderr?: unknown };
+    const failure = error as Error & {
+      status?: number | null;
+      signal?: string | null;
+      stdout?: unknown;
+      stderr?: unknown;
+    };
     const output = `${String(failure.stdout ?? '')}${String(failure.stderr ?? '')}`;
-    throw new Error(`${failure.message}\n${output}`.trim(), { cause: error });
+    const how =
+      failure.status != null
+        ? `exit status ${failure.status}`
+        : failure.signal
+          ? `signal ${failure.signal}`
+          : 'no exit status';
+    throw new Error(`${failure.message} (${how})\n${output}`.trim(), {
+      cause: error,
+    });
   }
 }
