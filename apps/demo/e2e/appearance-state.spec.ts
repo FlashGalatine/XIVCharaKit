@@ -65,8 +65,48 @@ test('reports the retained file’s colors as unavailable when resuming them fai
   await expect(page.getByTestId('identity')).toContainText('Hyur');
   await expect(page.getByTestId('swatches')).not.toContainText('Loading');
   await expect(page.getByTestId('swatch-hair')).toContainText('Unavailable');
+  // The colors sentence is about the previous file, and no size note belongs to this refusal.
+  await expect(page.getByRole('alert')).toHaveText(
+    /retained\. APPEARANCE_UNAVAILABLE: The previous file's colors could not be resolved\.$/,
+  );
   release?.();
 });
+
+test('keeps the size note when a file over the limit was refused and resuming the retained colors fails too', async ({
+  page,
+}) => {
+  let held = false;
+  let release: (() => void) | undefined;
+  await page.route('**/assets/palettes-*.js', async (route) => {
+    if (held) {
+      await route.abort('failed');
+      return;
+    }
+    held = true;
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await route.abort('failed').catch(() => {});
+  });
+  await page.getByRole('button', { name: 'Anamnesis', exact: true }).click();
+  await expect(page.getByTestId('swatches')).toContainText('Loading');
+  const MIB8 = 8 * 1024 * 1024;
+  const text = '{"Tribe":"Xaela"}';
+  await load(page, text + ' '.repeat(MIB8 + 1 - text.length), 'over.chara');
+  await expect(page.getByRole('alert')).toContainText('APPEARANCE_UNAVAILABLE');
+  // The rejection of the file the user chose stays visible, with the reason, and the sentence about
+  // the colors comes before the note, so that "previous file" is what it refers to.
+  await expect(page.getByRole('alert')).toHaveText(
+    /^FILE_TOO_LARGE: .*retained\. APPEARANCE_UNAVAILABLE: The previous file's colors could not be resolved\. The demo reads files up to 8 MiB\. .*embedded image/,
+  );
+  await expect(page.getByRole('alert')).not.toContainText(
+    'selected file remains',
+  );
+  await expect(page.getByTestId('identity')).toContainText('Hyur');
+  await expect(page.getByTestId('swatch-hair')).toContainText('Unavailable');
+  release?.();
+});
+
 test('posts the appearance result without the stored subtrees the inspection already carries', async ({
   page,
 }) => {

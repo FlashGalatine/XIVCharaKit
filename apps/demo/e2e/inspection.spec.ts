@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures.js';
-import { load } from './helpers.js';
+import { load, resolveButton } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -172,6 +172,8 @@ test('preserves a valid inspection on rejected replacements and checks extension
     await load(page, content, String(name));
     await expect(page.getByRole('alert')).toContainText(String(reason));
     await expect(page.getByTestId('identity')).toContainText('Hyur');
+    // The file that is kept can be looked up again, whichever way the replacement was refused.
+    await expect(resolveButton(page)).toBeEnabled();
   }
 });
 test('provides keyboard file selection and clear releases local state', async ({

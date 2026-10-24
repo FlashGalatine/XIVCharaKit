@@ -36,7 +36,7 @@ test('pages candidate lists in bounded reversible groups', async ({ page }) => {
     .click();
   // "Candidate 11" contains "Candidate 1", so the first item is matched as a whole.
   await expect(page.locator('.candidate-list li').first()).toHaveText(
-    /^Candidate 1(?!d)/,
+    /^Candidate 1(?!\d)/,
   );
   await expect(page.locator('.candidate-list')).toHaveAttribute('start', '1');
   await expect(

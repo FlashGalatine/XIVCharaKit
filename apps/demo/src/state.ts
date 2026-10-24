@@ -7,7 +7,7 @@ const MAX_BYTES = 8 * 1024 * 1024;
 /** Why a file was refused for its size: Anamnesis can save an image that takes it past the limit. */
 const sizeHint = (code: string): string =>
   code === 'FILE_TOO_LARGE' || code === 'INPUT_TOO_LARGE'
-    ? ' The demo reads files up to 8 MiB. An Anamnesis file saved with a large embedded image can be bigger; the library reads those with a larger limit.'
+    ? ' The demo reads files up to 8 MiB. An Anamnesis file saved with a large embedded image can be bigger; the library can read most of those when its maxBytes option is raised (up to 64 MiB).'
     : '';
 export class DemoSession {
   readonly state: DemoState = {
@@ -118,7 +118,7 @@ export class DemoSession {
         this.raise(
           rejected === undefined
             ? `${code}: Appearance could not be resolved. The selected file remains inspected.`
-            : `${rejected}: Could not finish local inspection. Your previous valid file is retained.${sizeHint(rejected)} ${code}: Its colors could not be resolved.`,
+            : `${rejected}: Could not finish local inspection. Your previous valid file is retained. ${code}: The previous file's colors could not be resolved.${sizeHint(rejected)}`,
         );
         this.state.localStatus =
           rejected === undefined

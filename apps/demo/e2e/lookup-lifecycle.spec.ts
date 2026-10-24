@@ -15,11 +15,24 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
 
-/** A clock that stands still until the test moves it, so a deadline can be probed to the millisecond. */
+/**
+ * A clock that stands still until the test moves it, so a deadline can be probed to the
+ * millisecond. It is paused a minute ahead because the clock runs in real time until it is paused:
+ * a runner that stalls between the two calls must not find the pause time already behind it.
+ */
 async function pauseClock(page: import('@playwright/test').Page) {
   const start = new Date('2026-01-01T00:00:00Z');
   await page.clock.install({ time: start });
-  await page.clock.pauseAt(new Date(start.getTime() + 1000));
+  await page.clock.pauseAt(new Date(start.getTime() + 60_000));
+}
+
+/** A promise that stays pending until `release` is called. */
+function holdOpen() {
+  let release: () => void = () => {};
+  const promise = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return { promise, release };
 }
 
 const clear = (page: import('@playwright/test').Page) =>
@@ -62,11 +75,70 @@ test.describe('Clear and replacement while a lookup is running', () => {
     await expect.poll(() => lookup.seen.aborted).toContain('/api/search');
     lookup.answer();
     await expect(resolveButton(page)).toBeEnabled();
-    await expect(page.getByTestId('equipment')).not.toContainText('Candidate');
     await resolveButton(page).click();
     await expect(page.getByTestId('equipment')).toContainText('Candidate 1');
     expect(lookup.searches()).toBe(2);
   });
+
+  // The page shows the result of a finished lookup only for the file it was made for. A new file
+  // (or Clear and then a new file) starts with every row as "not requested".
+  for (const [name, discard] of [
+    [
+      'a replacement file',
+      async (page: import('@playwright/test').Page) => {
+        await load(
+          page,
+          {
+            Tribe: 'Xaela',
+            Body: { ModelBase: 361, ModelVariant: 5, DyeId: 3 },
+          },
+          'second.chara',
+        );
+      },
+    ],
+    [
+      'Clear and then a new file',
+      async (page: import('@playwright/test').Page) => {
+        await clear(page).click();
+        await expect(page.getByTestId('identity')).toHaveCount(0);
+        await load(
+          page,
+          {
+            Tribe: 'Xaela',
+            Body: { ModelBase: 361, ModelVariant: 5, DyeId: 3 },
+          },
+          'second.chara',
+        );
+      },
+    ],
+  ] as const)
+    test(`${name} shows nothing from the lookup of the file before it`, async ({
+      page,
+    }) => {
+      await mockXivapi(page);
+      await load(page, {
+        Tribe: 'Midlander',
+        Body: { ModelBase: 361, ModelVariant: 5, DyeId: 3 },
+      });
+      await resolveButton(page).click();
+      const body = page.getByRole('row', { name: /Body/ });
+      await expect(page.getByTestId('equipment')).toContainText('Candidate 1');
+      await expect(body).toContainText('Dye 3');
+      await expect(page.locator('.lookup-status')).toContainText(
+        'Lookup finished.',
+      );
+      await expect(page.getByTestId('lookup-evidence')).toHaveCount(1);
+      await expect(page.getByTestId('dye-lookup-evidence')).toHaveCount(1);
+      await discard(page);
+      await expect(page.getByTestId('identity')).toContainText('Au Ra');
+      await expect(body).toContainText('Not requested');
+      await expect(body).not.toContainText('Dye 3');
+      await expect(body).not.toContainText('Candidate');
+      await expect(page.getByTestId('lookup-evidence')).toHaveCount(0);
+      await expect(page.getByTestId('dye-lookup-evidence')).toHaveCount(0);
+      await expect(page.locator('.lookup-status')).toHaveCount(0);
+      await expect(resolveButton(page)).toBeEnabled();
+    });
 
   test('Clear aborts a held dye-name request', async ({ page }) => {
     const lookup = await controlLookup(page);
@@ -201,6 +273,79 @@ test.describe('the worker', () => {
     await expect(page.getByTestId('identity')).toContainText('Hyur');
     await expect(page.getByTestId('identity')).not.toContainText('Au Ra');
     await expect(page.getByRole('alert')).toContainText('PROCESSING_TIMEOUT');
+    // The file that is kept can be looked up again.
+    await expect(resolveButton(page)).toBeEnabled();
+  });
+
+  test('is terminated when it times out while the previous file’s colors are still loading, and those colors finish', async ({
+    page,
+  }) => {
+    // The colors of the first file are held, so they are still loading when the replacement is
+    // chosen. The replacement's worker is held too, and times out: the page resumes the colors with
+    // a new worker, and has to terminate the one that timed out, not the one it just started.
+    const colors = holdOpen();
+    const worker = holdOpen();
+    let colorsRequested = 0;
+    let workerRequested = 0;
+    let workerServed = 0;
+    await page.route('**/assets/appearance-*.js', async (route) => {
+      colorsRequested++;
+      await colors.promise;
+      await route.continue().catch(() => {});
+    });
+    await pauseClock(page);
+    await load(page, { Tribe: 'Midlander' });
+    await expect(page.getByTestId('identity')).toContainText('Hyur');
+    await expect.poll(() => colorsRequested).toBeGreaterThan(0);
+    await expect(page.getByTestId('swatches')).toContainText('Loading');
+    await expect(resolveButton(page)).toBeDisabled();
+    await page.route('**/assets/worker-*.js', async (route) => {
+      workerRequested++;
+      await worker.promise;
+      await route.continue().catch(() => {});
+      workerServed++;
+    });
+    await load(page, { Tribe: 'Xaela' }, 'slow.chara');
+    await expect.poll(() => workerRequested).toBeGreaterThan(0);
+    await page.clock.runFor(5000);
+    await expect(page.getByRole('alert')).toContainText('PROCESSING_TIMEOUT');
+    await expect(page.locator('.local-status')).toHaveText(
+      'File rejected. Loading color evidence for the previous file…',
+    );
+    // Both held requests are let go: the worker that timed out can post if it was not terminated,
+    // and the one that was started for the colors can finish if it was not.
+    worker.release();
+    colors.release();
+    await expect.poll(() => workerServed).toBeGreaterThan(0);
+    await page.waitForTimeout(400);
+    await expect(page.getByTestId('identity')).toContainText('Hyur');
+    await expect(page.getByTestId('identity')).not.toContainText('Au Ra');
+    await expect(page.getByTestId('swatches')).not.toContainText('Loading');
+    await expect(resolveButton(page)).toBeEnabled();
+    await expect(page.locator('.filename')).toHaveText('test.chara');
+    await expect(page.locator('.local-status')).toHaveText(
+      'File rejected or processing incomplete.',
+    );
+  });
+
+  test('is not given a timeout once the colors have arrived', async ({
+    page,
+  }) => {
+    await pauseClock(page);
+    await load(page, { Tribe: 'Midlander' });
+    await expect(page.getByTestId('identity')).toContainText('Hyur');
+    await expect(page.getByTestId('swatches')).not.toContainText('Loading');
+    await expect(page.locator('.local-status')).toHaveText(
+      'File inspected locally.',
+    );
+    // The deadline of a job that finished is gone: nothing is reported when it would have passed.
+    await page.clock.runFor(60_000);
+    await expect(page.getByRole('alert')).toHaveText('');
+    await expect(page.locator('.local-status')).toHaveText(
+      'File inspected locally.',
+    );
+    await expect(page.getByTestId('swatches')).not.toContainText('Unavailable');
+    await expect(resolveButton(page)).toBeEnabled();
   });
 
   test('reports APPEARANCE_TIMEOUT when the colors never arrive, and keeps the inspection', async ({
@@ -246,9 +391,11 @@ test.describe('the worker', () => {
     await expect(page.getByRole('alert')).toContainText('PROCESSING_FAILED');
     await expect(page.getByTestId('identity')).toContainText('Hyur');
     await expect(page.getByTestId('identity')).not.toContainText('Au Ra');
-    // The page handles the failure itself: nothing is left for the browser to report as uncaught.
+    await expect(resolveButton(page)).toBeEnabled();
+    // The page handles the failure itself: the worker's error is not left uncaught. An uncaught
+    // worker error would be a page error; it is never written to the console list.
     await traffic.settle();
-    expect(traffic.console.filter((text) => /Uncaught/.test(text))).toEqual([]);
+    expect(traffic.pageErrors).toEqual([]);
   });
 });
 
@@ -286,7 +433,10 @@ test.describe('the example files', () => {
       await expect(page.getByRole('alert')).toContainText(
         'Your previous valid file is retained.',
       );
+      await expect(page.getByRole('alert')).not.toContainText('embedded image');
       await expect(page.getByTestId('identity')).toContainText('Hyur');
+      // The file that is kept can be looked up again.
+      await expect(resolveButton(page)).toBeEnabled();
     });
 
   test('is ignored when a file is chosen while it loads', async ({ page }) => {
@@ -369,6 +519,11 @@ test.describe('the file admission gate', () => {
     await load(page, { Tribe: 'Midlander' }, 'x.json');
     await expect(page.getByRole('alert')).toContainText('FILE_EXTENSION');
     await expect(page.getByRole('alert')).not.toContainText('embedded image');
+    // Nor does a file the library refuses for what it holds.
+    await load(page, { Bone: {} }, 'renamed.chara');
+    await expect(page.getByRole('alert')).toContainText('NOT_CHARACTER');
+    await expect(page.getByRole('alert')).not.toContainText('embedded image');
+    await expect(page.getByRole('alert')).not.toContainText('up to 8 MiB');
     await expect(page.getByTestId('identity')).toContainText('Au Ra');
   });
 
