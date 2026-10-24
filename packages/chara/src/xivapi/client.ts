@@ -37,6 +37,15 @@ import type {
   XivapiOptions,
 } from './types.js';
 
+/**
+ * The two forms of Retry-After that are waited for: delay-seconds (with an optional fraction) and an
+ * HTTP date in the IMF-fixdate form. Date.parse accepts many more strings and reads them differently
+ * in different engines ("-1" and "+1" are 1 January 2001 in V8), so everything else is refused.
+ */
+const DELAY_SECONDS = /^\d+(?:\.\d+)?$/;
+const IMF_FIXDATE =
+  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d{2}:\d{2}:\d{2} GMT$/;
+
 class Failure extends Error {
   constructor(readonly code: string) {
     super('XIVAPI lookup interrupted.');
@@ -185,13 +194,39 @@ const newBudget = (signal: AbortSignal): Budget => ({
   rows: 0,
 });
 
+const OPTION_KEYS = [
+  'fetch',
+  'baseUrl',
+  'version',
+  'schema',
+  'languages',
+  'maxPages',
+  'timeoutMs',
+  'cache',
+] as const;
+
 /** Internal shared scheduler for both the low-level client and whole resolutions. */
-export function createTransport(options: XivapiOptions = {}): Transport {
+export function createTransport(given: XivapiOptions = {}): Transport {
   const invalid = (): never => {
     throw new XivapiInputError('INVALID_OPTIONS');
   };
-  if (typeof options !== 'object' || options === null || Array.isArray(options))
+  if (typeof given !== 'object' || given === null || Array.isArray(given))
     return invalid();
+  // Each option is read once, and a getter that throws makes the options invalid, as it does for
+  // createDyeNameResolver. The cache's two methods are read here too, so that a getter on them is caught as well; the cache object itself is kept, because its methods may rely on this.
+  const options: XivapiOptions = {};
+  try {
+    for (const key of OPTION_KEYS) {
+      const value = given[key];
+      if (value !== undefined) Object.assign(options, { [key]: value });
+    }
+    if (typeof options.cache === 'object' && options.cache !== null) {
+      void options.cache.get;
+      void options.cache.set;
+    }
+  } catch {
+    return invalid();
+  }
   let base: URL;
   try {
     base = new URL(options.baseUrl ?? 'https://v2.xivapi.com/api');
@@ -328,9 +363,11 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           retry =
             raw === null
               ? 250
-              : /^\d+(\.\d+)?$/.test(raw)
+              : DELAY_SECONDS.test(raw)
                 ? Number(raw) * 1000
-                : Date.parse(raw) - Date.now();
+                : IMF_FIXDATE.test(raw)
+                  ? Date.parse(raw) - Date.now()
+                  : Number.NaN;
           if (!Number.isFinite(retry) || retry > 2000)
             throw new Failure('RETRY_LIMIT');
           retry = Math.max(0, retry);
