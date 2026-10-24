@@ -22,6 +22,24 @@ The beta.3 candidate accepts the exact tribe spelling `Helion` as an alias for c
 
 This alias preserves a legacy spelling already supported by XIV Dye Tools; it does not claim that the latest producers export it or introduce a new `.chara` revision. Published `0.1.0-beta.2` does not contain the fix. Publish and verify beta.3 before adopting that exact version in XIV Dye Tools.
 
+## Appearance semantics reviewed in source (2026-10-23)
+
+The snapshots above pin the serializer files. Appearance interpretation also depends on files that give two stored fields their meaning. Those were reviewed on 2026-10-23 and are pinned in [the manifest](../fixtures/manifest.json) (`sources` and `producerCompatibilityReview.semanticReview`). This is **source review only**: no producer binary was run, no new export was made, and in-game rendering was not observed.
+
+| Meaning | Anamnesis `3d63575` | Ktisis `551bb23` | Brio `3f6f8e1` |
+| --- | --- | --- | --- |
+| Lip color enabled | `EnableLipColor => Mouth >= 128` (`ActorCustomizeMemory.cs`) | The lip checkbox toggles `0x80` of `LipStyle` (`CustomizeEditorTab.cs`) | `LipColorEnabled => (LipStyle & _toggleMask) != 0`, mask 128 (`ActorCustomize.cs`) |
+| Face-paint mirror flag | Raw byte, no flip handling found (`ActorCustomizeMemory.cs`, `CustomizeEditor.xaml.cs`) | `canFlip` for `Facepaint` edits `baseValue & ~0x80` and preserves the bit (`CustomizeEditorTab.cs`) | `RealFacepaint` strips and `FacepaintFlipped` tests bit 128 (`ActorCustomize.cs`) |
+| Extended eye-color offsets | Left `0x40`, Right `0x50` (`ExtendedAppearanceMemory.cs`) | Not reviewed | Right `0x40`, Left `0x50` (`BrioHuman.cs`) |
+
+**Lip color.** All three producers use bit `0x80` of `Mouth`. Policy version `1.0.0` ignored it and treated every lip index as enabled; version `1.1.0` treats a clear bit as a disabled lip. All four committed real exports store `Mouth` 2, so the bit is clear in each.
+
+**Face paint.** Bit `0x80` of `FacePaint` is a mirror flag in Brio and Ktisis, and Anamnesis passes the raw byte through, so a mirrored export can store 128 or more. Policy version `1.0.0` treated any non-zero value as paint present, so `FacePaint` 128 (no paint, mirrored) showed a face-paint swatch; `1.1.0` looks at the low seven bits. Anamnesis' own handling was only searched in the files listed above, and no export with `FacePaint` of 128 or more is committed.
+
+**Eye colors, Brio v0.7.2 and later.** Brio's shader block was reordered by the 7.5 update (commit `5bec2d07`, 2026-04-30; tag `v0.7.1.2` has Left `0x60` then Right `0x70`, tag `v0.7.2` has Right `0x40` then Left `0x50`). The committed real Brio export is consistent with a crossing: each extended eye color equals the opposite eye's shader color. The `HISTORICAL_EYE_PAIR_SWAP` correction, named when it was thought to be a legacy quirk, therefore corrects current Brio output; its public identifiers are unchanged. It swaps only when both eyes land on the opposite shader, never by producer label. With a custom color on one eye the crossing cannot be confirmed: the colors stay as stored (possibly mirrored) and the result carries an `EYE_PAIRING_UNCONFIRMED` warning. Eyes that share an index cannot be detected.
+
+Unverified: pre-7.5 Brio exports (expected uncrossed, not tested against a real export here), fresh Brio exports that carry a custom eye color (the regression test edits the committed real export), and how any producer renders these fields in game.
+
 ## Field and presence matrix
 
 Field names are case-sensitive, except the decoded `Base64Image` key is discarded case-insensitively at every depth. Known field normalization uses this matrix regardless of the declared producer.
@@ -30,7 +48,7 @@ Field names are case-sensitive, except the decoded `Base64Image` key is discarde
 | --- | --- | --- |
 | Metadata | `TypeName`, `$type`, `FileExtension`, `FileVersion`, `Author`, `Description`, `Version`, `Nickname`, `SaveMode`, `ObjectKind` | Stored strings; version/save/object-kind fields also accept unsigned 32-bit integers. No type instantiation, save-section filtering, or producer dispatch. Unknown save flag names remain stored evidence. |
 | Identity | `Race`, `Tribe`, `Gender`, `Age`, `ModelType` | Known enum names or numeric IDs; `Lalafel`, `Miqote`, and `AuRa` have canonical race aliases. Legacy tribe `Helion` normalizes to `Helions` in the beta.3 candidate; raw evidence is preserved. Supported Tribe determines canonical race; absent/null Tribe permits Race fallback, an unsupported/invalid Tribe does not. Declared Race remains independently visible. Age IDs 0/1/3/4 mean None/Normal/Old/Young. ModelType is uint32. |
-| Byte customization | `Height`, `Head`, `Hair`, `Skintone`, `REyeColor`, `HairTone`, `Highlights`, `LimbalEyes`, `Eyebrows`, `LEyeColor`, `Eyes`, `Nose`, `Jaw`, `Mouth`, `LipsToneFurPattern`, `EarMuscleTailSize`, `TailEarsType`, `Bust`, `FacePaint`, `FacePaintColor` | Integers 0–255; no palette interpretation or bit masking. |
+| Byte customization | `Height`, `Head`, `Hair`, `Skintone`, `REyeColor`, `HairTone`, `Highlights`, `LimbalEyes`, `Eyebrows`, `LEyeColor`, `Eyes`, `Nose`, `Jaw`, `Mouth`, `LipsToneFurPattern`, `EarMuscleTailSize`, `TailEarsType`, `Bust`, `FacePaint`, `FacePaintColor` | Integers 0–255; inspection applies no palette interpretation or bit masking. Appearance reads bit `0x80` of `Mouth` as the lip-color enable and masks bit `0x80` of `FacePaint` as a mirror flag ([below](#appearance-semantics-reviewed-in-source-2026-10-23)). |
 | Customization flags | `EnableHighlights`, `FacialFeatures` | Strict boolean; facial features accept a byte or known comma-separated enum names. |
 | Extended colors | `SkinColor`, `SkinGloss`, `LeftEyeColor`, `RightEyeColor`, `LimbalRingColor`, `HairColor`, `HairGloss`, `HairHighlight`, `MouthColor` | Finite three-component vectors, four for mouth: comma-separated decimal strings, arrays, RGB(A) or XYZ(W) records. Stored source shape is retained. Components are not gamma converted, clamped, swapped, or declared active. Object/array shapes are admitted extensions; exact converter coverage remains a future compatibility gate. |
 | Extended controls | `IsExtendedAppearanceValid`, `BustScale`, `Transparency`, `MuscleTone`, `HeightMultiplier` | Strict boolean, finite three-component vector, or finite number respectively. Missing validity flags stay absent. |

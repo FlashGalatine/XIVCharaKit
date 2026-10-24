@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### After beta.3 (not in the published 0.1.0-beta.3)
+
+- Appearance policy `1.1.0`: read bit `0x80` of `Mouth` as the lip-color enable that Anamnesis, Ktisis and Brio all use. A cleared bit now reports the lip as inactive with the new reason `lipDisabled`, where `1.0.0` treated every lip index as enabled. The `AppearancePolicy.version` literal type is now `'1.1.0'`. An absent, null or invalid `Mouth` leaves lip activity unknown. Hrothgar ignores the bit; with an unknown race the lip is active only when the bit is set and unknown otherwise. Also treat bit `0x80` of `FacePaint` as the mirror flag it is in Brio and Ktisis: `FacePaint` 128 (no paint, mirrored) is now inactive instead of showing a face-paint swatch; every value with a non-zero low seven bits is unchanged. Consumers that switch exhaustively on `AppearanceReason` must handle `lipDisabled`.
+- Add an `EYE_PAIRING_UNCONFIRMED` warning when one eye's extended color lands on the opposite eye's shader color but a custom color on the other eye hides the second match (Brio v0.7.2+ stores the two eye colors crossed). Colors are not swapped in that case. Document the Brio crossing and pin the reviewed producer sources in the fixture manifest.
+- Pin the corrections, per-eye swatches and lip state of the four real producer exports in regression tests.
+
 ### 0.1.0-beta.3 candidate
 
 - Normalize legacy tribe `Helion` to `Helions` while preserving stored evidence, Hrothgar race derivation and palette interpretation. Keep numeric tribe IDs unchanged. This fix is not included in published beta.2.

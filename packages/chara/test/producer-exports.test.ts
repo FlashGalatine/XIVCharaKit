@@ -59,5 +59,96 @@ describe('maintainer-supplied default producer exports', () => {
       palettes: createDefaultPaletteProvider(),
     });
     expect(appearance.issues).toEqual([]);
+    // The eye colors are derived from the stored indices and the shipped creator table,
+    // not from the library's own output. Brio 0.7.2+ stores each eye's extended color
+    // under the other eye's name, so only Brio needs (and reports) the pair correction.
+    const { eyes } = JSON.parse(
+      await readFile(
+        new URL('../src/palettes/data/creator-shared.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    expect(inspection.appearance.LEyeColor.value).toBe(169);
+    expect(inspection.appearance.REyeColor.value).toBe(42);
+    expect(appearance.corrections).toEqual(
+      brio
+        ? [{ code: 'HISTORICAL_EYE_PAIR_SWAP', slots: ['leftEye', 'rightEye'] }]
+        : [],
+    );
+    expect(appearance.slots.leftEye).toMatchObject({
+      interpretation: 'palette',
+      displayHex: eyes[169],
+      correction: brio ? 'historicalEyePairSwap' : null,
+    });
+    expect(appearance.slots.rightEye).toMatchObject({
+      interpretation: 'palette',
+      displayHex: eyes[42],
+      correction: brio ? 'historicalEyePairSwap' : null,
+    });
+    // Every reviewed export stores Mouth 2: the producers' lip-color bit (0x80) is clear.
+    expect(inspection.appearance.Mouth.value).toBe(2);
+    expect(appearance.slots.lip).toMatchObject({
+      active: false,
+      interpretation: 'inactive',
+      reason: 'lipDisabled',
+      displayHex: null,
+    });
+  });
+
+  it('shows the stored lip color once the producer lip-color bit is set', async () => {
+    const fields = JSON.parse(
+      await readFile(
+        new URL(
+          '../../../fixtures/producer-exports/anamnesis-default.chara',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    );
+    const { lipsDark } = JSON.parse(
+      await readFile(
+        new URL('../src/palettes/data/creator-shared.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    const lipFor = async (mouth: number) =>
+      (
+        await resolveAppearance(
+          inspectChara(readChara(JSON.stringify({ ...fields, Mouth: mouth }))),
+          { palettes: createDefaultPaletteProvider() },
+        )
+      ).slots.lip;
+    expect(await lipFor(2)).toMatchObject({ active: false, displayHex: null });
+    // Stored LipsToneFurPattern 53 reads straight from the shipped creator table.
+    expect(await lipFor(2 | 0x80)).toMatchObject({
+      active: true,
+      interpretation: 'palette',
+      displayHex: lipsDark[53],
+    });
+  });
+
+  it('flags, without swapping, a Brio export whose crossing a custom eye color hides', async () => {
+    const fields = JSON.parse(
+      await readFile(
+        new URL(
+          '../../../fixtures/producer-exports/brio-default.chara',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    );
+    // An authored edit of the real export: one eye gets a custom color (not a fresh Brio export).
+    const edited = { ...fields, RightEyeColor: '0.8, 0.01, 0.01' };
+    const appearance = await resolveAppearance(
+      inspectChara(readChara(JSON.stringify(edited))),
+      { palettes: createDefaultPaletteProvider() },
+    );
+    expect(appearance.corrections).toEqual([]);
+    expect(appearance.issues).toEqual([
+      expect.objectContaining({
+        code: 'EYE_PAIRING_UNCONFIRMED',
+        path: [],
+      }),
+    ]);
   });
 });

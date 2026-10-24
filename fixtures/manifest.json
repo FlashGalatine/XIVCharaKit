@@ -193,6 +193,30 @@
       "commit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
       "path": "Brio/Game/Actor/Appearance/ActorEnums.cs",
       "sha256": "0db1ffde1545590f820017d7d5c0859fe1e294e1c20b96d57ed38d14fa62a2d7"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Memory/ExtendedAppearanceMemory.cs",
+      "sha256": "69904fc856b77009fbe614d8e75cee8e48ba7049527f3f95e24b332618233ebc"
+    },
+    {
+      "repository": "ktisis-tools/Ktisis",
+      "commit": "551bb23f5726ecffd1426ee3b540caf34feab18a",
+      "path": "Ktisis/Interface/Components/Chara/CustomizeEditorTab.cs",
+      "sha256": "2a4bb96516b57d1b938c38918cbcae207282237df64424615f369c637cd045e1"
+    },
+    {
+      "repository": "Etheirys/Brio",
+      "commit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
+      "path": "Brio/Game/Actor/Appearance/ActorCustomize.cs",
+      "sha256": "80535b791af9b6cff620e68e24272b22a465d7d404c19b289dec56a544360908"
+    },
+    {
+      "repository": "Etheirys/Brio",
+      "commit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
+      "path": "Brio/Game/Actor/Interop/BrioHuman.cs",
+      "sha256": "7099971db548c0c5c577c3af18228d8eb597ed7919c9fbc9263bd5beaf179f77"
     }
   ],
   "producerCompatibilityReview": {
@@ -224,6 +248,11 @@
         "sourceCommit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
         "releaseAndHeadSourcesIdentical": true
       }
-    ]
+    ],
+    "semanticReview": {
+      "date": "2026-10-23",
+      "scope": "Source review of the files that give stored fields their meaning (lip-color enable bit, extended eye-color offsets); no producer binaries run and no in-game rendering observed",
+      "findings": "All three producers treat bit 0x80 of Mouth as lip color enabled (Anamnesis ActorCustomizeMemory.EnableLipColor, Ktisis CustomizeEditorTab lip switch, Brio ActorCustomize.LipColorEnabled). Bit 0x80 of FacePaint is a mirror flag in Brio (RealFacepaint, FacepaintFlipped) and Ktisis (canFlip); Anamnesis passes the raw byte through. Brio stores RightEyeColor at 0x40 and LeftEyeColor at 0x50 while Anamnesis stores Left at 0x40 and Right at 0x50, and Brio copies the fields by name, so Brio exports from v0.7.2 onward carry each eye extended color under the other eye name relative to the stored indices."
+    }
   }
 }
