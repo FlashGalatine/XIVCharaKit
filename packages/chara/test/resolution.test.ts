@@ -523,6 +523,27 @@ describe('incomplete evidence and facewear', () => {
     expect(r.items.Body?.status).toBe('notFound');
     expect(r.facewear).toMatchObject({ id: 8, status: 'matched' });
   });
+  it('reads glassesId once, so a getter cannot change it after validation', async () => {
+    let reads = 0;
+    const input = {
+      models: [],
+      get glassesId() {
+        return ++reads === 1 ? 8 : 70000;
+      },
+    } as unknown as EquipmentResolveInput;
+    const rows: string[] = [];
+    const r = await resolver(async (url) => {
+      rows.push(new URL(String(url)).searchParams.get('rows') ?? '');
+      return json({
+        version: V,
+        schema: S,
+        rows: [{ row_id: 8, fields: { 'Name@lang(en)': 'Synthetic Glasses' } }],
+      });
+    }).resolve(input);
+    expect(reads).toBe(1);
+    expect(rows).toEqual(['8']);
+    expect(r.facewear).toMatchObject({ id: 8, status: 'matched' });
+  });
   it('accepts and honours a signal that is not an AbortSignal of this realm', async () => {
     class OtherSignal extends EventTarget {
       aborted = false;
