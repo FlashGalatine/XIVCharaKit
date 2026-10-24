@@ -4,7 +4,7 @@ import type { AppearanceSlot } from 'xivcharakit/appearance';
 import type { EquipmentCandidate } from 'xivcharakit/xivapi';
 import { iconKey } from './icons.js';
 import type { DemoSession } from './state.js';
-import type { DemoState } from './types.js';
+import type { DemoState, Shown } from './types.js';
 
 const slots: [AppearanceSlot, string][] = [
   ['leftEye', 'Left eye'],
@@ -50,7 +50,7 @@ function button(
   node.addEventListener('click', action);
   return node;
 }
-function field(value: Field<unknown> | undefined): string {
+function field(value: Shown<unknown> | undefined): string {
   return !value || value.state === 'absent'
     ? 'Not stored'
     : value.state === 'null'

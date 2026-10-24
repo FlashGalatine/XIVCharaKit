@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { load } from './helpers.js';
+import { item, load, S, V } from './helpers.js';
 
 test('clear discards a pending response and resets lookup permission', async ({
   page,
@@ -77,18 +77,6 @@ test('pages candidate lists in bounded reversible groups', async ({ page }) => {
   );
 });
 
-const V = '0123456789abcdef';
-const S = `exdschema@2:rev:${'a'.repeat(40)}`;
-const item = (id: number, name: string) => ({
-  sheet: 'Item',
-  row_id: id,
-  fields: {
-    'Name@lang(en)': name,
-    ModelMain: 328041,
-    ModelSub: 0,
-    EquipSlotCategory: { fields: { Body: 1 } },
-  },
-});
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });

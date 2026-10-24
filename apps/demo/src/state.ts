@@ -1,4 +1,4 @@
-import type { EquipmentModel } from 'xivcharakit';
+import type { CharaInspection, EquipmentModel } from 'xivcharakit';
 import type { DyeNameResolver } from 'xivcharakit/dyes';
 import { loadIcons } from './icons.js';
 import type { DemoState, WorkerReply } from './types.js';
@@ -83,7 +83,15 @@ export class DemoSession {
     this.state.reading = true;
     this.state.localStatus = 'Reading locally…';
     this.changed();
-    let committed = false;
+    this.run(file, generation);
+  }
+  /** Runs the worker for a new file, or resumes the colors of the inspection the page retained. */
+  private run(
+    request: File | { inspection: CharaInspection },
+    generation: number,
+  ): void {
+    const file = request instanceof File ? request : null;
+    let committed = file === null;
     const worker = new Worker(new URL('./worker.ts', import.meta.url), {
       type: 'module',
     });
@@ -113,7 +121,7 @@ export class DemoSession {
       const message = event.data;
       if (message.type === 'inspection') {
         committed = true;
-        this.state.fileName = file.name.slice(0, 256);
+        this.state.fileName = file?.name.slice(0, 256) ?? null;
         this.state.inspection = message.inspection;
         this.state.appearance = null;
         this.state.appearanceStatus = 'loading';
@@ -129,12 +137,23 @@ export class DemoSession {
         this.changed();
       } else fail(message.code);
     };
-    worker.postMessage(file);
+    worker.postMessage(
+      request instanceof File
+        ? request
+        : { type: 'appearance', inspection: request.inspection },
+    );
   }
   private reject(code: string): void {
     this.state.error = `${code}: Could not finish local inspection. Your previous valid file is retained.`;
     this.state.reading = false;
     this.state.localStatus = 'File rejected or processing incomplete.';
+    // begin() stopped the worker that was still resolving the retained file's colors.
+    if (this.state.inspection && this.state.appearanceStatus === 'loading') {
+      this.state.reading = true;
+      this.state.localStatus =
+        'File rejected. Loading color evidence for the previous file…';
+      this.run({ inspection: this.state.inspection }, this.generation);
+    }
     this.changed();
   }
   async example(producer: 'anamnesis' | 'ktisis' | 'brio'): Promise<void> {
