@@ -110,6 +110,13 @@ function field(value: Shown<unknown> | undefined): string {
           ? 'Unsupported'
           : 'Invalid';
 }
+/** A Tribe the library cannot use leaves no canonical race, but a stored Race is still evidence. */
+function race(identity: CharaInspection['identity']): string {
+  if (identity.canonicalRace) return identity.canonicalRace;
+  return identity.race.state === 'valid'
+    ? `${identity.race.value} (declared, Tribe unusable)`
+    : field(identity.race);
+}
 function dye(value: Field<number>, state: DemoState): string {
   if (value.state !== 'valid') return field(value);
   const id = value.value;
@@ -617,7 +624,7 @@ export function render(root: HTMLElement, session: DemoSession): void {
     );
     const values = el('dl', 'identity-values');
     for (const [name, value] of [
-      ['Race', inspection.identity.canonicalRace ?? 'Not stored'],
+      ['Race', race(inspection.identity)],
       ['Tribe', field(inspection.identity.tribe)],
       ['Gender', field(inspection.identity.gender)],
     ]) {
