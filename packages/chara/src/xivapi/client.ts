@@ -59,6 +59,36 @@ function reason(signal: AbortSignal): Failure {
     ? signal.reason
     : new Failure('CANCELLED');
 }
+/**
+ * The row ID that a 404 from a row-list request names as missing, or undefined when the body is
+ * anything else (a missing sheet, another sheet's row, an unknown shape). The message is matched,
+ * never quoted or returned, and an oversized body is not trusted.
+ */
+function missingRowIn(body: Uint8Array, sheet: string): number | undefined {
+  if (body.byteLength > 4096) return undefined;
+  let data: unknown;
+  try {
+    data = readBoundedJson(body);
+  } catch {
+    return undefined;
+  }
+  if (!isRecord(data) || data.code !== 404 || typeof data.message !== 'string')
+    return undefined;
+  const match = new RegExp(
+    `^not found: the Excel row ${sheet}/(\\d{1,5}):\\d{1,5} could not be found$`,
+  ).exec(data.message.length <= 256 ? data.message : '');
+  const id = match ? Number(match[1]) : Number.NaN;
+  return Number.isInteger(id) && id <= 65535 ? id : undefined;
+}
+function joined(chunks: Uint8Array[], bytes: number): Uint8Array {
+  const buffer = new Uint8Array(bytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    buffer.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return buffer;
+}
 /** Race even uncooperative host promises, and always remove listeners. */
 function interruptible<T>(
   promise: Promise<T>,
@@ -203,7 +233,8 @@ export function createTransport(options: XivapiOptions = {}): Transport {
   async function request(
     url: URL,
     budget: Budget,
-  ): Promise<{ status: number; data: unknown }> {
+    rowSheet?: string,
+  ): Promise<{ status: number; data: unknown; missingRow?: number }> {
     for (let attempt = 0; attempt < 2; attempt++) {
       if (budget.signal.aborted) throw reason(budget.signal);
       if (budget.bytes > 10 * 1024 * 1024) throw new Failure('RESPONSE_LIMIT');
@@ -250,7 +281,11 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           budget.bytes += chunk.value.byteLength;
           if (bytes > 2 * 1024 * 1024 || budget.bytes > 10 * 1024 * 1024)
             throw new Failure('RESPONSE_LIMIT');
-          if (response.ok) chunks.push(chunk.value);
+          if (
+            response.ok ||
+            (rowSheet !== undefined && response.status === 404)
+          )
+            chunks.push(chunk.value);
         }
         if (
           response.type === 'opaqueredirect' ||
@@ -269,14 +304,18 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           if (!Number.isFinite(retry) || retry > 2000)
             throw new Failure('RETRY_LIMIT');
           retry = Math.max(0, retry);
-        } else if (!response.ok) throw new Failure('UPSTREAM_UNAVAILABLE');
-        else {
-          const buffer = new Uint8Array(bytes);
-          let offset = 0;
-          for (const chunk of chunks) {
-            buffer.set(chunk, offset);
-            offset += chunk.byteLength;
-          }
+        } else if (!response.ok) {
+          // A row list that names a row the sheet lacks is answered with 404 for the whole
+          // request, so the one missing row is learned from the message and dropped by the caller.
+          const missingRow =
+            rowSheet !== undefined && response.status === 404
+              ? missingRowIn(joined(chunks, bytes), rowSheet)
+              : undefined;
+          if (missingRow === undefined)
+            throw new Failure('UPSTREAM_UNAVAILABLE');
+          return { status: 404, data: null, missingRow };
+        } else {
+          const buffer = joined(chunks, bytes);
           let data: unknown;
           try {
             data = readBoundedJson(buffer);
@@ -403,7 +442,14 @@ export function createTransport(options: XivapiOptions = {}): Transport {
       }
       let cursor: string | undefined;
       const cursors = new Set<string>();
-      for (let page = 0; page < maxPages; page++) {
+      // Rows still asked for: a row the API reports as missing is dropped and the rest retried.
+      const wanted: number[] = stains
+        ? [...selection.stains]
+        : items
+          ? []
+          : [selection as number];
+      const sheet = stains ? 'Stain' : items ? undefined : 'Glasses';
+      const urlFor = () => {
         const url = new URL(
           stains ? 'sheet/Stain' : items ? 'search' : 'sheet/Glasses',
           base,
@@ -424,13 +470,26 @@ export function createTransport(options: XivapiOptions = {}): Transport {
                       query: buildQuery(selection as readonly SlotLookup[]),
                     }),
               }
-            : {
-                rows: isStainLookup(selection)
-                  ? selection.stains.join(',')
-                  : String(selection),
-              }),
+            : { rows: wanted.join(',') }),
         }).toString();
-        const response = await request(url, budget);
+        return url;
+      };
+      for (let page = 0; page < maxPages; page++) {
+        let response = await request(urlFor(), budget, sheet);
+        while (response.missingRow !== undefined) {
+          const at = wanted.indexOf(response.missingRow);
+          if (at < 0) throw new Failure('UPSTREAM_UNAVAILABLE');
+          wanted.splice(at, 1);
+          if (!wanted.length) break;
+          response = await request(urlFor(), budget, sheet);
+        }
+        if (response.missingRow !== undefined) {
+          // Every requested row is missing. The answer names no version or schema, so only a
+          // request that was already pinned can say which it applies to.
+          upstreamVersion = canonicalVersion(pin) ? pin : null;
+          upstreamSchema = canonicalSchema(schemaPin) ? schemaPin : null;
+          break;
+        }
         const data = response.data;
         if (
           !isRecord(data) ||

@@ -524,3 +524,38 @@ describe('resolver admission and privacy', () => {
     expect(url).not.toContain('DyeId');
   });
 });
+
+describe('facewear rows that XIVAPI reports as missing', () => {
+  it('reports a Glasses row the API says does not exist as not found, like the live API', async () => {
+    const urls: string[] = [];
+    const r = await resolver(async (input) => {
+      const url = new URL(String(input));
+      urls.push(url.pathname);
+      return json(
+        {
+          code: 404,
+          message: `not found: the Excel row Glasses/${url.searchParams.get('rows')}:0 could not be found`,
+        },
+        404,
+      );
+    }).resolve({ models: [], glassesId: 60000 });
+    expect(r.facewear).toMatchObject({
+      id: 60000,
+      status: 'notFound',
+      candidates: [],
+    });
+    expect(urls).toEqual(['/api/sheet/Glasses']);
+  });
+  it('does not take a missing sheet for a missing row', async () => {
+    const r = await resolver(async () =>
+      json(
+        {
+          code: 404,
+          message: 'not found: the Excel sheet "Glasses" could not be found',
+        },
+        404,
+      ),
+    ).resolve({ models: [], glassesId: 8 });
+    expect(r.facewear?.status).toBe('unavailable');
+  });
+});

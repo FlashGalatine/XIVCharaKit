@@ -353,3 +353,113 @@ describe('cached optional dye-name lookup', () => {
     expect((await second).status).toBe('complete');
   });
 });
+
+// The live API answers a row list that names a missing row with HTTP 404 and the first
+// missing row (checked 2026-10-23); it never returns a 200 that silently omits the row.
+const missingRow = (sheet: string, id: number) =>
+  new Response(
+    JSON.stringify({
+      code: 404,
+      message: `not found: the Excel row ${sheet}/${id}:0 could not be found`,
+    }),
+    { status: 404 },
+  );
+const stainApi =
+  (existing: readonly number[], urls: URL[] = []): typeof globalThis.fetch =>
+  async (input) => {
+    const url = new URL(String(input));
+    urls.push(url);
+    const ids = (url.searchParams.get('rows') ?? '').split(',').map(Number);
+    const gap = ids.find((id) => !existing.includes(id));
+    return gap === undefined
+      ? response(ids.map((id) => row(id, `Dye ${id}`)))
+      : missingRow('Stain', gap);
+  };
+const dyes = (fetch: typeof globalThis.fetch, extra = {}) =>
+  createDyeNameResolver({
+    fetch,
+    version: V,
+    schema: S,
+    languages: ['en'],
+    ...extra,
+  });
+
+describe('rows that XIVAPI reports as missing', () => {
+  it('drops each missing Stain row and still names the others', async () => {
+    const urls: URL[] = [];
+    const result = await dyes(stainApi([0, 3], urls)).resolve([201, 3, 0, 200]);
+    expect(urls.map((url) => url.searchParams.get('rows'))).toEqual([
+      '0,3,200,201',
+      '0,3,201',
+      '0,3',
+    ]);
+    expect(result).toMatchObject({
+      status: 'complete',
+      version: V,
+      schema: S,
+      issues: [],
+    });
+    expect(result.rows.map((r) => r.rowId)).toEqual([0, 3]);
+  });
+  it('reports a request whose rows are all missing as complete and empty, and caches it', async () => {
+    const urls: URL[] = [];
+    const resolver = dyes(stainApi([0], urls));
+    expect(await resolver.resolve([200])).toMatchObject({
+      status: 'complete',
+      rows: [],
+      version: V,
+      schema: S,
+    });
+    await resolver.resolve([200]);
+    expect(urls).toHaveLength(1);
+  });
+  it.each([
+    [
+      'a missing sheet',
+      'not found: the Excel sheet "Stain" could not be found',
+    ],
+    [
+      'a different sheet',
+      'not found: the Excel row Item/3:0 could not be found',
+    ],
+    [
+      'a row that was not requested',
+      'not found: the Excel row Stain/77:0 could not be found',
+    ],
+    ['an unrecognised message', 'something else entirely'],
+  ])('still fails closed on a 404 naming %s', async (_name, message) => {
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ code: 404, message }), { status: 404 }),
+      );
+    const result = await dyes(fetch).resolve([3]);
+    expect(result.status).toBe('unavailable');
+    expect(result.issues.map((issue) => issue.code)).toContain(
+      'UPSTREAM_UNAVAILABLE',
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    ['not JSON', 'not json at all'],
+    [
+      'an oversized message',
+      JSON.stringify({ code: 404, message: 'x'.repeat(5000) }),
+    ],
+  ])('does not trust a 404 body that is %s', async (_name, text) => {
+    const result = await dyes(
+      async () => new Response(text, { status: 404 }),
+    ).resolve([3]);
+    expect(result.status).toBe('unavailable');
+  });
+  it('stays inside the request budget when every row is missing', async () => {
+    const urls: URL[] = [];
+    const result = await dyes(stainApi([], urls)).resolve(
+      Array.from({ length: 64 }, (_, i) => 100 + i),
+    );
+    expect(urls).toHaveLength(40);
+    expect(result.status).toBe('unavailable');
+    expect(result.issues.map((issue) => issue.code)).toContain('REQUEST_LIMIT');
+  });
+});
