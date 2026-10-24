@@ -50,6 +50,55 @@ function button(
   node.addEventListener('click', action);
   return node;
 }
+type Direction = 'previous' | 'next';
+function pagerButton(
+  label: string,
+  id: string,
+  direction: Direction,
+  action: () => void,
+): HTMLButtonElement {
+  const node = button(label, action, 'button quiet');
+  node.id = id;
+  node.dataset.pager = direction;
+  return node;
+}
+/**
+ * A pager button that was activated is replaced by the new page's pager, which would drop focus
+ * to the page. Focus the same direction again if it is still offered, else the other button
+ * (a paged view always offers one).
+ */
+function focusPager(
+  pager: HTMLElement,
+  direction: Direction | undefined,
+): void {
+  if (!direction) return;
+  const target =
+    pager.querySelector<HTMLElement>(`[data-pager="${direction}"]`) ??
+    pager.querySelector<HTMLElement>('[data-pager]');
+  target?.focus();
+}
+/**
+ * Controls that are disabled or removed by the render they caused hand focus to the control that
+ * takes over: Resolve gives way to Cancel while a lookup runs, and back when it ends.
+ */
+const FOCUS_FALLBACK: Record<string, string[]> = {
+  'resolve-equipment': ['cancel-lookup'],
+  'cancel-lookup': ['resolve-equipment'],
+  'clear-file': ['choose-file'],
+};
+function restoreFocus(id: string | undefined): void {
+  if (!id) return;
+  for (const candidate of [id, ...(FOCUS_FALLBACK[id] ?? [])]) {
+    const node = document.getElementById(candidate);
+    if (
+      node instanceof HTMLElement &&
+      !(node instanceof HTMLButtonElement && node.disabled)
+    ) {
+      node.focus({ preventScroll: true });
+      return;
+    }
+  }
+}
 function field(value: Shown<unknown> | undefined): string {
   return !value || value.state === 'absent'
     ? 'Not stored'
@@ -105,6 +154,7 @@ function rawPage(
   value: Record<string, JsonValue> | JsonValue[],
   path: string,
   offset = 0,
+  focus?: Direction,
 ): void {
   const keys = Object.keys(value);
   const nodes: HTMLElement[] = [];
@@ -165,20 +215,27 @@ function rawPage(
   );
   if (offset > 0)
     pager.append(
-      button(
+      pagerButton(
         'Show previous 200 fields',
-        () => rawPage(container, value, path, Math.max(0, offset - 200)),
-        'button quiet',
+        `${path}-previous`,
+        'previous',
+        () =>
+          rawPage(
+            container,
+            value,
+            path,
+            Math.max(0, offset - 200),
+            'previous',
+          ),
       ),
     );
   if (offset + 200 < keys.length)
     pager.append(
-      button(
-        'Show next 200 fields',
-        () => rawPage(container, value, path, offset + 200),
-        'button quiet',
+      pagerButton('Show next 200 fields', `${path}-next`, 'next', () =>
+        rawPage(container, value, path, offset + 200, 'next'),
       ),
     );
+  focusPager(pager, focus);
 }
 function icon(
   container: HTMLElement,
@@ -243,7 +300,7 @@ function candidates(
     `candidates-${slot}`,
   );
   let offset = 0;
-  const draw = () => {
+  const draw = (focus?: Direction) => {
     const list = el('ol', 'candidate-list');
     list.start = offset + 1;
     for (const row of rows.slice(offset, offset + 10)) {
@@ -281,26 +338,29 @@ function candidates(
     body.replaceChildren(list);
     if (offset > 0)
       body.append(
-        button(
+        pagerButton(
           'Show previous 10 candidates',
+          `candidates-${slot}-previous`,
+          'previous',
           () => {
             offset -= 10;
-            draw();
+            draw('previous');
           },
-          'button quiet',
         ),
       );
     if (offset + 10 < rows.length)
       body.append(
-        button(
+        pagerButton(
           'Show next 10 candidates',
+          `candidates-${slot}-next`,
+          'next',
           () => {
             offset += 10;
-            draw();
+            draw('next');
           },
-          'button quiet',
         ),
       );
+    focusPager(body, focus);
   };
   details.addEventListener('toggle', () => {
     if (details.open && !body.childElementCount) draw();
@@ -475,16 +535,17 @@ export function render(root: HTMLElement, session: DemoSession): void {
     ['Anamnesis', 'anamnesis'],
     ['Ktisis', 'ktisis'],
     ['Brio', 'brio'],
-  ] as const)
-    examples.append(
-      button(
-        label,
-        () => {
-          void session.example(key);
-        },
-        'button quiet',
-      ),
+  ] as const) {
+    const example = button(
+      label,
+      () => {
+        void session.example(key);
+      },
+      'button quiet',
     );
+    example.id = `example-${key}`;
+    examples.append(example);
+  }
   rail.append(
     examples,
     el(
@@ -630,10 +691,15 @@ export function render(root: HTMLElement, session: DemoSession): void {
     resolve.id = 'resolve-equipment';
     resolve.disabled = state.reading || state.lookingUp;
     actions.append(resolve);
-    if (state.lookingUp)
-      actions.append(
-        button('Cancel lookup', () => session.cancelLookup(), 'button quiet'),
+    if (state.lookingUp) {
+      const cancel = button(
+        'Cancel lookup',
+        () => session.cancelLookup(),
+        'button quiet',
       );
+      cancel.id = 'cancel-lookup';
+      actions.append(cancel);
+    }
     top.append(actions);
     equipment.append(
       top,
@@ -851,5 +917,5 @@ export function render(root: HTMLElement, session: DemoSession): void {
     const node = document.getElementById(id);
     if (node instanceof HTMLDetailsElement) node.open = true;
   }
-  if (focus) document.getElementById(focus)?.focus({ preventScroll: true });
+  restoreFocus(focus);
 }
