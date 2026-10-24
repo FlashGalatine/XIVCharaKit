@@ -842,6 +842,23 @@ describe('values from another realm and unusable signals', () => {
     ['a number', 1],
     ['null', null],
     ['an object without the listener methods', { aborted: false }],
+    [
+      'an object missing only removeEventListener',
+      { aborted: false, addEventListener() {} },
+    ],
+    [
+      'an object missing only addEventListener',
+      { aborted: false, removeEventListener() {} },
+    ],
+    [
+      'an object without a boolean aborted',
+      { addEventListener() {}, removeEventListener() {} },
+    ],
+    [
+      'an object whose aborted is not a boolean',
+      { aborted: 'no', addEventListener() {}, removeEventListener() {} },
+    ],
+    ['an AbortSignal prototype object', Object.create(AbortSignal.prototype)],
   ])(
     'rejects %s as a signal before any request starts',
     async (_name, signal) => {
@@ -860,6 +877,65 @@ describe('values from another realm and unusable signals', () => {
       expect(fetch).not.toHaveBeenCalled();
     },
   );
+  it('rejects options whose signal getter throws, before any request', async () => {
+    const fetch = vi.fn(async () => json(page([wire()])));
+    const options = Object.defineProperty({}, 'signal', {
+      get() {
+        throw new Error('boom');
+      },
+    });
+    const c = client(fetch);
+    await expect(c.searchItems([body], options)).rejects.toMatchObject({
+      code: 'INVALID_LOOKUP',
+    });
+    await expect(c.getStains([2], options)).rejects.toMatchObject({
+      code: 'INVALID_LOOKUP',
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it('does not orphan a subscriber when the signal cannot register its listener', async () => {
+    const aborts: boolean[] = [];
+    const fetch = vi.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>(() => {
+          init?.signal?.addEventListener('abort', () => aborts.push(true));
+        }),
+    );
+    const c = client(fetch);
+    const real = new AbortController();
+    const first = c.searchItems([body], { signal: real.signal });
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    const bad = {
+      aborted: false,
+      addEventListener() {
+        throw new TypeError('no listeners');
+      },
+      removeEventListener() {},
+    } as unknown as AbortSignal;
+    await expect(c.searchItems([body], { signal: bad })).rejects.toMatchObject({
+      code: 'INVALID_LOOKUP',
+    });
+    // The failed caller must not keep the shared request alive once the real caller leaves.
+    real.abort();
+    expect((await first).status).toBe('cancelled');
+    await vi.waitFor(() => expect(aborts).toEqual([true]));
+  });
+  it('settles when the signal cannot remove its listener', async () => {
+    const odd = {
+      aborted: false,
+      addEventListener() {},
+      removeEventListener() {
+        throw new TypeError('no removal');
+      },
+    } as unknown as AbortSignal;
+    const result = await Promise.race([
+      client(async () => json(page([wire()]))).searchItems([body], {
+        signal: odd,
+      }),
+      new Promise<string>((resolve) => setTimeout(() => resolve('hung'), 500)),
+    ]);
+    expect(result).toMatchObject({ status: 'complete' });
+  });
   it('rejects request options that are not an object', async () => {
     const fetch = vi.fn(async () => json(page([wire()])));
     await expect(

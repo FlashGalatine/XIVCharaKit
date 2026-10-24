@@ -66,6 +66,35 @@ describe('truncated diagnostics', () => {
     ).toHaveLength(1);
     expect(issues.map((issue) => issue.code)).toContain('INVALID_FIELD');
   });
+  it('keeps one final marker when inspection fills the list exactly to its cap', () => {
+    // 63 copied reader diagnostics plus exactly one of the inspection's own make 64 entries without
+    // overflowing, so only an explicit final marker can keep the reader's truncation visible.
+    const fields: Record<string, unknown> = { Race: 'Hyur', HairTone: 'x' };
+    for (let i = 0; i < 80; i++) fields[`Unknown${i}`] = i;
+    const document = readChara(JSON.stringify(fields));
+    expect(document.issues).toHaveLength(64);
+    expect(document.issues.at(-1)?.code).toBe('ISSUES_TRUNCATED');
+    const issues = inspectChara(document).issues;
+    expect(issues).toHaveLength(64);
+    expect(issues.at(-1)?.code).toBe('ISSUES_TRUNCATED');
+    expect(
+      issues.filter((issue) => issue.code === 'INVALID_FIELD'),
+    ).toHaveLength(0); // replaced by the marker
+    expect(
+      issues.filter((issue) => issue.code === 'ISSUES_TRUNCATED'),
+    ).toHaveLength(1);
+  });
+  it('keeps the marker last when the only inspection diagnostic is a bad ModelType', () => {
+    const document = readChara(JSON.stringify(crowded({ ModelType: 'x' })), {
+      maxIssues: 4,
+    });
+    const issues = inspectChara(document).issues;
+    expect(issues.map((issue) => issue.code)).toContain('INVALID_FIELD');
+    expect(issues.at(-1)?.code).toBe('ISSUES_TRUNCATED');
+    expect(
+      issues.filter((issue) => issue.code === 'ISSUES_TRUNCATED'),
+    ).toHaveLength(1);
+  });
   it('does not invent a marker when the reader did not truncate', () => {
     const issues = inspectChara(
       readChara(JSON.stringify({ Race: 'Hyur', HairTone: 'x' })),

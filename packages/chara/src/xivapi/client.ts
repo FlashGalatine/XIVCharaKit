@@ -730,18 +730,33 @@ export function createTransport(options: XivapiOptions = {}): Transport {
     }
     const shared = job;
     shared.subscribers++;
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       let done = false;
       const finish = (result: unknown) => {
         if (done) return;
         done = true;
-        signal?.removeEventListener('abort', abort);
+        // Account first: a host signal whose methods throw must not skip the bookkeeping.
         if (--shared.subscribers === 0)
           shared.controller.abort(new Failure('CANCELLED'));
+        try {
+          signal?.removeEventListener('abort', abort);
+        } catch {
+          // a host signal; nothing more to release
+        }
         resolve(JSON.parse(JSON.stringify(result)) as T);
       };
       const abort = () => finish(failure('CANCELLED', true));
-      signal?.addEventListener('abort', abort, { once: true });
+      try {
+        signal?.addEventListener('abort', abort, { once: true });
+      } catch {
+        // The signal cannot cancel this call, so it cannot be used: release the subscriber so the
+        // shared request does not outlive its real callers.
+        done = true;
+        if (--shared.subscribers === 0)
+          shared.controller.abort(new Failure('CANCELLED'));
+        reject(new XivapiInputError('INVALID_LOOKUP'));
+        return;
+      }
       void shared.promise.then(finish);
     });
   }

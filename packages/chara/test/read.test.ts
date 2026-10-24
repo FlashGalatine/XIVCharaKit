@@ -25,6 +25,20 @@ describe('binary input from another realm', () => {
     expect(foreign.byteOffset).toBe(11);
     expect(readChara(foreign).fields).toMatchObject({ Race: 'Hyur', Hair: 3 });
   });
+  it('rejects a Uint8Array whose buffer was transferred away, with the fixed error', () => {
+    const view = new Uint8Array(Buffer.from(text));
+    structuredClone(view.buffer, { transfer: [view.buffer] });
+    expect(view.byteLength).toBe(0); // detached
+    rejects(view, 'INVALID_INPUT');
+  });
+  it('reads the real bytes when own properties shadow the view', () => {
+    const view = new Uint8Array(Buffer.from(text));
+    for (const key of ['buffer', 'byteOffset', 'byteLength'])
+      Object.defineProperty(view, key, {
+        value: key === 'buffer' ? new ArrayBuffer(1) : 1e9,
+      });
+    expect(readChara(view).fields).toMatchObject({ Race: 'Hyur', Hair: 3 });
+  });
   it('still reads a Buffer and an ordinary Uint8Array', () => {
     expect(readChara(Buffer.from(text)).fields).toMatchObject({ Hair: 3 });
     expect(readChara(new Uint8Array(Buffer.from(text))).fields).toMatchObject({
