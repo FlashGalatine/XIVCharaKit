@@ -19,6 +19,7 @@ test.describe('keyboard focus', () => {
     const release = await holdLookup(page);
     await load(page, { Tribe: 'Midlander', ...equipmentBody });
     await expect(page.getByTestId('identity')).toContainText('Hyur');
+    await expect(page.locator('#resolve-equipment')).toBeEnabled();
     await page.locator('#resolve-equipment').focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#cancel-lookup')).toBeFocused();
@@ -33,6 +34,7 @@ test.describe('keyboard focus', () => {
     await holdLookup(page);
     await load(page, { Tribe: 'Midlander', ...equipmentBody });
     await expect(page.getByTestId('identity')).toContainText('Hyur');
+    await expect(page.locator('#resolve-equipment')).toBeEnabled();
     await page.locator('#resolve-equipment').focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#cancel-lookup')).toBeFocused();
@@ -94,5 +96,17 @@ test.describe('keyboard focus', () => {
     await expect(
       page.getByRole('button', { name: 'Show previous 200 fields' }),
     ).toBeFocused();
+  });
+  test('stays on a disclosure summary when the page re-renders', async ({
+    page,
+  }) => {
+    await load(page, { HairTone: 0, Outer: { Inner: 1 } });
+    await expect(page.getByTestId('identity')).toBeVisible();
+    await expect(page.locator('#resolve-equipment')).toBeEnabled();
+    const summary = page.locator('#stored-details > summary');
+    await summary.focus();
+    await load(page, {}, 'replacement.pose');
+    await expect(page.getByRole('alert')).toContainText('FILE_EXTENSION');
+    await expect(summary).toBeFocused();
   });
 });

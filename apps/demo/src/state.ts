@@ -94,6 +94,7 @@ export class DemoSession {
   private run(
     request: File | { inspection: CharaInspection },
     generation: number,
+    rejected?: string,
   ): void {
     const file = request instanceof File ? request : null;
     let committed = file === null;
@@ -107,11 +108,17 @@ export class DemoSession {
       if (committed) {
         this.state.appearanceStatus = 'unavailable';
         this.state.reading = false;
+        // A resumed job belongs to a rejected replacement: keep that rejection in the message,
+        // and do not say that the selected file was inspected.
         this.raise(
-          `${code}: Appearance could not be resolved. The selected file remains inspected.`,
+          rejected === undefined
+            ? `${code}: Appearance could not be resolved. The selected file remains inspected.`
+            : `${rejected}: Could not finish local inspection. Your previous valid file is retained. ${code}: Its colors could not be resolved.`,
         );
         this.state.localStatus =
-          'File inspected locally. Color evidence unavailable.';
+          rejected === undefined
+            ? 'File inspected locally. Color evidence unavailable.'
+            : 'File rejected. Color evidence for the previous file is unavailable.';
         this.changed();
       } else this.reject(code);
     };
@@ -139,7 +146,10 @@ export class DemoSession {
         this.state.appearance = message.appearance;
         this.state.appearanceStatus = 'ready';
         this.state.reading = false;
-        this.state.localStatus = 'File inspected locally.';
+        this.state.localStatus =
+          rejected === undefined
+            ? 'File inspected locally.'
+            : 'File rejected or processing incomplete.';
         this.stopWorker();
         this.changed();
       } else fail(message.code);
@@ -161,7 +171,7 @@ export class DemoSession {
       this.state.reading = true;
       this.state.localStatus =
         'File rejected. Loading color evidence for the previous file…';
-      this.run({ inspection: this.state.inspection }, this.generation);
+      this.run({ inspection: this.state.inspection }, this.generation, code);
     }
     this.changed();
   }

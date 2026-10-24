@@ -483,7 +483,12 @@ function writeAlert(frame: Frame, state: DemoState): void {
   alert.textContent = '';
   const serial = state.errorSerial;
   setTimeout(() => {
-    if (alert.textContent === '' && state.errorSerial === serial)
+    // An error cleared during the pause (Clear, a new file) must not come back.
+    if (
+      alert.textContent === '' &&
+      state.errorSerial === serial &&
+      state.error === text
+    )
       alert.textContent = text;
   }, 50);
 }
@@ -529,7 +534,13 @@ export function render(root: HTMLElement, session: DemoSession): void {
         )
       : [];
   previousInspection = state.inspection;
-  const focus = document.activeElement?.id;
+  // Moving a retained node (the stored-values panel) blurs whatever inside it had focus, and
+  // only some controls have ids, so remember the element itself as well.
+  const active =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+  const focus = active?.id;
   const frame = frameOf(root);
   const rail = document.createDocumentFragment();
   rail.append(el('h2', '', 'Character file'));
@@ -936,5 +947,8 @@ export function render(root: HTMLElement, session: DemoSession): void {
     const node = document.getElementById(id);
     if (node instanceof HTMLDetailsElement) node.open = true;
   }
-  restoreFocus(focus);
+  if (active?.isConnected) {
+    if (document.activeElement !== active)
+      active.focus({ preventScroll: true });
+  } else restoreFocus(focus);
 }

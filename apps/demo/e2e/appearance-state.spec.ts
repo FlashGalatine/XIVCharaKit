@@ -30,6 +30,9 @@ test('shows the retained file’s colors after a replacement is rejected while t
   await expect(page.getByTestId('swatches')).not.toContainText('Loading');
   await expect(page.getByTestId('swatch-rightEye')).toContainText('#F7F7F7');
   await expect(page.locator('.filename')).toHaveText('anamnesis.chara');
+  await expect(page.locator('.local-status')).toHaveText(
+    'File rejected or processing incomplete.',
+  );
   release?.();
 });
 
@@ -53,6 +56,12 @@ test('reports the retained file’s colors as unavailable when resuming them fai
   await expect(page.getByTestId('swatches')).toContainText('Loading');
   await load(page, {}, 'replacement.pose');
   await expect(page.getByRole('alert')).toContainText('APPEARANCE_UNAVAILABLE');
+  // The rejection of the file the user chose stays visible next to the colors failure.
+  await expect(page.getByRole('alert')).toContainText('FILE_EXTENSION');
+  await expect(page.getByRole('alert')).not.toContainText(
+    'selected file remains',
+  );
+  await expect(page.locator('.local-status')).toContainText('File rejected');
   await expect(page.getByTestId('identity')).toContainText('Hyur');
   await expect(page.getByTestId('swatches')).not.toContainText('Loading');
   await expect(page.getByTestId('swatch-hair')).toContainText('Unavailable');

@@ -131,6 +131,8 @@ test.describe('live regions', () => {
       ),
     });
     await expect(page.getByTestId('identity')).toBeVisible();
+    // Every render moves the stored panel, so let the colors arrive before watching.
+    await expect(page.getByTestId('swatches')).not.toContainText('Loading');
     await page.getByText('Stored values', { exact: true }).click();
     const range = page.getByTestId('stored-values').locator('[role="status"]');
     await expect(range).toHaveText('Fields 1–200 of 251');
@@ -157,6 +159,32 @@ test.describe('live regions', () => {
           ),
       ),
     ).toBe(true);
+  });
+  test('refill the alert after the pause when the same rejection repeats', async ({
+    page,
+  }) => {
+    await page.clock.install();
+    await load(page, {}, 'first.pose');
+    await expect(page.getByRole('alert')).toContainText('FILE_EXTENSION');
+    await load(page, {}, 'second.pose');
+    await expect(page.getByRole('alert')).toHaveText('');
+    await page.clock.runFor(100);
+    await expect(page.getByRole('alert')).toContainText('FILE_EXTENSION');
+  });
+  test('do not bring back an error that was cleared during the pause', async ({
+    page,
+  }) => {
+    await page.clock.install();
+    await load(page, { Tribe: 'Midlander' });
+    await expect(page.getByTestId('identity')).toContainText('Hyur');
+    await load(page, {}, 'first.pose');
+    await expect(page.getByRole('alert')).toContainText('FILE_EXTENSION');
+    await load(page, {}, 'second.pose');
+    await expect(page.getByRole('alert')).toHaveText('');
+    await page.getByRole('button', { name: 'Clear file' }).click();
+    await expect(page.getByTestId('identity')).toHaveCount(0);
+    await page.clock.runFor(200);
+    await expect(page.getByRole('alert')).toHaveText('');
   });
   test('announce an error again when the same rejection repeats', async ({
     page,
