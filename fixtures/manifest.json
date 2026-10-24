@@ -7,6 +7,11 @@
     "kind": "synthetic",
     "sha256": "7b47690d02c39915a2d1d7c6536aecada7b1e9fd73371aea49a4bcc47c3b8662"
   },
+  "appearanceExpectations": {
+    "path": "expected/appearance.json",
+    "kind": "synthetic",
+    "sha256": "d06f7944e8ef599d8fe3c76dd39bf695bad3d91b24b088fe58a6904949e45de4"
+  },
   "fixtures": [
     {
       "path": "producer-exports/brio-default.chara",
