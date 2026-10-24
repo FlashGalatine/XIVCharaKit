@@ -247,16 +247,20 @@ describe('what the languages and the cache hold', () => {
         expect(() => create(withLanguages(languages))).toThrow(invalid);
   });
 
-  it.each([
+  const BAD_CACHES: [string, unknown][] = [
     ['no methods', {}],
     ['no set', { get: async () => null }],
     ['no get', { set: async () => {} }],
     ['a get that is not a function', { get: 'x', set: async () => {} }],
     ['a set that is not a function', { get: async () => null, set: 1 }],
-  ])('refuses a cache with %s, with every entry point', (_name, cache) => {
-    for (const create of creators)
-      expect(() => create({ cache: cache as never })).toThrow(invalid);
-  });
+  ];
+  it.each(BAD_CACHES)(
+    'refuses a cache with %s, with every entry point',
+    (_name, cache) => {
+      for (const create of creators)
+        expect(() => create({ cache: cache as never })).toThrow(invalid);
+    },
+  );
 
   it('reads each language once, and refuses a list that is too long without reading it', () => {
     const reads: string[] = [];
