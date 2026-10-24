@@ -92,7 +92,8 @@ function matchItems(
     let matches = index.get(`${model.slot}:${key}`) ?? [];
     let viaMainHand = false;
     let incompleteContext = false;
-    if (model.slot === 'OffHand') {
+    // Key "0" is the all-zero "nothing equipped" model, never a shield or off-hand to pair.
+    if (model.slot === 'OffHand' && key !== '0') {
       const paired = mainRows.filter(
         (row) => key === mainKey || row.modelSub === key,
       );

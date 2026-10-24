@@ -182,6 +182,23 @@ describe('equipment candidates', () => {
       r.items.OffHand?.candidates.map((c) => [c.itemId, c.viaMainHand]),
     ).toEqual([[401, false]]);
   });
+  it('does not pair an all-zero off-hand with a main hand whose ModelSub is also zero', async () => {
+    const paired = fixture.rows[4];
+    if (!paired) throw new Error('Fixture missing');
+    // ModelSub 0 is XIVAPI's "no sub-model" value; off-hand key "0" means "nothing equipped".
+    const r = await resolver(source([{ ...paired, modelSub: '0' }])).resolve({
+      models: [main, { slot: 'OffHand', set: 0, base: 0, variant: 0 }],
+    });
+    expect(r.items.MainHand?.candidates.map((c) => c.itemId)).toEqual([301]);
+    expect(r.items.OffHand).toMatchObject({
+      modelKey: '0',
+      status: 'notFound',
+      candidates: [],
+    });
+    expect(r.issues.map((issue) => issue.code)).not.toContain(
+      'INCOMPLETE_OFFHAND_CONTEXT',
+    );
+  });
   it('does not reuse a cached off-hand selection across different main-hand contexts', async () => {
     const c = resolver(source(), { cache: createMemoryCache() });
     const a = await c.resolve({ models: [main, off] });
