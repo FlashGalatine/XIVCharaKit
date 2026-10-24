@@ -284,6 +284,51 @@ describe('what the languages and the cache hold', () => {
     expect(touched).toEqual([]);
   });
 
+  it('reads the length of a list of languages once, and refuses more than four before reading an element', () => {
+    const indexReads: string[] = [];
+    let lengthReads = 0;
+    // The answers to successive reads of length: a list that changes its mind is read as it first said.
+    const watch = (values: unknown[], lengths: number[]) =>
+      new Proxy(values, {
+        get(target, key, receiver) {
+          if (key === 'length')
+            return lengths[Math.min(lengthReads++, lengths.length - 1)];
+          if (typeof key === 'string' && /^[0-9]+$/.test(key))
+            indexReads.push(key);
+          return Reflect.get(target, key, receiver);
+        },
+      });
+    createXivapiClient(withLanguages(watch(['en', 'de'], [2, 1_000_000_000])));
+    expect(lengthReads).toBe(1);
+    expect(indexReads).toEqual(['0', '1']);
+    indexReads.length = 0;
+    expect(() =>
+      createXivapiClient(
+        withLanguages(watch(['en', 'de', 'fr', 'ja', 'en'], [5])),
+      ),
+    ).toThrow(invalid);
+    expect(indexReads).toEqual([]);
+    // Four are the most there are, and are accepted.
+    expect(() =>
+      createXivapiClient(withLanguages(['en', 'ja', 'de', 'fr'])),
+    ).not.toThrow();
+  });
+
+  it.each([
+    ['a string', 'en'],
+    ['a Set', new Set(['en'])],
+    ['an array-like object', { 0: 'en', length: 1 }],
+    ['an empty list', []],
+    ['a number', 1],
+    ['an object', {}],
+  ])(
+    'refuses %s as the languages, with every entry point',
+    (_name, languages) => {
+      for (const create of creators)
+        expect(() => create(withLanguages(languages))).toThrow(invalid);
+    },
+  );
+
   it('calls the methods of the cache on the cache, which may rely on this', async () => {
     class Store {
       readonly kept = new Map<string, unknown>();

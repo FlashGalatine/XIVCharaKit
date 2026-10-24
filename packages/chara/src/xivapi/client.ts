@@ -214,8 +214,9 @@ export function createTransport(given: XivapiOptions = {}): Transport {
     return invalid();
   // Each option is read once, and a getter that throws makes the options invalid, as it does for
   // createDyeNameResolver. The same goes for what an option holds: the languages are copied by index
-  // (a hole or a getter in the list is caught here, not later) and the cache's two methods are read
-  // once and called on the cache, which may rely on this.
+  // after a check of their length (a getter that throws is caught here, at creation; a hole becomes
+  // undefined and fails the language check below) and the cache's two methods are read once and called
+  // on the cache, which may rely on this.
   const options: XivapiOptions = {};
   try {
     for (const key of OPTION_KEYS) {

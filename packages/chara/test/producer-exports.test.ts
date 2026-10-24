@@ -282,6 +282,7 @@ describe('an Anamnesis-shaped export, which never carries IsExtendedAppearanceVa
     };
     const without = await resolve(fields);
     expect(without.slots.lip).toMatchObject({
+      active: false,
       interpretation: 'inactive',
       reason: 'furPattern',
       extendedActive: false,
@@ -329,6 +330,7 @@ describe('an Anamnesis-shaped export, which never carries IsExtendedAppearanceVa
       IsExtendedAppearanceValid: true,
     });
     expect(withFlag.slots.lip).toMatchObject({
+      active: false,
       interpretation: 'inactive',
       reason: 'noLip',
       displayHex: null,
