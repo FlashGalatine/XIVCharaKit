@@ -234,6 +234,13 @@ test('reports failed appearance processing without a permanent loading state or 
   await expect(page.getByRole('alert')).not.toContainText('previous valid');
   await expect(page.getByTestId('swatch-hair')).toContainText('Unavailable');
   await expect(page.getByTestId('swatches')).not.toContainText('Loading');
+  // The file was inspected, so a lookup can still be started.
+  await expect(resolveButton(page)).toBeEnabled();
+});
+test('shows only the first 256 characters of a file name', async ({ page }) => {
+  await load(page, { Tribe: 'Midlander' }, `${'n'.repeat(300)}.chara`);
+  await expect(page.getByTestId('identity')).toContainText('Hyur');
+  await expect(page.locator('.filename')).toHaveText('n'.repeat(256));
 });
 test('bounds the visible character nickname without changing its admitted value', async ({
   page,

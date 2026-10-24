@@ -372,12 +372,29 @@ test.describe('the worker', () => {
     await expect(page.locator('.local-status')).toContainText(
       'Color evidence unavailable.',
     );
+    // The inspection is fine, so the lookup can still be started.
+    await expect(resolveButton(page)).toBeEnabled();
   });
 
   test('that fails to start is reported as PROCESSING_FAILED, and the previous file is kept', async ({
     page,
     traffic,
   }) => {
+    // Keep every error event the page's workers receive, so that what the page did to it can be read
+    // afterwards: a handler that does not cancel the event leaves the error to the browser to report.
+    await page.addInitScript(() => {
+      const Native = window.Worker;
+      const events: Event[] = [];
+      (window as typeof window & { __workerErrors: Event[] }).__workerErrors =
+        events;
+      window.Worker = class extends Native {
+        constructor(...args: ConstructorParameters<typeof Native>) {
+          super(...args);
+          this.addEventListener('error', (event) => events.push(event));
+        }
+      };
+    });
+    await page.goto('/');
     await load(page, { Tribe: 'Midlander' });
     await expect(page.getByTestId('identity')).toContainText('Hyur');
     await expect(resolveButton(page)).toBeEnabled();
@@ -392,8 +409,14 @@ test.describe('the worker', () => {
     await expect(page.getByTestId('identity')).toContainText('Hyur');
     await expect(page.getByTestId('identity')).not.toContainText('Au Ra');
     await expect(resolveButton(page)).toBeEnabled();
-    // The page handles the failure itself: the worker's error is not left uncaught. An uncaught
-    // worker error would be a page error; it is never written to the console list.
+    // The page handled the one error event itself (it cancelled it) ...
+    const cancelled = await page.evaluate(() =>
+      (
+        window as typeof window & { __workerErrors: Event[] }
+      ).__workerErrors.map((event) => event.defaultPrevented),
+    );
+    expect(cancelled).toEqual([true]);
+    // ... and nothing was left uncaught.
     await traffic.settle();
     expect(traffic.pageErrors).toEqual([]);
   });

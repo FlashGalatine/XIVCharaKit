@@ -26,6 +26,26 @@ const entries = (page: import('@playwright/test').Page) =>
 const omitted = (page: import('@playwright/test').Page) =>
   page.getByText('Additional diagnostics omitted.');
 
+test('lists the issues of a lookup that could not finish', async ({ page }) => {
+  await page.route('https://v2.xivapi.com/**', (route) =>
+    route.fulfill({ status: 500, body: 'no' }),
+  );
+  await load(page, {
+    Tribe: 'Midlander',
+    HairTone: 0,
+    Body: { ModelBase: 361, ModelVariant: 5 },
+  });
+  await expect(page.getByTestId('identity')).toContainText('Hyur');
+  await page.getByRole('button', { name: 'Resolve equipment' }).click();
+  await expect(page.getByTestId('equipment')).toContainText('Unavailable');
+  // The failure is one of the diagnostics, next to those of the file itself.
+  await expect(
+    page.locator('#diagnostics-list .detail-body > p.caption', {
+      hasText: 'UPSTREAM_UNAVAILABLE',
+    }),
+  ).not.toHaveCount(0);
+});
+
 test.describe('the diagnostics cap', () => {
   test('lists every issue, without a note, when there are exactly 64', async ({
     page,

@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures.js';
-import { load } from './helpers.js';
+import { load, resolveButton } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -65,6 +65,7 @@ test('reports the retained file’s colors as unavailable when resuming them fai
   await expect(page.getByTestId('identity')).toContainText('Hyur');
   await expect(page.getByTestId('swatches')).not.toContainText('Loading');
   await expect(page.getByTestId('swatch-hair')).toContainText('Unavailable');
+  await expect(resolveButton(page)).toBeEnabled();
   // The colors sentence is about the previous file, and no size note belongs to this refusal.
   await expect(page.getByRole('alert')).toHaveText(
     /retained\. APPEARANCE_UNAVAILABLE: The previous file's colors could not be resolved\.$/,
@@ -104,6 +105,7 @@ test('keeps the size note when a file over the limit was refused and resuming th
   );
   await expect(page.getByTestId('identity')).toContainText('Hyur');
   await expect(page.getByTestId('swatch-hair')).toContainText('Unavailable');
+  await expect(resolveButton(page)).toBeEnabled();
   release?.();
 });
 
