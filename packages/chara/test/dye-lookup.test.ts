@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDyeNameResolver } from '../src/dyes/index.js';
-import { createMemoryCache } from '../src/xivapi/index.js';
+import { createMemoryCache, createXivapiClient } from '../src/xivapi/index.js';
 
 const V = '0123456789abcdef';
 const S = `exdschema@2:rev:${'a'.repeat(40)}`;
@@ -461,5 +461,74 @@ describe('rows that XIVAPI reports as missing', () => {
     expect(urls).toHaveLength(40);
     expect(result.status).toBe('unavailable');
     expect(result.issues.map((issue) => issue.code)).toContain('REQUEST_LIMIT');
+  });
+});
+
+describe('host option objects that are not plain literals', () => {
+  const make = () => {
+    const urls: URL[] = [];
+    const fetch: typeof globalThis.fetch = async (input) => {
+      urls.push(new URL(String(input)));
+      return response([row(3)]);
+    };
+    return { urls, fetch };
+  };
+  it.each([
+    [
+      'a class with getters',
+      (fetch: typeof globalThis.fetch) =>
+        new (class {
+          get fetch() {
+            return fetch;
+          }
+          get version() {
+            return V;
+          }
+          get schema() {
+            return S;
+          }
+          get languages() {
+            return ['en' as const];
+          }
+        })(),
+    ],
+    [
+      'inherited options',
+      (fetch: typeof globalThis.fetch) =>
+        Object.create({ fetch, version: V, schema: S, languages: ['en'] }),
+    ],
+    [
+      'non-enumerable options',
+      (fetch: typeof globalThis.fetch) =>
+        Object.defineProperties(
+          {},
+          {
+            fetch: { value: fetch },
+            version: { value: V },
+            schema: { value: S },
+            languages: { value: ['en'] },
+          },
+        ),
+    ],
+  ])('reads %s the way the client does', async (_name, options) => {
+    const { urls, fetch } = make();
+    const config = options(fetch);
+    const viaDyes = await createDyeNameResolver(config).resolve([3]);
+    const viaClient = await createXivapiClient(config).getStains([3]);
+    expect(viaDyes).toMatchObject({
+      status: 'complete',
+      version: V,
+      schema: S,
+    });
+    expect(viaClient.rows).toEqual(viaDyes.rows);
+    expect(urls).toHaveLength(2);
+    for (const url of urls) {
+      expect(url.searchParams.get('version')).toBe(V);
+      expect(url.searchParams.get('fields')).toBe('Name@lang(en)');
+    }
+  });
+  it('still rejects a null cache and a non-object', () => {
+    expect(() => createDyeNameResolver({ cache: null } as never)).toThrow();
+    expect(() => createDyeNameResolver(null as never)).toThrow();
   });
 });
