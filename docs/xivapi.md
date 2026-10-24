@@ -56,6 +56,22 @@ Only complete positive sets use seven-day TTL and complete empty sets ten minute
 
 Protocol references, verified 2026-10-19: official [search/pagination](https://v2.xivapi.com/docs/guides/search/), [fields/languages/row lists](https://v2.xivapi.com/docs/guides/sheets/), [pinning](https://v2.xivapi.com/docs/guides/pinning/), and [OpenAPI](https://v2.xivapi.com/api/openapi.json); commit-pinned source conventions are linked in the implementation plan. [Installed-package consumers](security/distribution-validation.md) now verify the mocked contract in Node/Node Worker, Chromium/module Web Worker and local workerd. Task 7's [live browser check](demo.md#live-integration-evidence) verified direct CORS, canonical upstream identities, and two icons from localhost in Chromium. The deployed origin was accepted on 2026-10-22, including direct CORS from that origin ([Cloudflare hosting](cloudflare-hosting.md#deployment-verified-on-2026-10-22)); recheck it after hosting or upstream changes.
 
+## Cloudflare Workers
+
+A Worker request runs in its own I/O context. A client or resolver kept in module scope shares one scheduler between requests: a lookup that joins another request's in-flight lookup, and a queued lookup that another request's completion starts, depend on promises and timers that belong to a request that may already be over.
+
+Reproduced under local workerd on 2026-10-23 with a module-scope client and an upstream that takes 1.5 s (a stand-in with real timers, no network):
+- Three simultaneous lookups for different IDs: the third was queued and its request ended after 30 s with "the Worker's code had hung". The runtime logged a promise resolved from a different request context than the one that created it.
+- The scheduler's slots were then never released: a later request on the same isolate, for a new ID and with nothing else running, failed with `DEADLINE` after 30 s.
+- Two requests for the same IDs, and a client disconnecting while another request waited on its lookup, completed normally in that run.
+
+Creating the client in each request completed every one of those scenarios, including disconnected clients and a later request. So on Workers (and any runtime that ties promises or timers to a request):
+- Call `createXivapiClient`, `createXivapiResolver` or `createDyeNameResolver` inside the request handler.
+- Share only the data cache: create one `createMemoryCache()` at module scope and pass it as `cache`. Otherwise `createDyeNameResolver` builds a new cache on every call.
+- Lookups for the same IDs in different requests then run separately, and `version: 'latest'` costs one version request per request unless you pin a version.
+
+Node and browsers are unaffected, and the demo runs in the browser.
+
 ## Equipment candidate resolution
 
 `createXivapiResolver(options?: XivapiOptions): EquipmentResolver` uses the same host configuration and bounds as the low-level client. Its `resolve(input: EquipmentResolveInput, options?: { signal?: AbortSignal }): Promise<EquipmentResolution>` accepts only `models` and optional `glassesId`. Call it after an explicit host lookup action. Pass inspected worn models; no document or character information is required. All identifiers and request options are validated before I/O. Empty models with no facewear perform no I/O. A requested zero ID/model remains an explicit lookup; the resolver does not turn zero into absent input.

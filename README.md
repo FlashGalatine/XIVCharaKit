@@ -68,7 +68,7 @@ import { createDyeNameResolver } from 'xivcharakit/dyes';
 const dyes = createDyeNameResolver({ languages: ['en'] });
 const names = await dyes.resolve([3, 10]);
 // names.rows: { rowId, names }; status/version/schema/issues retain evidence.
-// Reuse the resolver for its bounded default memory cache.
+// Reuse the resolver for its bounded default memory cache (on Cloudflare Workers, create it per request and share only a cache: docs/xivapi.md#cloudflare-workers).
 ```
 
 The demo shows `No dye (0)` for valid zero and raw IDs before lookup. **Resolve equipment and dye names** requests names; blank, missing and unavailable results remain distinct. Original stored fields are preserved. No name snapshot is bundled; see [dye provenance](docs/data-provenance.md#dye-names-through-xivapi). The synchronous `getDyeName` and `DYE_METADATA` exports were removed before publication.

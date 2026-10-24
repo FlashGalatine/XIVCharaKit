@@ -51,7 +51,7 @@ import { createDyeNameResolver } from 'xivcharakit/dyes';
 const dyes = createDyeNameResolver({ languages: ['en'] });
 const result = await dyes.resolve([3, 10]);
 // result.rows: { rowId, names }; result.status/version/schema/issues retain evidence.
-// Reuse this resolver for its bounded default memory cache.
+// Reuse this resolver for its bounded default memory cache (on Cloudflare Workers, create it per request and share only a cache: see the XIVAPI reference in the repository docs).
 ```
 
 No dye-name snapshot is bundled. Names require API availability or a successful cached response; stored IDs remain usable offline. The former synchronous `getDyeName` and `DYE_METADATA` exports were removed before publication. Blank names, missing rows and failed lookups remain distinct.
