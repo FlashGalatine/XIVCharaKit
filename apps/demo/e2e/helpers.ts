@@ -273,3 +273,70 @@ export function expectApproved(request: Recorded): void {
     else expect(value, name).toMatch(rule);
   }
 }
+
+/**
+ * Holds every XIVAPI request except the version probe until `answer()` is called, answers the ones
+ * that come after it at once, and records which requests the page started and which it gave up on
+ * (Playwright reports a request the page aborts as failed). `answer()` also lets the requests that
+ * were held reply, to a page that has already abandoned them.
+ */
+export async function controlLookup(page: Page, holdPaths?: readonly string[]) {
+  const seen = { started: [] as string[], aborted: [] as string[] };
+  let holding = true;
+  let open: () => void = () => {};
+  const gate = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  page.on('requestfailed', (request) => {
+    const url = new URL(request.url());
+    if (url.origin === 'https://v2.xivapi.com') seen.aborted.push(url.pathname);
+  });
+  await page.route('https://v2.xivapi.com/**', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/api/version') {
+      await route.fulfill({
+        json: { versions: [{ key: V, names: ['latest'] }] },
+      });
+      return;
+    }
+    seen.started.push(url.pathname);
+    if (holding && (!holdPaths || holdPaths.includes(url.pathname))) await gate;
+    const rows = (url.searchParams.get('rows') ?? '')
+      .split(',')
+      .filter(Boolean)
+      .map(Number);
+    const json =
+      url.pathname === '/api/sheet/Stain'
+        ? {
+            version: V,
+            schema: S,
+            rows: rows.map((id) => ({
+              row_id: id,
+              fields: { 'Name@lang(en)': `Dye ${id}` },
+            })),
+          }
+        : url.pathname === '/api/sheet/Glasses'
+          ? {
+              version: V,
+              schema: S,
+              rows: rows.map((id) => ({
+                row_id: id,
+                fields: { 'Name@lang(en)': `Round glasses ${id}` },
+              })),
+            }
+          : {
+              version: V,
+              schema: S,
+              results: [item(1, 'Candidate 1')],
+            };
+    await route.fulfill({ json }).catch(() => {});
+  });
+  return {
+    seen,
+    searches: () => seen.started.filter((p) => p === '/api/search').length,
+    answer: () => {
+      holding = false;
+      open();
+    },
+  };
+}

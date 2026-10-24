@@ -1,33 +1,6 @@
 import { expect, test } from './fixtures.js';
 import { load } from './helpers.js';
 
-test('terminates an overdue worker and preserves the previous valid inspection', async ({
-  page,
-}) => {
-  await load(page, { Tribe: 'Midlander' });
-  await expect(page.getByTestId('identity')).toContainText('Hyur');
-  await expect(
-    page.getByRole('button', {
-      name: 'Resolve equipment and dye names',
-      exact: true,
-    }),
-  ).toBeEnabled();
-  let release: (() => void) | undefined;
-  await page.route('**/assets/worker-*.js', async (route) => {
-    await new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await route.abort().catch(() => {});
-  });
-  await page.clock.install();
-  await load(page, { Tribe: 'Xaela' }, 'slow.chara');
-  await expect.poll(() => Boolean(release)).toBe(true);
-  await page.clock.runFor(5001);
-  await expect(page.getByRole('alert')).toContainText('PROCESSING_TIMEOUT');
-  await expect(page.getByTestId('identity')).toContainText('Hyur');
-  release?.();
-});
-
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });

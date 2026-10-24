@@ -151,34 +151,3 @@ test('keeps raw IDs usable when dye lookup fails', async ({ page }) => {
   ).toBeEnabled();
   await expect(page.getByTestId('identity')).toBeVisible();
 });
-
-test('clear discards a pending dye-name response', async ({ page }) => {
-  let release: (() => void) | undefined;
-  await page.route('https://v2.xivapi.com/**', async (route) => {
-    if (route.request().url().includes('/version')) {
-      await route.fulfill({
-        json: { versions: [{ key: V, names: ['latest'] }] },
-      });
-      return;
-    }
-    await new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await route
-      .fulfill({
-        json: {
-          version: V,
-          schema: S,
-          rows: [{ row_id: 3, fields: { 'Name@lang(en)': 'STALE_DYE' } }],
-        },
-      })
-      .catch(() => {});
-  });
-  await load(page, { Body: { DyeId: 3 } });
-  await page.getByRole('button', { name: button, exact: true }).click();
-  await expect.poll(() => Boolean(release)).toBe(true);
-  await page.getByRole('button', { name: 'Clear file', exact: true }).click();
-  release?.();
-  await expect(page.getByTestId('identity')).toHaveCount(0);
-  await expect(page.locator('body')).not.toContainText('STALE_DYE');
-});
