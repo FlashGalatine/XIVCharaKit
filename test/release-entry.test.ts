@@ -64,4 +64,18 @@ describe('the registry preflight request', () => {
     expect(init?.signal).toBeInstanceOf(AbortSignal);
     expect(init?.signal?.aborted).toBe(false);
   });
+  it('gives the registry fifteen seconds before the signal aborts the request', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    try {
+      await assertVersionUnpublished(
+        '0.1.0-beta.1',
+        vi
+          .fn<typeof fetch>()
+          .mockResolvedValue(new Response(null, { status: 404 })),
+      );
+      expect(timeout).toHaveBeenCalledExactlyOnceWith(15_000);
+    } finally {
+      timeout.mockRestore();
+    }
+  });
 });
