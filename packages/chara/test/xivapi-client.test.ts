@@ -727,6 +727,17 @@ describe('browser-style redirects and cached row order', () => {
     expect(r.status).toBe('unavailable');
     expect(code(r)).toEqual(['REDIRECT_REFUSED']);
   });
+  it('still refuses a redirect whose body cannot be cancelled', async () => {
+    const odd = {
+      type: 'basic',
+      status: 302,
+      ok: false,
+      body: {},
+      headers: new Headers(),
+    } as unknown as Response;
+    const r = await client(async () => odd).searchItems([body]);
+    expect(code(r)).toEqual(['REDIRECT_REFUSED']);
+  });
   it('treats a cached entry whose rows are not in ascending order as a miss', async () => {
     const stains = (ids: number[]) =>
       json({

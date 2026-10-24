@@ -469,6 +469,36 @@ describe('incomplete evidence and facewear', () => {
       (await r.resolve({ models: [], glassesId: 0 })).facewear,
     ).toMatchObject({ id: 0, status: 'notFound', candidates: [] });
   });
+  it('stops waiting on a hung host cache after its first timeout, across both components', async () => {
+    vi.useFakeTimers();
+    const hung = {
+      get: () => new Promise<null>(() => {}),
+      set: () => new Promise<void>(() => {}),
+    };
+    const pending = resolver(
+      async (input) =>
+        new URL(String(input)).pathname.endsWith('/sheet/Glasses')
+          ? json({
+              version: V,
+              schema: S,
+              rows: [
+                {
+                  row_id: 8,
+                  fields: {
+                    'Name@lang(en)': 'Synthetic Glasses',
+                    Icon: { id: 9 },
+                  },
+                },
+              ],
+            })
+          : response([]),
+      { cache: hung },
+    ).resolve({ models: [body], glassesId: 8 });
+    await vi.advanceTimersByTimeAsync(35_000);
+    const r = await pending;
+    expect(r.items.Body?.status).toBe('notFound');
+    expect(r.facewear).toMatchObject({ id: 8, status: 'matched' });
+  });
   it('preserves caller cancellation for both item and facewear results', async () => {
     const abort = new AbortController();
     abort.abort();

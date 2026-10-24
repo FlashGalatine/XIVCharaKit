@@ -33,14 +33,21 @@ export function createDyeNameResolver(
   if (typeof options !== 'object' || options === null || Array.isArray(options))
     throw new XivapiInputError('INVALID_OPTIONS');
   // Read each known option by name: a spread would drop inherited and non-enumerable ones.
+  // A getter that throws is invalid options, as it is for createXivapiClient.
   const known: XivapiOptions = {};
-  for (const key of OPTION_KEYS) {
-    const value = options[key];
-    if (value !== undefined) Object.assign(known, { [key]: value });
+  let cache: XivapiOptions['cache'];
+  try {
+    for (const key of OPTION_KEYS) {
+      const value = options[key];
+      if (value !== undefined) Object.assign(known, { [key]: value });
+    }
+    cache = options.cache;
+  } catch {
+    throw new XivapiInputError('INVALID_OPTIONS');
   }
   const client = createXivapiClient({
     ...known,
-    cache: options.cache === undefined ? createMemoryCache() : options.cache,
+    cache: cache === undefined ? createMemoryCache() : cache,
   });
   return { resolve: client.getStains };
 }

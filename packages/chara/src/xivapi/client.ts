@@ -75,7 +75,7 @@ function missingRowIn(body: Uint8Array, sheet: string): number | undefined {
   if (!isRecord(data) || data.code !== 404 || typeof data.message !== 'string')
     return undefined;
   const match = new RegExp(
-    `^not found: the Excel row ${sheet}/(\\d{1,5}):\\d{1,5} could not be found$`,
+    `^not found: the Excel row ${sheet}/(0|[1-9]\\d{0,4}):0 could not be found$`,
   ).exec(data.message.length <= 256 ? data.message : '');
   const id = match ? Number(match[1]) : Number.NaN;
   return Number.isInteger(id) && id <= 65535 ? id : undefined;
@@ -146,6 +146,8 @@ async function delay(ms: number, signal: AbortSignal): Promise<void> {
   }
 }
 interface Budget {
+  /** A host cache call timed out: skip further cache calls in this operation. */
+  cacheDown: boolean;
   requests: number;
   bytes: number;
   rows: number;
@@ -175,6 +177,7 @@ interface Transport extends XivapiClient {
 }
 const newBudget = (signal: AbortSignal): Budget => ({
   signal,
+  cacheDown: false,
   requests: 0,
   bytes: 0,
   rows: 0,
@@ -287,7 +290,11 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           response.type === 'opaqueredirect' ||
           (response.status >= 300 && response.status < 400)
         ) {
-          void response.body?.cancel().catch(() => {});
+          try {
+            void response.body?.cancel().catch(() => {});
+          } catch {
+            // the body is not needed
+          }
           throw new Failure('REDIRECT_REFUSED');
         }
         if (!response.body || typeof response.body.getReader !== 'function')
@@ -419,7 +426,7 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           : schema;
       const key =
         pin && canonicalSchema(schemaPin) ? keyFor(pin, schemaPin) : null;
-      if (cache && key) {
+      if (cache && key && !budget.cacheDown) {
         try {
           const hit: unknown = await cacheCall(
             cache.get(key),
@@ -463,8 +470,10 @@ export function createTransport(options: XivapiOptions = {}): Transport {
               };
             }
           }
-        } catch {
+        } catch (error) {
           if (signal.aborted) throw reason(signal);
+          if (error instanceof Failure && error.code === 'CACHE_TIMEOUT')
+            budget.cacheDown = true;
         }
       }
       let cursor: string | undefined;
@@ -502,13 +511,15 @@ export function createTransport(options: XivapiOptions = {}): Transport {
         return url;
       };
       for (let page = 0; page < maxPages; page++) {
-        let response = await request(urlFor(), budget, sheet);
+        // A 404 names no version: with the alias unresolved a later 200 could describe another one.
+        const rowSheet = pin !== null ? sheet : undefined;
+        let response = await request(urlFor(), budget, rowSheet);
         while (response.missingRow !== undefined) {
           const at = wanted.indexOf(response.missingRow);
           if (at < 0) throw new Failure('UPSTREAM_UNAVAILABLE');
           wanted.splice(at, 1);
           if (!wanted.length) break;
-          response = await request(urlFor(), budget, sheet);
+          response = await request(urlFor(), budget, rowSheet);
         }
         if (response.missingRow !== undefined) {
           // Every requested row is missing. The answer names no version or schema, so only a
@@ -539,7 +550,11 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           const row = stains
             ? normalizeStainRow(raw, languages)
             : normalizeRow(raw, languages, items);
-          if (!row || !associated(row, selection)) {
+          if (
+            !row ||
+            !associated(row, selection) ||
+            (!items && !wanted.includes(row.rowId))
+          ) {
             complete = false;
             diagnostics.add('INVALID_ROW', [], 'An upstream row was rejected.');
             continue;
@@ -572,6 +587,7 @@ export function createTransport(options: XivapiOptions = {}): Transport {
       if (
         complete &&
         cache &&
+        !budget.cacheDown &&
         canonicalVersion(upstreamVersion) &&
         canonicalSchema(upstreamSchema)
       ) {
@@ -598,8 +614,10 @@ export function createTransport(options: XivapiOptions = {}): Transport {
               signal,
               timeoutMs,
             );
-        } catch {
-          // ignored on purpose
+        } catch (error) {
+          // ignored on purpose, but a timeout stops further cache calls in this operation
+          if (error instanceof Failure && error.code === 'CACHE_TIMEOUT')
+            budget.cacheDown = true;
         }
       }
       if (upstreamVersion && upstreamSchema && complete) {
