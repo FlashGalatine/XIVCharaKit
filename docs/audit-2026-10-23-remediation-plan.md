@@ -2,7 +2,7 @@
 
 **Source:** [audit-2026-10-23.md](audit-2026-10-23.md), the audit of `014c6a0` (106 findings: 2 high, 28 medium, 76 low; 8 verifier disputes resolved by the maintainer, see its §7). Plus one finding added during the fixes (N001, FacePaint mirror flag).
 
-**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings, the ten Wave 4 findings, the eight Wave 5 findings and the eight Wave 6 findings, 51 in all. Partly fixed: F090 (warning only). Outstanding: 55. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
+**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings, the ten Wave 4 findings, the eight Wave 5 findings, the eight Wave 6 findings, the eleven Wave 7 findings and the fifteen Wave 8 findings, 77 in all. Partly fixed: F090 (warning only). Outstanding: 29. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
 
 **Ordering:**
 1. One deploy unit per wave, each ending in a named gate or release. Waves are the equivalent of the sprints in the XIV Dye Tools remediation plans.
@@ -22,8 +22,8 @@
 | 4 | repo tooling (scripts, test/, CI) | Release and verification tooling that can pass vacuously | 0 / 1 / 9 | ✅ done (27d3c5e to 3fbe8a7) |
 | 5 | apps/demo | State, focus and live-region fragility across re-renders | 0 / 2 / 6 | ✅ done (e8be1fd to e4bc6e7) |
 | 6 | apps/demo (tests) | Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03) | 0 / 4 / 4 | ✅ done (5d5574e to ba6353d) |
-| 7 | packages/chara (tests) | Reader and inspection guards that can be deleted unnoticed | 0 / 4 / 7 | open |
-| 8 | packages/chara (tests) | Appearance maths and palette provider assertions | 0 / 6 / 9 | open |
+| 7 | packages/chara (tests) | Reader and inspection guards that can be deleted unnoticed | 0 / 4 / 7 | ✅ done (8a1b3fd to 726a01b) |
+| 8 | packages/chara (tests) | Appearance maths and palette provider assertions | 0 / 6 / 9 | ✅ done (d5d064e to 0defad7) |
 | 9 | packages/chara (tests) | XIVAPI budgets, cache admission and resolver scope (SEC-05) | 0 / 3 / 11 | open |
 | 10 | apps/demo (tests) | State-machine and UI behaviour tests | 0 / 2 / 6 | open |
 | 11 | docs + fixtures manifest | Producer compatibility record and refresh method | 0 / 2 / 5 | open |
@@ -172,51 +172,57 @@ No application code changed. Each new assertion was shown to fail against the we
 
 **Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:demo:cloudflare`: 123 tooling, 463 package, 18 demo unit and 72 demo browser tests pass (74 with the hosting checks; 1 live smoke skipped). A workflow review (two lenses, two verifiers per finding) confirmed thirteen findings, none disputed: the default XIVAPI block had broken the opt-in live check, and the recorder missed Blob bodies, WebSockets, SharedWorker, page-exit sends, structured console arguments, history state and the file system, and pinned only some lookup values; all were fixed (ba6353d). Not deployed.
 
-## Wave 7 — packages/chara (tests): Reader and inspection guards that can be deleted unnoticed
+## Wave 7 — packages/chara (tests): Reader and inspection guards that can be deleted unnoticed ✅ COMPLETED 2026-10-24 (8a1b3fd to 726a01b)
 
-**Anchors F002, F003, F004:** the hand-written syntax checks on discarded image strings, the node/key budgets inside the omitted image subtree, and the `READ_MAXIMUMS` ceiling have no test. Plus the weapon worn/empty rule (F013) and the boundary and cap tests (F005-F007, F014-F017).
-Method for every row: add the test, delete or loosen the guard on a scratch copy, confirm the test fails, restore.
-
-| ID | Sev · Tier | Location | Item | Status |
-|---|---|---|---|---|
-| F002 | Medium · P2 | `packages/chara/src/read.ts:137` | No test covers the hand-written syntax checks on discarded image strings | Open |
-| F003 | Medium · P2 | `packages/chara/test/read.test.ts:191` | Node and key-length budgets inside the omitted image subtree are untested | Open |
-| F004 | Medium · P2 | `packages/chara/src/read.ts:20` | `READ_MAXIMUMS` values and acceptance at the ceiling are not pinned by tests | Open |
-| F013 | Medium · P2 | `packages/chara/src/inspect.ts:207` | Weapon worn/empty rule and weapon `INCOMPLETE_MODEL` have no test | Open |
-| F005 | Low · P3 | `packages/chara/src/read.ts:233` | Untested: a key exactly at `maxKeyLength`, valid exponents, `MAX_SAFE_INTEGER` | Open |
-| F006 | Low · P3 | `packages/chara/test/property.test.ts:45` | Property mutation test accepts any thrown error and never checks that valid input is accepted | Open |
-| F007 | Low · P3 | `packages/chara/src/issues.ts:11` | Multi-segment path budget and behaviour at exactly the issue cap are unpinned | Open |
-| F014 | Low · P3 | `packages/chara/src/inspect.ts:248` | The `RACE_TRIBE_MISMATCH` and `UNSUPPORTED_VALUE` codes are never asserted | Open |
-| F015 | Low · P3 | `packages/chara/src/inspect.ts:225` | Numeric Age/Race decoding and the `Miqote`/`AuRa` aliases are untested | Open |
-| F016 | Low · P3 | `packages/chara/src/inspect.ts:79` | `vector()` count/length guards and FacialFeatures bounds are unpinned | Open |
-| F017 | Low · P3 | `packages/chara/src/inspect.ts:262` | The numeric-typing rule for metadata fields and the combined 64-issue cap are untested | Open |
-
-**Ends with:** `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`. Test-only: no release of its own.
-
-## Wave 8 — packages/chara (tests): Appearance maths and palette provider assertions
-
-**Anchors F019, F020, F022, F034-F036:** CIEDE2000 hue wraparound is never asserted, hex-to-Lab is checked only for greys, policy validation is mostly untested, and the palette tests check wiring and offsets only partly. Plus the provider association checks, thresholds, composite and deep-freeze tests (F021, F023-F027, F033, F037, F038).
-Derive expected colors from an independent source (published CIEDE2000 test vectors, the shipped JSON), not from the code under test.
+No library code changed. Each new assertion was shown to fail against the weakened source it names: 122 weakened versions of the reader, issue and inspector code (117 caught at once; the five survivors were fixed with four more tests and the existing read test, and two mutants are equivalent), then 24 more after an independent review, all caught.
+- **F002, F003, F004, F005, F007 (reader):** `test/read-guards.test.ts` pins the hand-written syntax checks on the discarded image string, the node, key-length and depth budgets inside the omitted subtree, a hard-coded table of the six ceilings and the defaults (each ceiling accepted, ceiling + 1 refused), the number grammar, and the path and issue-cap bounds.
+- **F013-F017 (inspection):** `test/inspect-guards.test.ts` pins the weapon worn/empty rule and INCOMPLETE_MODEL, RACE_TRIBE_MISMATCH and UNSUPPORTED_VALUE with their paths, the numeric and alias forms of Race, Tribe, Gender and Age, vector and FacialFeatures parsing, metadata typing and the combined 64-issue cap.
+- **F006:** `test/property.test.ts` now requires that malformed mutants are refused with the reader's own error and an allowed code, and that text native JSON accepts is read to the same value.
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
-| F019 | Medium · P2 | `packages/chara/src/appearance/color-math.ts:65` | CIEDE2000 hue-wraparound branches are never asserted | Open |
-| F020 | Medium · P2 | `packages/chara/src/appearance/color-math.ts:35` | hex→Lab conversion is asserted only for neutral (grey) colours | Open |
-| F022 | Medium · P2 | `packages/chara/src/appearance/policy.ts:48` | Most policy validation untested; the "before provider work" ordering is never asserted | Open |
-| F034 | Medium · P2 | `scripts/palette-generation.ts:19` | Generator test pins only some offsets and tribes, but the docs claim it proves them all | Open |
-| F035 | Medium · P2 | `packages/chara/src/palettes/default-provider.ts:141` | No test checks the actual colour values returned for each gender | Open |
-| F036 | Medium · P2 | `packages/chara/src/palettes/index.ts:25` | `shader-shared` loader wiring unpinned (only `eyes[0]` is sampled, and it is identical in both tables) | Open |
-| F021 | Low · P3 | `packages/chara/src/appearance/resolve.ts:68` | Provider association and canonical-hex checks are mostly untested; the test title claims more than it checks | Open |
-| F023 | Low · P3 | `packages/chara/src/appearance/resolve.ts:365` | Custom thresholds and the exact-equality boundaries are unpinned | Open |
-| F024 | Low · P3 | `packages/chara/src/appearance/resolve.ts:141` | Unpinned: `ZERO_KEYS` completeness, and that ambiguity is independent of the flag | Open |
-| F025 | Low · P3 | `packages/chara/src/appearance/resolve.ts:261` | Index 192 boundary, limbal kind, gridAddress, eyesShareIndex, metadata and composite clamp are never asserted | Open |
-| F026 | Low · P3 | `packages/chara/src/appearance/color-math.ts:104` | `compositeHex` is tested only for white over black | Open |
-| F027 | Low · P3 | `packages/chara/test/appearance.test.ts:14` | The mock provider hides errors in highlights/features palette routing | Open |
-| F033 | Low · P3 | `packages/chara/src/palettes/default-provider.ts:39` | Validation rejection paths and `PALETTE_LOAD_FAILED` are untested; sparse arrays are accepted | Open |
-| F037 | Low · P3 | `packages/chara/test/palettes.test.ts:86` | The deep-freeze guarantee is tested only at the top level | Open |
-| F038 | Low · P3 | `scripts/build-palettes.ts:33` | The CLI's pre-read size gate and argument validation are untested | Open |
+| F002 | Medium · P2 | `packages/chara/src/read.ts:137` | No test covers the hand-written syntax checks on discarded image strings | Fixed |
+| F003 | Medium · P2 | `packages/chara/test/read.test.ts:191` | Node and key-length budgets inside the omitted image subtree are untested | Fixed |
+| F004 | Medium · P2 | `packages/chara/src/read.ts:20` | `READ_MAXIMUMS` values and acceptance at the ceiling are not pinned by tests | Fixed |
+| F013 | Medium · P2 | `packages/chara/src/inspect.ts:207` | Weapon worn/empty rule and weapon `INCOMPLETE_MODEL` have no test | Fixed |
+| F005 | Low · P3 | `packages/chara/src/read.ts:233` | Untested: a key exactly at `maxKeyLength`, valid exponents, `MAX_SAFE_INTEGER` | Fixed |
+| F006 | Low · P3 | `packages/chara/test/property.test.ts:45` | Property mutation test accepts any thrown error and never checks that valid input is accepted | Fixed |
+| F007 | Low · P3 | `packages/chara/src/issues.ts:11` | Multi-segment path budget and behaviour at exactly the issue cap are unpinned | Fixed |
+| F014 | Low · P3 | `packages/chara/src/inspect.ts:248` | The `RACE_TRIBE_MISMATCH` and `UNSUPPORTED_VALUE` codes are never asserted | Fixed |
+| F015 | Low · P3 | `packages/chara/src/inspect.ts:225` | Numeric Age/Race decoding and the `Miqote`/`AuRa` aliases are untested | Fixed |
+| F016 | Low · P3 | `packages/chara/src/inspect.ts:79` | `vector()` count/length guards and FacialFeatures bounds are unpinned | Fixed |
+| F017 | Low · P3 | `packages/chara/src/inspect.ts:262` | The numeric-typing rule for metadata fields and the combined 64-issue cap are untested | Fixed |
 
-**Ends with:** `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`. Test-only.
+**Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test` passed when the wave was committed. A workflow review (two lenses, two verifiers per finding) confirmed sixteen findings, none disputed: all were gaps in what the new tests pin, none a library defect (726a01b). Test-only: no release of its own.
+
+## Wave 8 — packages/chara (tests): Appearance maths and palette provider assertions ✅ COMPLETED 2026-10-24 (d5d064e to 0defad7)
+
+Two small changes to shipped code: `colors()` in the default palette provider read a list with `some` and `every`, which skip the holes of a sparse array (F033), and the pre-read size gate of `scripts/build-palettes.ts` now has a message of its own (F038). Everything else is tests. Each new assertion was shown to fail against the weakened source it names: 273 weakened versions in all (color maths 91, appearance 91, palette provider 44, palette generator 22, build-palettes 25); the 11 that survive are equivalent and are listed in the commit messages.
+- **F019, F020, F026 (`color-math-reference.test.ts`):** all 34 published CIEDE2000 pairs, pairs on both sides of the 180 degree hue wrap with values from a separate implementation, hex to Lab for every pair of 17 reference colors and for greys on both sides of the Lab knee, and compositing on the linear part of the encoder.
+- **F021-F025, F027 (`appearance-policy.test.ts`, `appearance-guards.test.ts`):** policy validation and exact thresholds, a provider that gives every entry its own color (so a crossed palette shows), answers that do not belong to the request for both the hair and the skin slot, the all-zero block, index ranges and the lip composite guards.
+- **F033, F035, F036, F037 (`palette-values.test.ts`):** the bundled JSON read directly, a synthetic dataset with a color per coordinate, dataset validation (including inherited names and sparse lists), requests that must load nothing, retry after a failed validation, and the frozen provenance record.
+- **F034 (`palette-layout.test.ts`):** the generator is run over a buffer in which every entry holds its own position, so every palette offset, block size and order is read back.
+- **F038 (`test/build-palettes-cli.test.ts`):** the arguments, the version patterns and the pre-read size gate, including a preload that shows no byte is read before a refusal.
+
+| ID | Sev · Tier | Location | Item | Status |
+|---|---|---|---|---|
+| F019 | Medium · P2 | `packages/chara/src/appearance/color-math.ts:65` | CIEDE2000 hue-wraparound branches are never asserted | Fixed |
+| F020 | Medium · P2 | `packages/chara/src/appearance/color-math.ts:35` | hex→Lab conversion is asserted only for neutral (grey) colours | Fixed |
+| F022 | Medium · P2 | `packages/chara/src/appearance/policy.ts:48` | Most policy validation untested; the "before provider work" ordering is never asserted | Fixed |
+| F034 | Medium · P2 | `scripts/palette-generation.ts:19` | Generator test pins only some offsets and tribes, but the docs claim it proves them all | Fixed |
+| F035 | Medium · P2 | `packages/chara/src/palettes/default-provider.ts:141` | No test checks the actual colour values returned for each gender | Fixed |
+| F036 | Medium · P2 | `packages/chara/src/palettes/index.ts:25` | `shader-shared` loader wiring unpinned (only `eyes[0]` is sampled, and it is identical in both tables) | Fixed |
+| F021 | Low · P3 | `packages/chara/src/appearance/resolve.ts:68` | Provider association and canonical-hex checks are mostly untested; the test title claims more than it checks | Fixed |
+| F023 | Low · P3 | `packages/chara/src/appearance/resolve.ts:365` | Custom thresholds and the exact-equality boundaries are unpinned | Fixed |
+| F024 | Low · P3 | `packages/chara/src/appearance/resolve.ts:141` | Unpinned: `ZERO_KEYS` completeness, and that ambiguity is independent of the flag | Fixed |
+| F025 | Low · P3 | `packages/chara/src/appearance/resolve.ts:261` | Index 192 boundary, limbal kind, gridAddress, eyesShareIndex, metadata and composite clamp are never asserted | Fixed |
+| F026 | Low · P3 | `packages/chara/src/appearance/color-math.ts:104` | `compositeHex` is tested only for white over black | Fixed |
+| F027 | Low · P3 | `packages/chara/test/appearance.test.ts:14` | The mock provider hides errors in highlights/features palette routing | Fixed |
+| F033 | Low · P3 | `packages/chara/src/palettes/default-provider.ts:39` | Validation rejection paths and `PALETTE_LOAD_FAILED` are untested; sparse arrays are accepted | Fixed |
+| F037 | Low · P3 | `packages/chara/test/palettes.test.ts:86` | The deep-freeze guarantee is tested only at the top level | Fixed |
+| F038 | Low · P3 | `scripts/build-palettes.ts:33` | The CLI's pre-read size gate and argument validation are untested | Fixed |
+
+**Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`: 174 tooling, 1079 package, 18 demo unit and 72 demo browser tests pass. A workflow review (three lenses, two verifiers per finding) confirmed twenty findings, none disputed: seventeen were gaps in what the tests pin (the Lab and encoder knees, the hue wrap thresholds, the skin slot, the lip composite guard, the race index limit and tribe check before loading, the integer check on the index, retry after a failed validation, and whether the size gate runs before the read) and three were errors in the commit messages (an index limit called equivalent, F033 labelled F037, and a description of an old gate message that never existed); all were fixed (d5d064e to 0defad7). Test-only apart from the two changes above.
 
 ## Wave 9 — packages/chara (tests): XIVAPI budgets, cache admission and resolver scope (SEC-05)
 
