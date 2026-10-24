@@ -711,3 +711,49 @@ describe('versioned normalized row caching', () => {
     expect(await cache.get('bad')).toBeNull();
   });
 });
+
+describe('browser-style redirects and cached row order', () => {
+  it('reports an opaque redirect as a refused redirect, as a browser returns it', async () => {
+    // fetch with redirect: 'manual' resolves to type opaqueredirect, status 0 and no body.
+    const opaque = {
+      type: 'opaqueredirect',
+      status: 0,
+      ok: false,
+      body: null,
+      headers: new Headers(),
+    } as unknown as Response;
+    const r = await client(async () => opaque).searchItems([body]);
+    expect(r.status).toBe('unavailable');
+    expect(code(r)).toEqual(['REDIRECT_REFUSED']);
+  });
+  it('treats a cached entry whose rows are not in ascending order as a miss', async () => {
+    const stains = (ids: number[]) =>
+      json({
+        version: V,
+        schema: S,
+        rows: ids.map((id) => ({
+          row_id: id,
+          fields: { 'Name@lang(en)': `Dye ${id}` },
+        })),
+      });
+    const store = createMemoryCache();
+    const first = vi.fn(async () => stains([2, 5]));
+    await client(first, { cache: store, languages: ['en'] }).getStains([2, 5]);
+    expect(first).toHaveBeenCalledTimes(1);
+    const reordered = {
+      set: store.set,
+      async get(key: string) {
+        const value = await store.get(key);
+        value?.rows.reverse();
+        return value;
+      },
+    };
+    const second = vi.fn(async () => stains([2, 5]));
+    const result = await client(second, {
+      cache: reordered,
+      languages: ['en'],
+    }).getStains([2, 5]);
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(result.rows.map((r) => r.rowId)).toEqual([2, 5]);
+  });
+});

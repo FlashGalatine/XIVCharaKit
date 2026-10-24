@@ -264,6 +264,14 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           ),
           control.signal,
         );
+        // A browser answers redirect: 'manual' with an opaque redirect that has no body.
+        if (
+          response.type === 'opaqueredirect' ||
+          (response.status >= 300 && response.status < 400)
+        ) {
+          void response.body?.cancel().catch(() => {});
+          throw new Failure('REDIRECT_REFUSED');
+        }
         if (!response.body || typeof response.body.getReader !== 'function')
           throw new Failure('BODY_UNAVAILABLE');
         reader = response.body.getReader();
@@ -287,11 +295,6 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           )
             chunks.push(chunk.value);
         }
-        if (
-          response.type === 'opaqueredirect' ||
-          (response.status >= 300 && response.status < 400)
-        )
-          throw new Failure('REDIRECT_REFUSED');
         if (response.status === 429 || response.status === 503) {
           if (attempt !== 0) throw new Failure('UPSTREAM_UNAVAILABLE');
           const raw = response.headers.get('Retry-After');
@@ -423,7 +426,9 @@ export function createTransport(options: XivapiOptions = {}): Transport {
             }
             if (
               normalized.length === data.rows.length &&
-              new Set(normalized.map((r) => r.rowId)).size === normalized.length
+              normalized.every(
+                (r, i) => i === 0 || (normalized[i - 1]?.rowId ?? 0) < r.rowId,
+              )
             ) {
               budget.rows += normalized.length;
               if (budget.rows > 5000) throw new Failure('ROW_LIMIT');
