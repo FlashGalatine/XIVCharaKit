@@ -1,9 +1,18 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { PALETTE_METADATA } from '../packages/chara/src/palettes/index.js';
 import {
   assertArtifactSet,
@@ -152,32 +161,111 @@ describe('the committed artifact list', () => {
   });
 });
 
-describe('build-palettes --check', () => {
-  const script = fileURLToPath(
-    new URL('../scripts/build-palettes.ts', import.meta.url),
-  );
-  const tsx = fileURLToPath(
-    new URL('../node_modules/tsx/dist/cli.mjs', import.meta.url),
-  );
-  it('fails for a file that would change the committed palettes, without writing anything', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'palette-check-'));
-    try {
-      const file = join(dir, 'human.cmp');
-      writeFileSync(file, Buffer.alloc(182_272));
-      const result = spawnSync(
-        process.execPath,
-        [tsx, script, file, '--check'],
-        {
-          encoding: 'utf8',
-          timeout: 60_000,
-        },
-      );
-      expect(result.status).toBe(1);
-      const report = JSON.parse(result.stdout);
-      expect(report).toMatchObject({ mode: 'check', matchesCommitted: false });
-      expect(report.differences.length).toBeGreaterThan(0);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+// The scripts write to fixed paths relative to their own location, so they run here from a replica
+// of the layout: a regression that writes in check mode, or at all, can never touch the repository.
+const repo = fileURLToPath(new URL('../', import.meta.url));
+const tsx = join(repo, 'node_modules/tsx/dist/cli.mjs');
+const temp = mkdtempSync(join(tmpdir(), 'palette-scripts-'));
+afterAll(() => rmSync(temp, { recursive: true, force: true }));
+let counter = 0;
+const replica = () => {
+  const dir = join(temp, String(++counter));
+  mkdirSync(join(dir, 'packages/chara'), { recursive: true });
+  cpSync(join(repo, 'scripts'), join(dir, 'scripts'), { recursive: true });
+  cpSync(join(repo, 'packages/chara/src'), join(dir, 'packages/chara/src'), {
+    recursive: true,
+  });
+  for (const file of ['package.json', 'packages/chara/package.json'])
+    cpSync(join(repo, file), join(dir, file));
+  return dir;
+};
+const palettesOf = (dir: string) => join(dir, 'packages/chara/src/palettes');
+const digest = (dir: string): string => {
+  const hash = createHash('sha256');
+  const files = [
+    'metadata.json',
+    ...readdirSync(join(palettesOf(dir), 'data')).map((f) => `data/${f}`),
+  ];
+  for (const file of files.sort())
+    hash.update(file).update(readFileSync(join(palettesOf(dir), file)));
+  return hash.digest('hex');
+};
+const run = (dir: string, script: string, args: string[]) =>
+  spawnSync(process.execPath, [tsx, join(dir, 'scripts', script), ...args], {
+    encoding: 'utf8',
+    timeout: 60_000,
+  });
+const zeroCmp = (): string => {
+  const file = join(temp, `zero-${++counter}.cmp`);
+  writeFileSync(file, Buffer.alloc(182_272));
+  return file;
+};
+
+describe('build-palettes --check, run as a script', () => {
+  it('fails for a file that would change the committed palettes, and writes nothing', () => {
+    const dir = replica();
+    const before = digest(dir);
+    const result = run(dir, 'build-palettes.ts', [zeroCmp(), '--check']);
+    expect(result.status).toBe(1);
+    const report = JSON.parse(result.stdout);
+    expect(report).toMatchObject({ mode: 'check', matchesCommitted: false });
+    expect(report.differences.length).toBeGreaterThan(0);
+    expect(digest(dir)).toBe(before);
+  });
+});
+
+describe('build-palettes write mode, run as a script', () => {
+  const metadata = (dir: string) =>
+    JSON.parse(readFileSync(join(palettesOf(dir), 'metadata.json'), 'utf8'));
+  it('empties the upstream source hashes unless asked to keep them', () => {
+    const dir = replica();
+    const committedSources = metadata(dir).sources.length;
+    expect(committedSources).toBeGreaterThan(0);
+    const result = run(dir, 'build-palettes.ts', [
+      zeroCmp(),
+      '--dataset-version',
+      'test-regeneration',
+      '--game-version',
+      '8.0',
+    ]);
+    expect(result.status, result.stderr).toBe(0);
+    expect(metadata(dir)).toMatchObject({
+      datasetVersion: 'test-regeneration',
+      gameVersion: '8.0',
+      sources: [],
+      generatedFrom: { bytes: 182_272 },
+    });
+  });
+  it('keeps them with --keep-sources', () => {
+    const dir = replica();
+    const committedSources = metadata(dir).sources.length;
+    const result = run(dir, 'build-palettes.ts', [
+      zeroCmp(),
+      '--dataset-version',
+      'test-regeneration',
+      '--keep-sources',
+    ]);
+    expect(result.status, result.stderr).toBe(0);
+    expect(metadata(dir).sources).toHaveLength(committedSources);
+  });
+});
+
+describe('verify-palettes, run as a script', () => {
+  it('passes for the committed dataset', () => {
+    const result = run(replica(), 'verify-palettes.ts', []);
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain(
+      'Verified 4 table hashes and 26,208 palette colors',
+    );
+  });
+  it('fails when the metadata lost one of the four tables', () => {
+    const dir = replica();
+    const file = join(palettesOf(dir), 'metadata.json');
+    const metadata = JSON.parse(readFileSync(file, 'utf8'));
+    metadata.artifacts.pop();
+    writeFileSync(file, JSON.stringify(metadata));
+    const result = run(dir, 'verify-palettes.ts', []);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('must list exactly');
   });
 });
