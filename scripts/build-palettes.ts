@@ -38,13 +38,17 @@ const file = await open(path, 'r');
 let bytes: Buffer;
 try {
   const stat = await file.stat();
+  // Checked before any byte is read, with a message of its own: the generator rejects a bad layout
+  // with another one, so a test can tell which of the two gates refused the file.
   if (
     !stat.isFile() ||
     stat.size < CMP_MIN_BYTES ||
     stat.size > CMP_MAX_BYTES ||
     stat.size % 4 !== 0
   )
-    throw new Error('Invalid human.cmp layout.');
+    throw new Error(
+      `Source file must be a regular file whose size is a multiple of 4 between ${CMP_MIN_BYTES} and ${CMP_MAX_BYTES} bytes.`,
+    );
   // Read only the admitted layout; a concurrently growing file cannot expand this allocation.
   bytes = Buffer.alloc(stat.size);
   let offset = 0;
