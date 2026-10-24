@@ -2,7 +2,7 @@
 
 **Source:** [audit-2026-10-23.md](audit-2026-10-23.md), the audit of `014c6a0` (106 findings: 2 high, 28 medium, 76 low; 8 verifier disputes resolved by the maintainer, see its §7). Plus one finding added during the fixes (N001, FacePaint mirror flag).
 
-**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents and the seven Wave 2 findings, 18 in all. Partly fixed: F090 (warning only). Outstanding: 88. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
+**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings and the seven Wave 3 findings, 25 in all. Partly fixed: F090 (warning only). Outstanding: 81. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
 
 **Ordering:**
 1. One deploy unit per wave, each ending in a named gate or release. Waves are the equivalent of the sprints in the XIV Dye Tools remediation plans.
@@ -18,7 +18,7 @@
 | 0 | packages/chara (appearance) | Done in this session | 2 / 0 / 1 + N001 | ✅ done (04fbeff) |
 | 1 | docs only | Documents that misstate the current state | 0 / 1 / 7 | ✅ done (5a4a6e9, 614ac34, 8d0d0b2, 0cd9f7f) |
 | 2 | packages/chara (xivapi) | The client was written against doubles that are not the real API | 0 / 3 / 4 | ✅ done (8959fc1, b20624f, e8cf5f9, ed0589a, ab358b0, b83c9de, dbf5b62, bdd1cbc, 298bd32) |
-| 3 | packages/chara (reader, inspect, xivapi) | Cross-realm input, re-read values, label accuracy; then publish | 0 / 0 / 7 | open |
+| 3 | packages/chara (reader, inspect, xivapi) | Cross-realm input, re-read values, label accuracy; then publish | 0 / 0 / 7 | ✅ done (e965238, 60717a5, 7c49ade, d217c44) |
 | 4 | repo tooling (scripts, test/, CI) | Release and verification tooling that can pass vacuously | 0 / 1 / 9 | open |
 | 5 | apps/demo | State, focus and live-region fragility across re-renders | 0 / 2 / 6 | open |
 | 6 | apps/demo (tests) | Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03) | 0 / 4 / 4 | open |
@@ -84,24 +84,24 @@ Check every claim against the code before editing (each finding names both locat
 
 **Ends with:** Done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package` (Windows `tar`): 55 tooling, 413 package and 24 demo tests pass. Two independent Opus reviews found a version-alias race, a hung cache spending a whole resolution's deadline, and several tests that could be weakened unnoticed; all were fixed (bdd1cbc, 298bd32), with mutation checks showing the new tests fail when the guards are removed. Not released: this publish is Wave 3.
 
-## Wave 3 — packages/chara (reader, inspect, xivapi): Cross-realm input, re-read values, label accuracy; then publish
+## Wave 3 — packages/chara (reader, inspect, xivapi): Cross-realm input, re-read values, label accuracy; then publish ✅ COMPLETED 2026-10-23 (e965238, 60717a5, 7c49ade, d217c44)
 
-Small robustness fixes in three modules; **F001, G009, G010** are the same cross-realm `instanceof` pattern (`Uint8Array`, `AbortSignal`, body chunks): use the `%TypedArray%` brand getter or an equivalent realm-independent check.
-- **F054:** `resolve()` re-reads `glassesId` after validating it (read once into locals; F011, the same pattern in `modelKey`, was ruled info).
-- **F086:** an invalid `signal` throws after the request has started, leaving an orphaned subscriber.
-- **F010, F012:** the `unsupported` vs `invalid` label for wide integers, and the reader's `ISSUES_TRUNCATED` marker landing mid-list.
+Fixed test-first. **F001, G009, G010** were the same cross-realm `instanceof` pattern (`Uint8Array`, `AbortSignal`, body chunks); a new internal `realm.ts` reads the `%TypedArray%` brand through internal-slot getters and checks a signal by its members. F086 is now one shared signal check that runs before any request.
+- **F054:** `resolve()` now reads `glassesId` once (F011, the same pattern in `modelKey`, was ruled info).
+- **F086:** an invalid `signal` (including `null`) now throws `INVALID_LOOKUP`; a signal that cannot register its listener releases its subscriber. A `null` signal that the low-level client used to ignore is now rejected.
+- **F010, F012:** integers above 255 in `Race`, `Tribe`, `Gender`, `Age` and `FacialFeatures` are now `invalid`; the reader's `ISSUES_TRUNCATED` marker is the single final entry of `inspection.issues`.
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
-| F001 | Low · P3 | `packages/chara/src/read.ts:53` | A `Uint8Array` from another realm is rejected as `INVALID_INPUT` | Open |
-| G009 | Low · P3 | `packages/chara/src/xivapi/resolve.ts:141` | Only the resolver rejects an `AbortSignal` from another realm | Open |
-| G010 | Low · P3 | `packages/chara/src/xivapi/client.ts:247` | Body chunks from another realm make every lookup `BODY_UNAVAILABLE` | Open |
-| F086 | Low · P3 | `packages/chara/src/xivapi/client.ts:635` | An invalid `signal` throws `TypeError` after the request has started, leaving an orphaned subscriber | Open |
-| F054 | Low · P3 | `packages/chara/src/xivapi/resolve.ts:47` | `resolve()` reads `glassesId` again after validating it | Open |
-| F010 | Low · P3 | `packages/chara/src/inspect.ts:112` | Integers too wide for fields that can be `unsupported` are labelled `unsupported`, not `invalid` | Open |
-| F012 | Low · P3 | `packages/chara/src/inspect.ts:216` | The reader's `ISSUES_TRUNCATED` can land mid-list in `inspection.issues` | Open |
+| F001 | Low · P3 | `packages/chara/src/read.ts:53` | A `Uint8Array` from another realm is rejected as `INVALID_INPUT` | Fixed |
+| G009 | Low · P3 | `packages/chara/src/xivapi/resolve.ts:141` | Only the resolver rejects an `AbortSignal` from another realm | Fixed |
+| G010 | Low · P3 | `packages/chara/src/xivapi/client.ts:247` | Body chunks from another realm make every lookup `BODY_UNAVAILABLE` | Fixed |
+| F086 | Low · P3 | `packages/chara/src/xivapi/client.ts:635` | An invalid `signal` throws `TypeError` after the request has started, leaving an orphaned subscriber | Fixed |
+| F054 | Low · P3 | `packages/chara/src/xivapi/resolve.ts:47` | `resolve()` reads `glassesId` again after validating it | Fixed |
+| F010 | Low · P3 | `packages/chara/src/inspect.ts:112` | Integers too wide for fields that can be `unsupported` are labelled `unsupported`, not `invalid` | Fixed |
+| F012 | Low · P3 | `packages/chara/src/inspect.ts:216` | The reader's `ISSUES_TRUNCATED` can land mid-list in `inspection.issues` | Fixed |
 
-**Ends with:** `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, `pnpm test:package`; then publish: `package.json` is `0.1.0-beta.3`, which npm already lists, so bump `packages/chara/package.json` and the `expected_version` default in `.github/workflows/publish.yml`, update `CHANGELOG.md`, and run **Publish to npm** as a dry run first. This publish also carries Wave 0 and Wave 2.
+**Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package` (Windows `tar`): 55 tooling, 463 package and 24 demo tests pass, and the tarball is now 43 files (a new shared chunk). A workflow review (two Opus reviewers, two verifiers per finding) confirmed seven gaps in the new code, none rejected; all were fixed (d217c44) and nine mutants of the new code are now killed. **Not done: the publish.** `package.json` is `0.1.0-beta.3`, which npm already lists, so a release needs a version bump (the maintainer chooses it) in `packages/chara/package.json` and the `expected_version` default in `.github/workflows/publish.yml`, a `CHANGELOG.md` release heading, then **Publish to npm** as a dry run first. The publish would carry Waves 0, 2 and 3.
 
 ## Wave 4 — repo tooling (scripts, test/, CI): Release and verification tooling that can pass vacuously
 
