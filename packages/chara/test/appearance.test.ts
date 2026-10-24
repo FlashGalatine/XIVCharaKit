@@ -765,7 +765,8 @@ describe('provider failures and independent expectations', () => {
       expect.objectContaining({ code: 'PALETTE_UNAVAILABLE' }),
     );
   });
-  it('rejects noncanonical provider colors and mismatched associations', async () => {
+  // Mismatched associations are covered in appearance-guards.test.ts.
+  it('rejects a provider color that is not a canonical hex', async () => {
     const hostile = {
       async getColor(request: PaletteRequest) {
         return {
