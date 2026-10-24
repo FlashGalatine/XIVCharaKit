@@ -173,7 +173,7 @@ describe('portable XIVAPI requests', () => {
       iconId: null,
     });
   });
-  it('only treats a validated successful empty search or glasses row list as complete empty', async () => {
+  it('treats a validated successful empty search or glasses row list as complete empty, and an unrecognised failure as unavailable', async () => {
     expect(
       (await client(async () => json(page())).searchItems([body])).status,
     ).toBe('complete');
@@ -738,6 +738,38 @@ describe('browser-style redirects and cached row order', () => {
     const r = await client(async () => odd).searchItems([body]);
     expect(code(r)).toEqual(['REDIRECT_REFUSED']);
   });
+  it('treats a cached entry with a repeated row as a miss', async () => {
+    const backing = new Map<string, unknown>();
+    const store = {
+      async get(key: string) {
+        return (backing.get(key) ?? null) as CachedRows | null;
+      },
+      async set(key: string, value: CachedRows) {
+        backing.set(key, JSON.parse(JSON.stringify(value)));
+      },
+    };
+    const stainBody = () =>
+      json({
+        version: V,
+        schema: S,
+        rows: [{ row_id: 2, fields: { 'Name@lang(en)': 'Ash Grey' } }],
+      });
+    await client(async () => stainBody(), {
+      cache: store,
+      languages: ['en'],
+    }).getStains([2]);
+    for (const value of backing.values()) {
+      const entry = value as { rows: unknown[] };
+      entry.rows = [entry.rows[0], entry.rows[0]];
+    }
+    const second = vi.fn(async () => stainBody());
+    const result = await client(second, {
+      cache: store,
+      languages: ['en'],
+    }).getStains([2]);
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(result.rows.map((r) => r.rowId)).toEqual([2]);
+  });
   it('treats a cached entry whose rows are not in ascending order as a miss', async () => {
     const stains = (ids: number[]) =>
       json({
@@ -785,14 +817,21 @@ describe('host caches that hang', () => {
   it('keeps a fully fetched result complete when the cache write never settles', async () => {
     vi.useFakeTimers();
     const fetch = vi.fn(async () => stains());
+    let settled = false;
     const pending = client(
       fetch,
       options({
         get: async () => null,
         set: () => new Promise<void>(() => {}),
       }),
-    ).getStains([2]);
-    await vi.advanceTimersByTimeAsync(30_000);
+    )
+      .getStains([2])
+      .finally(() => {
+        settled = true;
+      });
+    // The write is capped at timeoutMs (20 ms); the 30 s operation deadline must not be needed.
+    await vi.advanceTimersByTimeAsync(25);
+    expect(settled).toBe(true);
     const result = await pending;
     expect(result).toMatchObject({ status: 'complete', issues: [] });
     expect(result.rows.map((r) => r.rowId)).toEqual([2]);
@@ -835,13 +874,42 @@ describe('host caches that hang', () => {
     expect(result).toMatchObject({ status: 'complete', issues: [] });
     expect(result.rows.map((r) => r.rowId)).toEqual([41, 42, 43]);
   });
-  it('still reports cancellation while a cache call is pending', async () => {
-    const abort = new AbortController();
-    const pending = client(
-      vi.fn(async () => stains()),
-      options({ get: () => new Promise<null>(() => {}), set: async () => {} }),
-    ).getStains([2], { signal: abort.signal });
-    abort.abort();
-    expect((await pending).status).toBe('cancelled');
+  it('releases scheduler slots at once when callers cancel during pending cache reads', async () => {
+    vi.useFakeTimers();
+    let gets = 0;
+    const fetch = vi.fn(async (input: RequestInfo | URL) =>
+      json({
+        version: V,
+        schema: S,
+        rows: (new URL(String(input)).searchParams.get('rows') ?? '')
+          .split(',')
+          .map((id) => ({
+            row_id: Number(id),
+            fields: { 'Name@lang(en)': `Dye ${id}` },
+          })),
+      }),
+    );
+    const c = client(fetch, {
+      languages: ['en'],
+      cache: {
+        get: () =>
+          ++gets <= 2 ? new Promise<null>(() => {}) : Promise.resolve(null),
+        set: async () => {},
+      },
+    });
+    const a = new AbortController();
+    const b = new AbortController();
+    const first = c.getStains([2], { signal: a.signal });
+    const second = c.getStains([3], { signal: b.signal });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(gets).toBe(2); // both cache reads are pending when the callers cancel
+    a.abort();
+    b.abort();
+    expect((await first).status).toBe('cancelled');
+    expect((await second).status).toBe('cancelled');
+    const third = c.getStains([4]);
+    await vi.advanceTimersByTimeAsync(5); // far below timeoutMs: the slots were freed
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect((await third).status).toBe('complete');
   });
 });

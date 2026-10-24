@@ -199,6 +199,22 @@ describe('equipment candidates', () => {
       'INCOMPLETE_OFFHAND_CONTEXT',
     );
   });
+  it('does not flag a missing main-hand ModelSub for an all-zero off-hand', async () => {
+    const paired = fixture.rows[4];
+    if (!paired) throw new Error('Fixture missing');
+    const r = await resolver(source([{ ...paired, modelSub: null }])).resolve({
+      models: [main, { slot: 'OffHand', set: 0, base: 0, variant: 0 }],
+    });
+    expect(r.items.MainHand?.candidates.map((c) => c.itemId)).toEqual([301]);
+    expect(r.items.OffHand).toMatchObject({
+      modelKey: '0',
+      status: 'notFound',
+      candidates: [],
+    });
+    expect(r.issues.map((issue) => issue.code)).not.toContain(
+      'INCOMPLETE_OFFHAND_CONTEXT',
+    );
+  });
   it('does not reuse a cached off-hand selection across different main-hand contexts', async () => {
     const c = resolver(source(), { cache: createMemoryCache() });
     const a = await c.resolve({ models: [main, off] });
@@ -463,7 +479,15 @@ describe('incomplete evidence and facewear', () => {
     expect(r.upstream.items).toEqual({ version: null, schema: null });
   });
   it('distinguishes absent facewear from a successfully unmatched requested ID including zero', async () => {
-    const r = resolver(async () => json({ version: V, schema: S, rows: [] }));
+    const r = resolver(async (input) =>
+      json(
+        {
+          code: 404,
+          message: `not found: the Excel row Glasses/${new URL(String(input)).searchParams.get('rows')}:0 could not be found`,
+        },
+        404,
+      ),
+    );
     expect((await r.resolve({ models: [] })).facewear).toBeNull();
     expect(
       (await r.resolve({ models: [], glassesId: 0 })).facewear,

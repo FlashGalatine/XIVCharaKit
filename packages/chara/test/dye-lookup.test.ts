@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDyeNameResolver } from '../src/dyes/index.js';
 import { createMemoryCache, createXivapiClient } from '../src/xivapi/index.js';
 
@@ -157,7 +157,7 @@ describe('cached optional dye-name lookup', () => {
     await resolver.resolve([3]);
     expect(fetch).toHaveBeenCalledTimes(2);
   });
-  it('retains blank rows and distinguishes an empty successful response from failure', async () => {
+  it('retains blank rows and accepts a non-conforming 200 that leaves out a requested row', async () => {
     const resolver = createDyeNameResolver({
       version: V,
       schema: S,
@@ -449,17 +449,69 @@ describe('rows that XIVAPI reports as missing', () => {
     );
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+  const matching = (extra = {}) =>
+    JSON.stringify({
+      code: 404,
+      message: 'not found: the Excel row Stain/3:0 could not be found',
+      ...extra,
+    });
   it.each([
     ['not JSON', 'not json at all'],
     [
-      'an oversized message',
-      JSON.stringify({ code: 404, message: 'x'.repeat(5000) }),
+      'over 4 KiB although the message matches',
+      matching({ pad: 'x'.repeat(5000) }),
     ],
+    ['carrying another code', matching({ code: 500 })],
   ])('does not trust a 404 body that is %s', async (_name, text) => {
     const result = await dyes(
       async () => new Response(text, { status: 404 }),
     ).resolve([3]);
     expect(result.status).toBe('unavailable');
+    expect(result.issues.map((issue) => issue.code)).toEqual([
+      'UPSTREAM_UNAVAILABLE',
+    ]);
+  });
+  it.each([400, 410, 500])(
+    'does not take a status-%i answer for a missing row',
+    async (status) => {
+      const fetch = vi.fn<typeof globalThis.fetch>(
+        async () => new Response(matching(), { status }),
+      );
+      const result = await dyes(fetch).resolve([3]);
+      expect(result.status).toBe('unavailable');
+      expect(result.issues.map((issue) => issue.code)).toContain(
+        'UPSTREAM_UNAVAILABLE',
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    },
+  );
+  it('leaves the schema null when every row is missing and the schema is not pinned', async () => {
+    const paths: string[] = [];
+    const resolver = createDyeNameResolver({
+      languages: ['en'],
+      fetch: async (input) => {
+        const url = new URL(String(input));
+        paths.push(url.pathname);
+        return url.pathname.endsWith('/version')
+          ? new Response(
+              JSON.stringify({ versions: [{ key: V, names: ['latest'] }] }),
+            )
+          : missingRow('Stain', 200);
+      },
+    });
+    expect(await resolver.resolve([200])).toMatchObject({
+      status: 'complete',
+      rows: [],
+      version: V,
+      schema: null,
+    });
+    // Without both identities the empty answer is not cached, so asking again asks again.
+    await resolver.resolve([200]);
+    expect(paths).toEqual([
+      '/api/version',
+      '/api/sheet/Stain',
+      '/api/sheet/Stain',
+    ]);
   });
   it('does not drop rows while the version alias is unresolved', async () => {
     // A 404 names no version, so with 'latest' unresolved a later 200 could describe another one.
@@ -509,6 +561,37 @@ describe('rows that XIVAPI reports as missing', () => {
 });
 
 describe('host option objects that are not plain literals', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => {
+        throw new Error('unexpected global fetch');
+      }),
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  it('reads an inherited base URL and rejects an inherited invalid maxPages', async () => {
+    const urls: URL[] = [];
+    const fetch: typeof globalThis.fetch = async (input) => {
+      urls.push(new URL(String(input)));
+      return response([row(3)]);
+    };
+    await createDyeNameResolver(
+      Object.create({
+        fetch,
+        baseUrl: 'https://example.test/api',
+        version: V,
+        schema: S,
+        languages: ['en'],
+      }),
+    ).resolve([3]);
+    expect(urls.map((url) => url.origin)).toEqual(['https://example.test']);
+    expect(() =>
+      createDyeNameResolver(Object.create({ maxPages: 0 })),
+    ).toThrow();
+  });
   const make = () => {
     const urls: URL[] = [];
     const fetch: typeof globalThis.fetch = async (input) => {
