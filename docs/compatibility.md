@@ -42,7 +42,7 @@ Unverified: pre-7.5 Brio exports (expected uncrossed, not tested against a real 
 
 ### Extended colors by producer (source review, 2026-10-24)
 
-Extended colors change the result only when `IsExtendedAppearanceValid` is true ([API](api.md#appearance-resolution)). The producers differ in whether they ever write it:
+Extended colors change the result only when `IsExtendedAppearanceValid` is true ([API](api.md#appearance-interpretation-xivcharakitappearance)). The producers differ in whether they ever write it:
 
 | Producer | Writes extended colors | Writes `IsExtendedAppearanceValid` |
 | --- | --- | --- |
@@ -50,11 +50,13 @@ Extended colors change the result only when `IsExtendedAppearanceValid` is true 
 | Ktisis `551bb23` | No: the writer carries no extended block | Not applicable |
 | Brio `3f6f8e1` | Yes | Yes, as a computed value: true when any extended color is present (`AnamnesisCharaFile.cs`) |
 
-So off-grid and extended-only colors, live lip opacity and the eye-pair correction can only happen for Brio-shaped files. For an Anamnesis export the stored block is read as inactive evidence: the swatch is the indexed palette color with reason `extendedInactive`, and the lip is the palette lip where the same character exported by Brio would show `noLip` (an opacity of 0). The unmodified Anamnesis export with the flag added agrees with its palette colors on all six slots, so the stored block is live captured data that the gate holds back. XIV Dye Tools' own resolver applies a lip opacity of 0 whatever the flag says, so adopting the library as it stands changes that for Anamnesis files. This is a deliberate, tested policy (`appearance.test.ts`, `producer-exports.test.ts`); a change to it, such as a "presence" mode that matches Brio's own definition of the flag or an `unknown` activity state, has to ship as an explicit option or a policy-version bump, not as a new default.
+So off-grid and extended-only colors, live lip opacity and the eye-pair correction can only happen for Brio-shaped files. For an Anamnesis export the stored block is read as inactive evidence: the swatch is the indexed palette color with reason `extendedInactive`. The unmodified Anamnesis export with the flag added agrees with its palette colors on all six slots (distance 0), so the stored block is live captured data that the gate holds back. The lip shows it most: with the lip-color bit (`0x80`) of `Mouth` set, an Anamnesis file shows the palette lip, where a Brio-shaped file whose stored opacity is 0 shows no lip (`noLip`) and one above 0 a composite. With the bit clear, as in all four committed exports (they store `Mouth` 2), both producers' files show `lipDisabled` and the gate has no effect on the lip; the zero-opacity file with the bit set is an authored edit of the real export, in the regression test. The audit of 2026-10-23 found that XIV Dye Tools' own resolver applies a lip opacity of 0 whatever the flag says (not rechecked here), so adopting the library as it stands would change that for Anamnesis files whose lip-color bit is set.
+
+Brio writes `SkinGloss`, `HairGloss` and `BustScale` as `null`: they default to `null` in its `AnamnesisCharaFile`, its writer never sets them and its serializer keeps nulls, and the committed export shows it. An Anamnesis export has no gloss fields and writes `BustScale` as a vector. Nothing in the library depends on this and it has not been validated as a way to tell producers or versions apart. This is a deliberate, tested policy (`appearance.test.ts`, `producer-exports.test.ts`); a change to it, such as a "presence" mode that matches Brio's own definition of the flag or an `unknown` activity state, has to ship as an explicit option or a policy-version bump, not as a new default.
 
 ### Files pinned for what a field means (2026-10-24)
 
-The format snapshots above pin the serializer files. These further files give the stored values their form and meaning, and are pinned in [the manifest](../fixtures/manifest.json) (`sources` and `producerCompatibilityReview.pinReview`), each with the SHA-256 of the raw file at the pinned commit, so that a refresh sees a change in them:
+The format snapshots above pin the serializer files. These further files give the stored values their form and meaning, or are what a stated limit rests on, and are pinned in [the manifest](../fixtures/manifest.json) (`sources` and `producerCompatibilityReview.pinReview`), each with the SHA-256 of the raw file at the pinned commit, so that a refresh sees a change in them:
 
 | Producer | File | What it defines |
 | --- | --- | --- |
@@ -63,17 +65,20 @@ The format snapshots above pin the serializer files. These further files give th
 | | AetherToolsWpf `Math3D/Extensions/VectorExtensions.cs` (commit `8221958`, Anamnesis' `Lib/XivToolsWpf` submodule) | The vector text format and its separator |
 | | `VersionConverter.cs` | `Version` as text, or a Ktisis-style integer read as `Ktisis_<n>` |
 | | `ObjectTypes.cs` | The `ObjectKind` values |
+| | `Actor/Pages/CharacterPage.xaml.cs` | Every export saves all sections; "Save with metadata" opens the metadata editor |
+| | `Files/FileMetaEditor.xaml.cs` | Browsed images above 6 MiB are refused; a clipboard image has no check |
 | Ktisis `551bb23` | `CustomizeContainer.cs` | The Gender and Age enum names |
 | | `EntityCharaConverter.cs` | The writer of the file |
 | | `FileDialogManager.cs` | Where the file is written |
 | Brio `3f6f8e1` | `Files/Converters/VectorConverters.cs` | Vectors as comma-and-space separated invariant-culture decimals |
+| | `Capabilities/Actor/ActorAppearanceCapability.cs` | `ExportAppearance` writes the whole file; the import options apply to import only |
 
-The reader accepts a comma-separated vector with or without the space and does not depend on any one separator. A renamed enum value upstream (for example `Age.Old`) would otherwise appear only as `UNSUPPORTED_VALUE` on real files.
+The reader splits a vector on a comma and trims spaces, so it accepts ", " and "," and exponent notation such as `1E-05`; any other separator (a semicolon, a plain space) makes the color `INVALID_FIELD`, and every extended color of a file would be lost. That is why the vector and color converters are pinned. A renamed enum value upstream (for example `Age.Old`) would otherwise appear only as `UNSUPPORTED_VALUE` on real files.
 
 ### Producer limits
 
-- **Embedded images.** Anamnesis' metadata editor accepts browsed images up to 6 MiB and clipboard images without a limit. A 6 MiB image is 8,388,608 base64 characters, about 8.39 MB before any other content, and about 9.05 MB when `+` is written as `\u002B`, so the image alone can pass the default 8 MiB read budget once it is about 5.56 MiB. Such a file fails a default read with `INPUT_TOO_LARGE` and reads with `maxBytes` of 16 MiB. The default is a documented trade-off ([threat model](security/THREAT_MODEL.md#proposed-resource-budgets)) and raising it is a maintainer decision. The largest file in the maintainer's local corpus is 3,128,021 bytes. The demo says so when it refuses a file for its size.
-- **Selective export.** Neither Anamnesis (v7.57.0.3) nor Ktisis (v0.4.1.2) offers a selective export: every writer saves all sections, and the save modes apply to import only. Selective exports are therefore not available to collect from the current builds; builds of Anamnesis before 2021-09-28 and the Ktisis v0.2 line had them and are not verified here.
+- **Embedded images.** Anamnesis' metadata editor accepts browsed images up to 6 MiB and clipboard images without a limit. A 6 MiB image is 8,388,608 base64 characters, about 8.39 MB before any other content, and about 9.05 MB when `+` is written as `\u002B`, so the image alone can pass the default 8 MiB read budget once it is about 5.56 MiB. Such a file fails a default read with `INPUT_TOO_LARGE`. A file with a browsed image reads with `maxBytes` of 16 MiB; a clipboard image has no upper bound, and the largest `maxBytes` the library accepts is 64 MiB. The default is a documented trade-off ([threat model](security/THREAT_MODEL.md#proposed-resource-budgets)) and raising it is a maintainer decision. The largest file in the maintainer's local corpus is 3,128,021 bytes. The demo says so when it refuses a file for its size.
+- **Selective export.** None of Anamnesis (v7.57.0.3), Ktisis (v0.4.1.2) and Brio (v0.8.0.12) offers a selective export: every writer saves all sections, and the save modes or import options apply to import only. Selective exports are therefore not available to collect from the current builds; builds of Anamnesis before 2021-09-28 and the Ktisis v0.2 line had them and are not verified here.
 
 ### Refreshing the record: compare meaning, not only bytes
 

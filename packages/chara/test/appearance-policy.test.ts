@@ -250,6 +250,82 @@ describe('the grid threshold at exactly its value', () => {
   });
 });
 
+describe('the eye-pair rule needs each extended color to miss its own shader', () => {
+  // Two different eyes whose shader colors are only 1.2 apart, each extended color exactly on its own
+  // shader: each sits within the (raised) eye match of the other eye's shader as well, but it also
+  // matches its own, so the pair is not crossed and nothing may be corrected.
+  const near = { 'eyes:9': '#FAF7DF', 'eyes:16': '#FAF6E1' };
+  const fields = {
+    LEyeColor: 9,
+    REyeColor: 16,
+    LeftEyeColor: gamma(near['eyes:9']),
+    RightEyeColor: gamma(near['eyes:16']),
+    IsExtendedAppearanceValid: true,
+  };
+  it('has shader colors that are close but not equal', () => {
+    const apart = hexDeltaE(near['eyes:9'], near['eyes:16']);
+    expect(apart).toBeGreaterThan(1);
+    expect(apart).toBeLessThan(1.5);
+  });
+  it('makes no correction and raises no warning when each color is on its own shader', async () => {
+    const result = await resolveAppearance(inspect(fields), {
+      palettes: spy(near),
+      policy: { eyeMatchDeltaE: 1.5 },
+    });
+    expect(result.corrections).toEqual([]);
+    expect(result.issues.map((issue) => issue.code)).toEqual([]);
+    expect(result.slots.leftEye.correction).toBeNull();
+    expect(result.slots.rightEye.correction).toBeNull();
+  });
+});
+
+describe('the eye-pair rule needs both extended colors to miss their own shader', () => {
+  // The same close shader colors (1.2 apart). One eye's color sits exactly on its own shader and the
+  // other eye's color lands on the far side of the first one, so the second eye looks crossed on its
+  // own and the first does not: a single crossed eye is no pair, and nothing may be corrected.
+  const L = '#FAF7DF';
+  const R = '#FAF6E1';
+  const beyondR = '#FAF5E3';
+  const beyondL = '#FAF8DD';
+  const run = (left: string, right: string) =>
+    resolveAppearance(
+      inspect({
+        LEyeColor: 9,
+        REyeColor: 16,
+        LeftEyeColor: gamma(left),
+        RightEyeColor: gamma(right),
+        IsExtendedAppearanceValid: true,
+      }),
+      {
+        palettes: spy({ 'eyes:9': L, 'eyes:16': R }),
+        policy: { eyeMatchDeltaE: 1.5 },
+      },
+    );
+  it('has colors at the distances the cases rely on', () => {
+    expect(hexDeltaE(L, R)).toBeLessThan(1.5);
+    for (const [color, near, far] of [
+      [beyondR, R, L],
+      [beyondL, L, R],
+    ] as const) {
+      expect(hexDeltaE(color, near)).toBeLessThanOrEqual(1.5);
+      expect(hexDeltaE(color, far)).toBeGreaterThan(1.5);
+    }
+  });
+  it.each([
+    ['the right eye is on its own shader', beyondR, R],
+    ['the left eye is on its own shader', L, beyondL],
+  ])('makes no correction when %s', async (_name, left, right) => {
+    const result = await run(left, right);
+    expect(result.corrections).toEqual([]);
+    expect(result.slots.leftEye.correction).toBeNull();
+    expect(result.slots.rightEye.correction).toBeNull();
+  });
+  it('corrects when both colors are crossed (the control)', async () => {
+    const result = await run(beyondR, beyondL);
+    expect(result.corrections).toHaveLength(1);
+  });
+});
+
 describe('the eye match threshold at exactly its value', () => {
   // Each eye's extended color sits next to the other eye's shader color.
   const leftNearRight = '#0000FE';

@@ -199,8 +199,8 @@ describe('an Anamnesis-shaped export, which never carries IsExtendedAppearanceVa
       'HairHighlight',
     ])
       expect(typeof fields[key], key).toBe('string');
-    const { eyes } = await table('creator-shared');
-    const { hair } = await table('creator-race');
+    const { eyes, highlights, features } = await table('creator-shared');
+    const { hair, skin } = await table('creator-race');
     const result = await resolve(fields);
     for (const slot of COLORED)
       expect(result.slots[slot], slot).toMatchObject({
@@ -212,19 +212,35 @@ describe('an Anamnesis-shaped export, which never carries IsExtendedAppearanceVa
     expect(result.slots.leftEye.displayHex).toBe(eyes[169]);
     expect(result.slots.rightEye.displayHex).toBe(eyes[42]);
     expect(result.slots.hair.displayHex).toBe(hair.Duskwight.Female[71]);
+    // Highlights 36, Skintone 0 and LimbalEyes 7 read from their own palettes, not from the stored colors.
+    expect(result.slots.highlights.displayHex).toBe(highlights[36]);
+    expect(result.slots.skin.displayHex).toBe(skin.Duskwight.Female[0]);
+    expect(result.slots.limbal.displayHex).toBe(features[7]);
     expect(result.corrections).toEqual([]);
   });
 
-  it('keeps a custom stored color from changing anything while the flag is absent', async () => {
-    const fields = await fixture();
-    const plain = await resolve(fields);
-    const custom = await resolve({ ...fields, HairColor: '1, 0, 0' });
-    expect(custom.slots.hair).toMatchObject({
-      interpretation: 'palette',
-      reason: 'extendedInactive',
-      displayHex: plain.slots.hair.displayHex,
-    });
-  });
+  it.each([
+    ['leftEye', 'LeftEyeColor'],
+    ['rightEye', 'RightEyeColor'],
+    ['hair', 'HairColor'],
+    ['highlights', 'HairHighlight'],
+    ['skin', 'SkinColor'],
+    ['limbal', 'LimbalRingColor'],
+  ] as const)(
+    'keeps a custom stored color from changing the %s swatch while the flag is absent',
+    async (slot, field) => {
+      const fields = await fixture();
+      const plain = await resolve(fields);
+      // A stored color far from every palette color of that slot.
+      const custom = await resolve({ ...fields, [field]: '1, 0, 0' });
+      expect(custom.slots[slot]).toMatchObject({
+        interpretation: 'palette',
+        reason: 'extendedInactive',
+        displayHex: plain.slots[slot].displayHex,
+      });
+      expect(custom.slots[slot].displayHex).not.toBe('#FF0000');
+    },
+  );
 
   it('reads the same stored colors as live, and equal to the palette, once the flag is added', async () => {
     const fields = await fixture();
@@ -245,14 +261,57 @@ describe('an Anamnesis-shaped export, which never carries IsExtendedAppearanceVa
     const fields = await fixture();
     const result = await resolve({
       ...fields,
-      HairColor: '1, 0, 0',
+      HairColor: '0.25, 0, 0',
       IsExtendedAppearanceValid: true,
     });
-    // Gamma 2: (1, 0, 0) decodes to 255, 0, 0.
+    // Gamma 2 decodes 0.25 to sqrt(0.25) * 255 = 127.5, which rounds to 128 (0x80); a linear
+    // decoding would give 64 (0x40).
     expect(result.slots.hair).toMatchObject({
       interpretation: 'offGrid',
-      displayHex: '#FF0000',
+      displayHex: '#800000',
     });
+  });
+
+  it('keeps a stored lip color off a Hrothgar fur pattern without the flag, and shows it with the flag', async () => {
+    // Hrothgar's LipsToneFurPattern is a fur enum: only a live mouth color can supply a lip swatch.
+    const fields = {
+      ...(await fixture()),
+      Tribe: 'Helions',
+      Mouth: 2 | 0x80,
+      MouthColor: '0.5, 0.2, 0.2, 1',
+    };
+    const without = await resolve(fields);
+    expect(without.slots.lip).toMatchObject({
+      interpretation: 'inactive',
+      reason: 'furPattern',
+      extendedActive: false,
+      displayHex: null,
+    });
+    const live = await resolve({ ...fields, IsExtendedAppearanceValid: true });
+    // Gamma 2: sqrt(0.5) * 255 = 180.3 (0xB4) and sqrt(0.2) * 255 = 114.0 (0x72).
+    expect(live.slots.lip).toMatchObject({
+      interpretation: 'extendedOnly',
+      reason: 'floatOnly',
+      extendedActive: true,
+      displayHex: '#B47272',
+    });
+  });
+
+  it('makes no swatch from a stored color for a palette index that is missing, unless the flag is added', async () => {
+    const { Skintone: _skin, HairTone: _hair, ...fields } = await fixture();
+    const without = await resolve(fields);
+    for (const slot of ['skin', 'hair'] as const)
+      expect(without.slots[slot], slot).toMatchObject({
+        interpretation: 'unresolved',
+        reason: 'missingColor',
+        displayHex: null,
+      });
+    const live = await resolve({ ...fields, IsExtendedAppearanceValid: true });
+    for (const slot of ['skin', 'hair'] as const)
+      expect(live.slots[slot], slot).toMatchObject({
+        interpretation: 'extendedOnly',
+        reason: 'floatOnly',
+      });
   });
 
   it('shows the palette lip where a Brio-shaped file with zero opacity shows none', async () => {
