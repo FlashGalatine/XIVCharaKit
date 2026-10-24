@@ -2,7 +2,7 @@
 
 **Source:** [audit-2026-10-23.md](audit-2026-10-23.md), the audit of `014c6a0` (106 findings: 2 high, 28 medium, 76 low; 8 verifier disputes resolved by the maintainer, see its §7). Plus one finding added during the fixes (N001, FacePaint mirror flag).
 
-**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings, the ten Wave 4 findings and the eight Wave 5 findings, 43 in all. Partly fixed: F090 (warning only). Outstanding: 63. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
+**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings, the ten Wave 4 findings, the eight Wave 5 findings and the eight Wave 6 findings, 51 in all. Partly fixed: F090 (warning only). Outstanding: 55. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
 
 **Ordering:**
 1. One deploy unit per wave, each ending in a named gate or release. Waves are the equivalent of the sprints in the XIV Dye Tools remediation plans.
@@ -21,7 +21,7 @@
 | 3 | packages/chara (reader, inspect, xivapi) | Cross-realm input, re-read values, label accuracy; then publish | 0 / 0 / 7 | ✅ done (e965238, 60717a5, 7c49ade, d217c44) |
 | 4 | repo tooling (scripts, test/, CI) | Release and verification tooling that can pass vacuously | 0 / 1 / 9 | ✅ done (27d3c5e to 3fbe8a7) |
 | 5 | apps/demo | State, focus and live-region fragility across re-renders | 0 / 2 / 6 | ✅ done (e8be1fd to e4bc6e7) |
-| 6 | apps/demo (tests) | Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03) | 0 / 4 / 4 | open |
+| 6 | apps/demo (tests) | Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03) | 0 / 4 / 4 | ✅ done (5d5574e to ba6353d) |
 | 7 | packages/chara (tests) | Reader and inspection guards that can be deleted unnoticed | 0 / 4 / 7 | open |
 | 8 | packages/chara (tests) | Appearance maths and palette provider assertions | 0 / 6 / 9 | open |
 | 9 | packages/chara (tests) | XIVAPI budgets, cache admission and resolver scope (SEC-05) | 0 / 3 / 11 | open |
@@ -151,23 +151,26 @@ Nothing here ships in the package tarball. No screen reader was run; the live-re
 
 **Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package` (Windows `tar`) and `pnpm test:demo:cloudflare`: 123 tooling, 463 package and 47 demo tests pass (49 with the hosting checks, 1 live smoke skipped), and the tarball is still 43 files. A workflow review (three lenses, two verifiers per finding) confirmed ten findings, none disputed: a stale re-announce timer, focus lost from disclosure summaries, a resume-failure message that named the wrong file, and three timing races in the new tests; all were fixed (e4bc6e7) with six more mutants killed. **Not deployed:** `pnpm deploy:demo` is a manual action that needs the maintainer's yes.
 
-## Wave 6 — apps/demo (tests): Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03)
+## Wave 6 — apps/demo (tests): Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03) ✅ COMPLETED 2026-10-24 (5d5574e to ba6353d)
 
-The gates exist but their tests would still pass if the control were weakened. **Anchors F064, G004, G005:** the CSP test uses substring checks (a widened policy still passes), request evidence ignores page-load and same-origin traffic, and there is no log/console canary. Also F061 (the icon loader's bounds never run in CI), G001-G003 and G006 (hostile-render, page-load and allowlist coverage).
-Each new assertion must be shown to fail against the weakened control before it is trusted.
+No application code changed. Each new assertion was shown to fail against the weakened control it names: 16 weakened policies, 36 weakened versions of the icon loader, 28 leaks added to the app, 10 changed lookup requests, 4 HTML-injecting renders, and the recorder's own capabilities.
+- **F064:** the served Content-Security-Policy is parsed into directives and compared for equality with a hard-coded, reviewed copy; a repeated directive fails.
+- **G002, G004, G005, G006, G001:** `e2e/fixtures.ts` records requests (headers and bodies), console output with its serialised arguments, page errors, dialogs, navigations, popups, downloads and WebSockets from before the page loads, and fails every test on a private-data marker, a CSP violation, a request that is not a GET, a request to another origin, a WebSocket, SharedWorker or EventSource, or an uncaught error. `e2e/privacy.spec.ts` loads a file with markers in values, keys and the file name and checks the allowlists, including the exact shape of every lookup route and the state of storage, history and the file system afterwards; `e2e/recorder.spec.ts` shows the recorder detects each channel it claims to cover.
+- **F061:** the icon loader's bounds are pinned by 18 Vitest unit tests (the demo gains a Vitest setup) and by browser tests with mocked icons, revocation and hostile responses.
+- **G003:** `docs/demo.md` records the mechanism and its limits (a CSP violation raised inside the module worker is not reported to the page).
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
-| F064 | Medium · P2 | `apps/demo/hosting/hosting.spec.ts:25` | CSP test uses substring checks; a widened policy or missing `base-uri`/`form-action` still passes | Open |
-| G004 | Medium · P2 | `apps/demo/e2e/inspection.spec.ts:43` | SEC-03 request evidence ignores page-load and same-origin traffic | Open |
-| G005 | Medium · P2 | `apps/demo/e2e/resolution.spec.ts:193` | No log/console canary; storage is checked only before lookup | Open |
-| F061 | Medium · P2 | `apps/demo/src/icons.ts:4` | Icon loader security bounds have no automated coverage | Open |
-| G001 | Low · P3 | `apps/demo/e2e/inspection.spec.ts:140` | The hostile-render test does not watch for requests, dialogs or navigation | Open |
-| G002 | Low · P3 | `apps/demo/e2e/inspection.spec.ts:31` | No CI test watches requests from the start of page load | Open |
-| G003 | Low · P3 | `docs/security/THREAT_MODEL.md:117` | SEC-03 log-canary evidence is missing and not recorded as an open item | Open |
-| G006 | Low · P3 | `apps/demo/e2e/resolution.spec.ts:133` | In CI, lookup request minimisation is checked by a deny-list; allowlists exist only in the skipped live test | Open |
+| F064 | Medium · P2 | `apps/demo/hosting/hosting.spec.ts:25` | CSP test uses substring checks; a widened policy or missing `base-uri`/`form-action` still passes | Fixed |
+| G004 | Medium · P2 | `apps/demo/e2e/inspection.spec.ts:43` | SEC-03 request evidence ignores page-load and same-origin traffic | Fixed |
+| G005 | Medium · P2 | `apps/demo/e2e/resolution.spec.ts:193` | No log/console canary; storage is checked only before lookup | Fixed |
+| F061 | Medium · P2 | `apps/demo/src/icons.ts:4` | Icon loader security bounds have no automated coverage | Fixed |
+| G001 | Low · P3 | `apps/demo/e2e/inspection.spec.ts:140` | The hostile-render test does not watch for requests, dialogs or navigation | Fixed |
+| G002 | Low · P3 | `apps/demo/e2e/inspection.spec.ts:31` | No CI test watches requests from the start of page load | Fixed |
+| G003 | Low · P3 | `docs/security/THREAT_MODEL.md:117` | SEC-03 log-canary evidence is missing and not recorded as an open item | Fixed |
+| G006 | Low · P3 | `apps/demo/e2e/resolution.spec.ts:133` | In CI, lookup request minimisation is checked by a deny-list; allowlists exist only in the skipped live test | Fixed |
 
-**Ends with:** `pnpm --filter @xivcharakit/demo test` and `pnpm test:demo:cloudflare`.
+**Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:demo:cloudflare`: 123 tooling, 463 package, 18 demo unit and 72 demo browser tests pass (74 with the hosting checks; 1 live smoke skipped). A workflow review (two lenses, two verifiers per finding) confirmed thirteen findings, none disputed: the default XIVAPI block had broken the opt-in live check, and the recorder missed Blob bodies, WebSockets, SharedWorker, page-exit sends, structured console arguments, history state and the file system, and pinned only some lookup values; all were fixed (ba6353d). Not deployed.
 
 ## Wave 7 — packages/chara (tests): Reader and inspection guards that can be deleted unnoticed
 
