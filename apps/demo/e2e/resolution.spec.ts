@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test';
-import { item, load, S, V } from './helpers.js';
+import { expect, test } from './fixtures.js';
+import { expectApproved, item, load, S, V } from './helpers.js';
 
 test('clear discards a pending response and resets lookup permission', async ({
   page,
@@ -82,6 +82,7 @@ test.beforeEach(async ({ page }) => {
 });
 test('requires an explicit lookup, shows every candidate and sends only identifiers', async ({
   page,
+  traffic,
 }) => {
   const urls: string[] = [];
   await page.route('https://v2.xivapi.com/**', async (route) => {
@@ -118,6 +119,15 @@ test('requires an explicit lookup, shows every candidate and sends only identifi
   await expect(page.getByTestId('equipment')).toContainText(
     '<img src=x onerror=alert(1)>',
   );
+  await traffic.settle();
+  expect(traffic.toXivapi().length).toBeGreaterThan(2);
+  for (const request of traffic.toXivapi()) expectApproved(request);
+  expect(
+    traffic
+      .toXivapi()
+      .filter((r) => new URL(r.url).pathname === '/api/search')
+      .map((r) => new URL(r.url).searchParams.get('query')),
+  ).toEqual(['+((+EquipSlotCategory.Body=1 +ModelMain=328041))']);
   expect(urls.join(' ')).not.toMatch(/PRIVATE_|DyeId|HairTone|Nickname|Author/);
   expect(
     new URL(

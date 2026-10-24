@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 import { load } from './helpers.js';
 
 test('terminates an overdue worker and preserves the previous valid inspection', async ({
@@ -137,24 +137,54 @@ test('retains both dye IDs locally and preserves missing, null and invalid value
   }
   expect(external).toEqual([]);
 });
-test('renders hostile names and values literally and omits embedded image payloads', async ({
+test('renders hostile names and values literally, requests nothing and omits embedded image payloads', async ({
   page,
+  traffic,
 }) => {
-  await load(page, {
-    Nickname: '<img src="https://evil.invalid/" onerror="alert(1)">',
-    HairTone: 0,
-    Base64Image: 'PRIVATE_IMAGE_CANARY',
-    Note: '<script>alert(1)</script>',
-  });
+  // The fixture also fails the test on any dialog, popup, download, page error or CSP violation.
+  const hostileName = '<img src=x onerror=alert(6)>.chara';
+  await load(
+    page,
+    {
+      Nickname: '<img src="https://evil.invalid/" onerror="alert(1)">',
+      HairTone: 0,
+      Base64Image: 'PRIVATE_IMAGE_CANARY',
+      Note: '<script>alert(1)</script>',
+      '<img src=x onerror=alert(2)>': 'hostile key',
+      '"><svg onload=alert(3)>': { '<b>nested</b>': 'javascript:alert(4)' },
+      Link: 'javascript:alert(5)',
+      Tracker: 'https://evil.invalid/tracker.png',
+    },
+    hostileName,
+  );
   await expect(page.getByTestId('identity')).toContainText('<img src=');
+  await expect(page.locator('.filename')).toHaveText(hostileName);
   await page.getByText('Stored values', { exact: true }).click();
   await expect(page.getByTestId('stored-values')).toContainText(
     '<script>alert(1)</script>',
   );
-  expect(await page.locator('img[src*="evil"]').count()).toBe(0);
+  await expect(page.getByTestId('stored-values')).toContainText(
+    '<img src=x onerror=alert(2)>',
+  );
+  await page.getByText('"><svg onload=alert(3)> — Object').click();
+  await expect(page.getByTestId('stored-values')).toContainText(
+    'javascript:alert(4)',
+  );
+  await expect(page.getByTestId('swatches')).not.toContainText('Loading');
+  expect(
+    await page
+      .locator('img[src*="evil"], svg[onload], script:not([src])')
+      .count(),
+  ).toBe(0);
   expect(await page.locator('body').textContent()).not.toContain(
     'PRIVATE_IMAGE_CANARY',
   );
+  await traffic.settle();
+  expect(traffic.offOrigin()).toEqual([]);
+  expect(traffic.requests.filter((r) => /evil|alert/.test(r.url))).toEqual([]);
+  expect(traffic.navigations).toEqual([`${traffic.appOrigin}/`]);
+  expect(traffic.dialogs).toEqual([]);
+  expect(traffic.pageErrors).toEqual([]);
 });
 test('preserves a valid inspection on rejected replacements and checks extension and size', async ({
   page,

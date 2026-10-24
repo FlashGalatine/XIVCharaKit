@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 import { load } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
