@@ -12,7 +12,7 @@
 
 **Spec:** [Consumer migration brief](../../../migration.md), [library API](../../api.md), [appearance semantics](../../api.md#appearance-interpretation-xivcharakitappearance), and the compatibility decisions below.
 
-**Execution root:** `C:\dev\XIVProjects\xivdyetools`. All task paths refer to that repository unless explicitly prefixed `XIVCharaKit:`. This plan is stored in the library repository for handoff; its Markdown reference links resolve relative to this document. An executor can read it here while working in the target repository; copying files is not required.
+**Execution root:** a local checkout of `FlashGalatine/xivdyetools`. All task paths refer to that repository unless explicitly prefixed `XIVCharaKit:`. This plan is stored in the library repository for handoff; its Markdown reference links resolve relative to this document. An executor can read it here while working in the target repository; copying files is not required.
 
 ## Baseline and scope
 
