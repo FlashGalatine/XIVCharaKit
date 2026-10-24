@@ -27,13 +27,13 @@ Reviewed local sources on **2026-10-22**. The initial draft used target `d50927c
 | Discord worker | `5.8.15` | Shared attachment guards and command handlers |
 | API worker | `0.20.1` | `/v1/chara/resolve`, icon proxy, regional names, acquisition and twin selection |
 
-The integration target is **exactly `xivcharakit@0.1.0-beta.3` once published and verified**, not a floating `next` tag. Review its eventual registry artifact against its own CI release manifest before installation. The historical beta.2 integrity is `sha512-i0Kno7HGUeBs9h9pPVCVxanofG2tXb/O125/bB7tCjqj4qrYmXhmoF0sRhcRbBrg60veMCoUL7Tg0iUpUsOauw==`; it cannot substitute for beta.3 verification.
+The integration target is **exactly `xivcharakit@0.1.0-beta.3` once published and verified**, not a floating `next` tag. Review its eventual registry artifact against its own CI release manifest before installation. The historical beta.2 integrity is `sha512-i0Kno7HGUeBs9h9pPVCVxanofG2tXb/O125/bB7tCjqj4qrYmXhmoF0sRhcRbBrg60veMCoUL7Tg0iUpUsOauw==`; it cannot substitute for beta.3 verification. Beta.3 ignores the lip-color bit of `Mouth` (audit finding F096); beta.4, prepared and not published, reads it and reports the lip of the committed real exports as inactive (`lipDisabled`). Whether the target moves to beta.4 once it is published, verified and aged is the maintainer's decision.
 
 Beta.2 is a historical comparison baseline, not a promise of complete host parity. The host accepts the legacy `Helion` tribe alias, while published beta.2 lists `Helions` without that alias. The beta.3 candidate fixes this gap with inspection and actual-palette regressions, following the 2026-10-22 producer-source refresh. Publish and verify beta.3 before consumer adoption; preparing this candidate does not change the published beta.2 artifact. Any additional blocking gap found during comparison requires its own reviewed library change and exact version pin.
 
 ## Review findings addressed by this revision
 
-Review basis: the local `2026-10-22-chara-integration-plan-security` audit in the target repository's `.claude/worktrees/chara-integration-plan-review/docs/audits/` directory. Its original snapshot and findings remain historical evidence. The following requirements address the findings in the plan; they do not mark the unimplemented fixes or acceptance gates complete.
+Review basis: the `2026-10-22-chara-integration-plan-security` audit of this plan, which the maintainer keeps locally and which is not part of either repository. Its original snapshot and findings remain historical evidence. The following requirements address the findings in the plan; they do not mark the unimplemented fixes or acceptance gates complete.
 
 | Finding | Required plan change | Owner / acceptance |
 | --- | --- | --- |

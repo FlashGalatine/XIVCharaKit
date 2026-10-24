@@ -31,10 +31,10 @@ Item rows retain decimal `modelMain`, nullable `modelSub`, supported slots, sele
 | `baseUrl` | `https://v2.xivapi.com/api`; trusted custom HTTPS API root with no credentials/query/fragment |
 | `version` | `latest`; 1–64 ASCII letters/digits/dots/underscores/hyphens, starting with a letter or digit |
 | `schema` | `exdschema@2:ver:request`, or `exdschema@2:rev:` plus 1–40 lowercase hexadecimal digits |
-| `languages` | en/ja/de/fr; a nonempty subset, deduplicated and sorted |
+| `languages` | en/ja/de/fr; 1 to 4 entries (counted before duplicates are removed, a hole is invalid), deduplicated and sorted |
 | `timeoutMs` | 10,000; positive integer up to 10,000, covering headers and body |
 | `maxPages` | 20; positive integer up to 20 |
-| `fetch` / `cache` | Optional trusted host adapters; no implicit cache |
+| `fetch` / `cache` | Optional trusted host adapters; no implicit cache. A cache needs both `get` and `set`; they are read once when the client is created and called on the cache object, so replacing them later has no effect |
 
 Invalid host options throw `XivapiInputError` (`INVALID_OPTIONS`); invalid direct identifiers throw `INVALID_LOOKUP` before requests. Upstream issue codes include `NETWORK_ERROR`, `TIMEOUT`, `DEADLINE`, `UPSTREAM_UNAVAILABLE`, `REDIRECT_REFUSED`, `BODY_UNAVAILABLE`, `MALFORMED_RESPONSE`, `RESPONSE_IDENTITY`, `INVALID_ROW`, `CONFLICTING_ROW`, `INVALID_CURSOR`, `REPEATED_CURSOR`, `PAGE_LIMIT`, `ROW_LIMIT`, `REQUEST_LIMIT`, `RESPONSE_LIMIT`, `RETRY_LIMIT`, `QUEUE_FULL`, and `CANCELLED`. Native errors and upstream error bodies are never quoted.
 
