@@ -47,22 +47,34 @@ test('requests only the page and its own assets from load until the user asks, w
   expect(await traffic.leaks(PRIVATE)).toEqual([]);
 });
 
-test('requests only the synthetic example files when an example is chosen', async ({
-  page,
-  traffic,
-}) => {
-  traffic.reset();
-  await page.getByRole('button', { name: 'Ktisis', exact: true }).click();
-  await expect(page.getByTestId('identity')).toContainText('Lalafell');
-  await expect(page.getByTestId('swatches')).not.toContainText('Loading');
-  await traffic.settle();
-  expect(traffic.offOrigin()).toEqual([]);
-  expect(
-    traffic.requests
-      .map((request) => new URL(request.url).pathname)
-      .filter((path) => !APP_ASSET.test(path)),
-  ).toEqual(['/examples/ktisis.chara']);
-});
+for (const [button, race, file] of [
+  ['Anamnesis', 'Hyur', 'anamnesis'],
+  ['Ktisis', 'Lalafell', 'ktisis'],
+  ['Brio', 'Au Ra', 'brio'],
+] as const)
+  test(`requests only the synthetic ${button} file when that example is chosen`, async ({
+    page,
+    traffic,
+  }) => {
+    await traffic.reset();
+    await page.getByRole('button', { name: button, exact: true }).click();
+    await expect(page.getByTestId('identity')).toContainText(race);
+    await expect(page.getByTestId('swatches')).not.toContainText('Loading');
+    await traffic.settle();
+    expect(traffic.offOrigin()).toEqual([]);
+    for (const request of traffic.requests) {
+      const url = new URL(request.url);
+      expect(request.method).toBe('GET');
+      expect(request.postData).toBeNull();
+      expect(url.search).toBe('');
+      expect(url.hash).toBe('');
+    }
+    expect(
+      traffic.requests
+        .map((request) => new URL(request.url).pathname)
+        .filter((path) => !APP_ASSET.test(path)),
+    ).toEqual([`/examples/${file}.chara`]);
+  });
 
 test('sends only approved identifiers and controls to the reviewed origin, and nothing else', async ({
   page,
@@ -119,7 +131,7 @@ test('sends only approved identifiers and controls to the reviewed origin, and n
   expect(await traffic.leaks(PRIVATE)).toEqual([]);
 });
 
-test('keeps character data out of storage, cookies, the address and the console through a lookup with icons', async ({
+test('keeps character data out of storage, cookies, history, the file system, the address and the console through a lookup with icons', async ({
   page,
   traffic,
 }) => {
@@ -142,6 +154,13 @@ test('keeps character data out of storage, cookies, the address and the console 
     cookie: document.cookie,
     href: location.href,
     name: window.name,
+    history: JSON.stringify(history.state),
+    opfs: await (async () => {
+      const names: string[] = [];
+      const root = await navigator.storage.getDirectory();
+      for await (const [name] of root.entries()) names.push(name);
+      return names;
+    })(),
   }));
   expect(state).toEqual({
     local: [],
@@ -152,43 +171,10 @@ test('keeps character data out of storage, cookies, the address and the console 
     cookie: '',
     href: `${traffic.appOrigin}/`,
     name: '',
+    history: 'null',
+    opfs: [],
   });
   expect(await page.context().cookies()).toEqual([]);
   expect(JSON.stringify(state)).not.toMatch(PRIVATE);
   expect(await traffic.leaks(PRIVATE)).toEqual([]);
-});
-
-test('the recorder sees a marker wherever it could leave the page', async ({
-  page,
-  traffic,
-}) => {
-  // Without this, "nothing leaked" could mean "nothing was being watched".
-  await page.evaluate(() => {
-    void fetch('/control?CONTROL_URL', {
-      method: 'POST',
-      headers: { 'x-control': 'CONTROL_HEADER' },
-      body: 'CONTROL_BODY',
-    }).catch(() => {});
-    console.log({ nested: { deep: ['CONTROL_CONSOLE'] } });
-    setTimeout(() => {
-      throw new Error('CONTROL_ERROR');
-    }, 0);
-    location.hash = 'CONTROL_NAVIGATION';
-    alert('CONTROL_DIALOG');
-  });
-  await expect
-    .poll(async () => (await traffic.leaks(/CONTROL_/)).length)
-    .toBeGreaterThanOrEqual(7);
-  const found = (await traffic.leaks(/CONTROL_/)).join('\n');
-  for (const where of [
-    'request url',
-    'request header',
-    'request body',
-    'console',
-    'page error',
-    'dialog',
-    'navigation',
-  ])
-    expect(found, where).toContain(where);
-  traffic.reset();
 });

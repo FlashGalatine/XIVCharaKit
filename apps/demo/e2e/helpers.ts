@@ -168,31 +168,88 @@ export const activeId = (page: Page) =>
 
 const HEADER_ALLOWED =
   /^(accept|accept-language|accept-encoding|origin|user-agent|priority|sec-[\w-]+)$/;
-export const APPROVED_PATHS = [
-  '/api/version',
-  '/api/search',
-  '/api/sheet/Stain',
-  '/api/sheet/Glasses',
-  '/api/asset',
-];
-export const APPROVED_PARAMETERS = [
-  'fields',
-  'version',
-  'schema',
-  'language',
-  'transient',
-  'limit',
-  'sheets',
-  'query',
-  'cursor',
-  'rows',
-  'path',
-  'format',
-];
+
+const SEARCH_FIELDS = [
+  'Name@lang(de),Name@lang(en),Name@lang(fr),Name@lang(ja),Icon.id,ModelMain,ModelSub,LevelEquip,ItemUICategory.row_id',
+  ...[
+    'MainHand',
+    'OffHand',
+    'Head',
+    'Body',
+    'Gloves',
+    'Legs',
+    'Feet',
+    'Ears',
+    'Neck',
+    'Wrists',
+    'FingerL',
+    'FingerR',
+  ].map((slot) => `EquipSlotCategory.${slot}`),
+  'DyeCount,IsGlamorous',
+  ...[
+    'Hyur',
+    'Elezen',
+    'Lalafell',
+    'Miqote',
+    'Roegadyn',
+    'AuRa',
+    'Hrothgar',
+    'Viera',
+    'Male',
+    'Female',
+  ].map((who) => `EquipRestriction.${who}`),
+  'GrandCompany.row_id',
+].join(',');
+const ROWS = /^[0-9]+(,[0-9]+)*$/;
+const VERSION = /^[0-9a-f]{16}$/;
+const SCHEMA = /^exdschema@2:(ver:request|rev:[0-9a-f]{40})$/;
+/**
+ * The complete shape of each request a lookup may send to the reviewed origin: its route, exactly
+ * the parameters it carries, and a value rule for every one of them. A parameter that is added, or
+ * a value outside its rule, fails here, so private data cannot ride along in a field that no test
+ * looked at. Identifiers are digits; everything else is a fixed word or a pattern with no free text.
+ */
+const SHAPES: Record<string, Record<string, string | RegExp>> = {
+  '/api/version': {},
+  '/api/sheet/Stain': {
+    fields: 'Name@lang(en)',
+    version: VERSION,
+    schema: SCHEMA,
+    language: 'en',
+    transient: '',
+    rows: ROWS,
+  },
+  '/api/sheet/Glasses': {
+    fields: 'Name@lang(de),Name@lang(en),Name@lang(fr),Name@lang(ja),Icon.id',
+    version: VERSION,
+    schema: SCHEMA,
+    language: 'en',
+    transient: '',
+    rows: ROWS,
+  },
+  '/api/search': {
+    fields: SEARCH_FIELDS,
+    version: VERSION,
+    schema: SCHEMA,
+    language: 'en',
+    transient: '',
+    limit: '500',
+    sheets: 'Item',
+    query:
+      /^\+\((\(\+EquipSlotCategory\.[A-Za-z]+=1 \+ModelMain=[0-9]+\)( |(?=\))))+\)$/,
+  },
+  '/api/asset': {
+    path: /^ui\/icon\/[0-9]{6}\/[0-9]{6}_hr1\.tex$/,
+    format: 'png',
+    version: VERSION,
+  },
+};
+export const APPROVED_PATHS = Object.keys(SHAPES);
 /**
  * What a lookup may send to the reviewed origin, as an allowlist: a GET without a body, cookies,
- * credentials or referrer, to a fixed route, with only the documented parameter names. A deny-list
- * of private strings would pass a new parameter that carries something else.
+ * credentials or referrer, carrying only the headers a browser adds, to a fixed route, with the
+ * route's exact parameters and value rules. A deny-list of private strings would pass a new
+ * parameter, or a transformed copy of a private value.
  */
 export function expectApproved(request: Recorded): void {
   const url = new URL(request.url);
@@ -205,7 +262,14 @@ export function expectApproved(request: Recorded): void {
     expect(header, `header ${header}`).toMatch(HEADER_ALLOWED);
   expect(url.hash).toBe('');
   expect(url.username + url.password).toBe('');
-  expect(APPROVED_PATHS).toContain(url.pathname);
-  for (const key of url.searchParams.keys())
-    expect(APPROVED_PARAMETERS).toContain(key);
+  const shape = SHAPES[url.pathname];
+  expect(shape, `route ${url.pathname}`).toBeDefined();
+  const names = [...url.searchParams.keys()];
+  expect(new Set(names).size, 'a repeated parameter').toBe(names.length);
+  expect(names.sort()).toEqual(Object.keys(shape ?? {}).sort());
+  for (const [name, rule] of Object.entries(shape ?? {})) {
+    const value = url.searchParams.get(name) ?? '';
+    if (typeof rule === 'string') expect(value, name).toBe(rule);
+    else expect(value, name).toMatch(rule);
+  }
 }

@@ -91,8 +91,7 @@ describe('the icon request', () => {
     expect(init.method ?? 'GET').toBe('GET');
     expect(init.body ?? null).toBeNull();
   });
-  it('is cancelled with the lookup and bounded by a five second timeout', async () => {
-    const timeout = vi.spyOn(AbortSignal, 'timeout');
+  it('is cancelled with the lookup', async () => {
     const controller = new AbortController();
     let seen: AbortSignal | undefined;
     respond = (_url, init) => {
@@ -100,9 +99,25 @@ describe('the icon request', () => {
       return answer(png());
     };
     await loadIcons(resolution([5]), controller.signal, ready);
-    expect(timeout).toHaveBeenCalledWith(5000);
     expect(seen?.aborted).toBe(false);
     controller.abort();
+    expect(seen?.aborted).toBe(true);
+  });
+  it('is bounded by a five second timeout that reaches the request itself', async () => {
+    // A timeout signal the test controls, so that the signal fetch receives can be tied to it.
+    const expiry = new AbortController();
+    const timeout = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockReturnValue(expiry.signal);
+    let seen: AbortSignal | undefined;
+    respond = (_url, init) => {
+      seen = init.signal ?? undefined;
+      return answer(png());
+    };
+    await run(resolution([5]));
+    expect(timeout).toHaveBeenCalledExactlyOnceWith(5000);
+    expect(seen?.aborted).toBe(false);
+    expiry.abort();
     expect(seen?.aborted).toBe(true);
   });
   it('is keyed by version and id and reaches the page as an object URL', async () => {

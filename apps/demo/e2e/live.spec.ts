@@ -1,6 +1,9 @@
 import { writeFile } from 'node:fs/promises';
 import { expect, test } from './fixtures.js';
 
+// The one test that reaches the real XIVAPI: the default block is for every other test.
+test.use({ allowXivapi: true });
+
 test('manual live browser lookup', async ({ page }) => {
   test.skip(
     process.env.CHARA_LIVE_SMOKE !== '1',

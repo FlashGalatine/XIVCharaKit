@@ -63,11 +63,14 @@ test('requests icons only after Resolve and shows them as blob-backed images', a
   await expect(images).toHaveCount(2);
   await expect
     .poll(() =>
-      images.evaluateAll((all) =>
-        all.every((image) => (image as HTMLImageElement).naturalWidth === 1),
+      images.evaluateAll(
+        (all) =>
+          all.length === 2 &&
+          all.every((image) => (image as HTMLImageElement).naturalWidth === 1),
       ),
     )
     .toBe(true);
+  await expect(page.locator('.item-icon', { hasText: '—' })).toHaveCount(0);
   for (const image of await images.all()) {
     expect(await image.getAttribute('src')).toMatch(/^blob:/);
     expect(await image.getAttribute('alt')).toBe('');

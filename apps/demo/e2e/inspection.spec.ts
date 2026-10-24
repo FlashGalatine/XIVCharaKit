@@ -208,6 +208,9 @@ test('provides keyboard file selection and clear releases local state', async ({
     .getByRole('button', { name: 'Choose .chara file', exact: true })
     .focus();
   const chooser = page.waitForEvent('filechooser');
+  // A key press is immediate, unlike a click: make sure the browser is intercepting the chooser
+  // before the press opens it, or the native dialog opens and no event ever arrives.
+  await page.evaluate(() => undefined);
   await page.keyboard.press('Enter');
   await (await chooser).setFiles({
     name: 'keyboard.chara',
