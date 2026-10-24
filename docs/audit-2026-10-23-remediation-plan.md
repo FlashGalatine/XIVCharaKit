@@ -2,7 +2,7 @@
 
 **Source:** [audit-2026-10-23.md](audit-2026-10-23.md), the audit of `014c6a0` (106 findings: 2 high, 28 medium, 76 low; 8 verifier disputes resolved by the maintainer, see its §7). Plus one finding added during the fixes (N001, FacePaint mirror flag).
 
-**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings and the ten Wave 4 findings, 35 in all. Partly fixed: F090 (warning only). Outstanding: 71. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
+**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings, the ten Wave 4 findings and the eight Wave 5 findings, 43 in all. Partly fixed: F090 (warning only). Outstanding: 63. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
 
 **Ordering:**
 1. One deploy unit per wave, each ending in a named gate or release. Waves are the equivalent of the sprints in the XIV Dye Tools remediation plans.
@@ -20,7 +20,7 @@
 | 2 | packages/chara (xivapi) | The client was written against doubles that are not the real API | 0 / 3 / 4 | ✅ done (8959fc1, b20624f, e8cf5f9, ed0589a, ab358b0, b83c9de, dbf5b62, bdd1cbc, 298bd32) |
 | 3 | packages/chara (reader, inspect, xivapi) | Cross-realm input, re-read values, label accuracy; then publish | 0 / 0 / 7 | ✅ done (e965238, 60717a5, 7c49ade, d217c44) |
 | 4 | repo tooling (scripts, test/, CI) | Release and verification tooling that can pass vacuously | 0 / 1 / 9 | ✅ done (27d3c5e to 3fbe8a7) |
-| 5 | apps/demo | State, focus and live-region fragility across re-renders | 0 / 2 / 6 | open |
+| 5 | apps/demo | State, focus and live-region fragility across re-renders | 0 / 2 / 6 | ✅ done (e8be1fd to e4bc6e7) |
 | 6 | apps/demo (tests) | Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03) | 0 / 4 / 4 | open |
 | 7 | packages/chara (tests) | Reader and inspection guards that can be deleted unnoticed | 0 / 4 / 7 | open |
 | 8 | packages/chara (tests) | Appearance maths and palette provider assertions | 0 / 6 / 9 | open |
@@ -128,22 +128,28 @@ Nothing here ships in the package tarball; all of it is a gate that must still f
 
 **Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package` (Windows `tar`): 123 tooling, 463 package and 24 demo tests pass, and the installed tarball is still 43 files. A workflow review found gaps in the first fixes (release wiring that no test ran, an unpinned timeout, fixture discovery that missed upper-case extensions and followed links, a tool error that lost its exit status); all were fixed (2e3887a, 6e18e8e, 3fbe8a7).
 
-## Wave 5 — apps/demo: State, focus and live-region fragility across re-renders
+## Wave 5 — apps/demo: State, focus and live-region fragility across re-renders ✅ COMPLETED 2026-10-24 (e8be1fd to e4bc6e7)
 
-**Anchor F060:** if a replacement file is rejected while appearance is still resolving, the retained file's swatches stay on "Loading…". Also here: live regions and alerts recreated on every render (G013), focus lost when Resolve/Cancel or a pager button is activated (F072, F074), nested disclosures collapsing on re-render (F069), the Race row saying "Not stored" (F073), `--muted` text failing WCAG AA on tinted panels (G014), and the appearance message serialising raw subtrees twice (G012).
+Fixed test-first with Playwright tests that were red before each fix; every group of new code was mutation-checked.
+- **F060, G012:** a rejected replacement no longer leaves the retained file's swatches on "Loading…": the colors of the retained inspection are resumed in a new worker, and report Unavailable (keeping the rejection visible) if that fails too. The appearance message is a projection without the stored subtrees the inspection already carries.
+- **G013:** the status line, the alert and a lookup announcer are written in place instead of being rebuilt on every render, and only when their text changes; a repeated identical error is announced again. The stored-values pager keeps its status element between pages.
+- **F072, F074:** a control that a render disables or removes hands keyboard focus to the one that takes over (Resolve to Cancel and back, Clear to Choose); the example buttons and both pagers keep focus.
+- **F069:** the stored-values panel is built once per inspection and moved into each render, so nested disclosures and the page being read survive Resolve, Cancel, a rejected replacement and example clicks.
+- **F073, G014:** the Race row shows a stored Race that an unusable Tribe cannot confirm, labelled "declared"; `--muted` is `#5a6873` (5.15:1 on the rail), checked on every element that uses it.
+Nothing here ships in the package tarball. No screen reader was run; the live-region behaviour follows the ARIA guidance cited in the audit.
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
-| F060 | Medium · P2 | `apps/demo/src/state.ts:134` | If a replacement file is rejected while appearance is still resolving, the retained file's swatches stay on "Loading…" | Open |
-| G013 | Medium · P2 | `apps/demo/src/render.ts:383` | Live regions and alerts are recreated on every render | Open |
-| F072 | Low · P3 | `apps/demo/src/render.ts:768` | Keyboard focus is lost when Resolve or Cancel is activated | Open |
-| F074 | Low · P3 | `apps/demo/src/render.ts:270` | Pager buttons are destroyed when activated, which drops focus | Open |
-| F069 | Low · P3 | `apps/demo/src/render.ts:764` | On re-render, nested stored-value disclosures collapse and paging resets | Open |
-| F073 | Low · P3 | `apps/demo/src/render.ts:419` | The Race row says "Not stored" when Race is stored but Tribe is unusable | Open |
-| G014 | Low · P3 | `apps/demo/src/styles.css:10` | `--muted` text fails WCAG AA contrast on tinted panels | Open |
-| G012 | Low · P3 | `apps/demo/src/worker.ts:23` | The appearance message serialises the raw stored subtrees a second time | Open |
+| F060 | Medium · P2 | `apps/demo/src/state.ts:134` | If a replacement file is rejected while appearance is still resolving, the retained file's swatches stay on "Loading…" | Fixed |
+| G013 | Medium · P2 | `apps/demo/src/render.ts:383` | Live regions and alerts are recreated on every render | Fixed |
+| F072 | Low · P3 | `apps/demo/src/render.ts:768` | Keyboard focus is lost when Resolve or Cancel is activated | Fixed |
+| F074 | Low · P3 | `apps/demo/src/render.ts:270` | Pager buttons are destroyed when activated, which drops focus | Fixed |
+| F069 | Low · P3 | `apps/demo/src/render.ts:764` | On re-render, nested stored-value disclosures collapse and paging resets | Fixed |
+| F073 | Low · P3 | `apps/demo/src/render.ts:419` | The Race row says "Not stored" when Race is stored but Tribe is unusable | Fixed |
+| G014 | Low · P3 | `apps/demo/src/styles.css:10` | `--muted` text fails WCAG AA contrast on tinted panels | Fixed |
+| G012 | Low · P3 | `apps/demo/src/worker.ts:23` | The appearance message serialises the raw stored subtrees a second time | Fixed |
 
-**Ends with:** `pnpm --filter @xivcharakit/demo test` and `pnpm test:demo:cloudflare`; deploy is `pnpm deploy:demo`, a **manual** action that needs the maintainer's yes.
+**Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package` (Windows `tar`) and `pnpm test:demo:cloudflare`: 123 tooling, 463 package and 47 demo tests pass (49 with the hosting checks, 1 live smoke skipped), and the tarball is still 43 files. A workflow review (three lenses, two verifiers per finding) confirmed ten findings, none disputed: a stale re-announce timer, focus lost from disclosure summaries, a resume-failure message that named the wrong file, and three timing races in the new tests; all were fixed (e4bc6e7) with six more mutants killed. **Not deployed:** `pnpm deploy:demo` is a manual action that needs the maintainer's yes.
 
 ## Wave 6 — apps/demo (tests): Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03)
 
