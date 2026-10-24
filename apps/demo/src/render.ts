@@ -1,4 +1,4 @@
-import type { Field, JsonValue } from 'xivcharakit';
+import type { CharaInspection, Field, JsonValue } from 'xivcharakit';
 import { EQUIPMENT_SLOTS } from 'xivcharakit';
 import type { AppearanceSlot } from 'xivcharakit/appearance';
 import type { EquipmentCandidate } from 'xivcharakit/xivapi';
@@ -480,6 +480,38 @@ function writeAlert(frame: Frame, state: DemoState): void {
       alert.textContent = text;
   }, 50);
 }
+const storedPanels = new WeakMap<object, HTMLDetailsElement>();
+/**
+ * The stored-values panel depends only on the inspection, so it is built once and moved into each
+ * render. Rebuilding it collapsed the nested disclosures (their bodies are built by asynchronous
+ * toggle events, after the open state is restored) and returned paging to the first fields.
+ */
+function storedPanel(inspection: CharaInspection): HTMLDetailsElement {
+  const known = storedPanels.get(inspection);
+  if (known) return known;
+  const raw = disclosure('Stored values', 'stored-details');
+  raw.details.classList.add('stored');
+  raw.body.dataset.testid = 'stored-values';
+  raw.details
+    .querySelector('summary')
+    ?.replaceChildren(
+      el('span', '', 'Stored values'),
+      el(
+        'span',
+        'stored-hint caption',
+        'View the admitted fields without changing the file.',
+      ),
+    );
+  let rawBuilt = false;
+  raw.details.addEventListener('toggle', () => {
+    if (raw.details.open && !rawBuilt) {
+      rawBuilt = true;
+      rawPage(raw.body, inspection.document.fields, 'raw');
+    }
+  });
+  storedPanels.set(inspection, raw.details);
+  return raw.details;
+}
 let previousInspection: DemoState['inspection'] = null;
 export function render(root: HTMLElement, session: DemoSession): void {
   const state = session.state;
@@ -859,27 +891,7 @@ export function render(root: HTMLElement, session: DemoSession): void {
       equipment.append(evidence);
     }
     main.append(equipment);
-    const raw = disclosure('Stored values', 'stored-details');
-    raw.details.classList.add('stored');
-    raw.body.dataset.testid = 'stored-values';
-    raw.details
-      .querySelector('summary')
-      ?.replaceChildren(
-        el('span', '', 'Stored values'),
-        el(
-          'span',
-          'stored-hint caption',
-          'View the admitted fields without changing the file.',
-        ),
-      );
-    let rawBuilt = false;
-    raw.details.addEventListener('toggle', () => {
-      if (raw.details.open && !rawBuilt) {
-        rawBuilt = true;
-        rawPage(raw.body, inspection.document.fields, 'raw');
-      }
-    });
-    main.append(raw.details);
+    main.append(storedPanel(inspection));
     const diagnostics = el('section', 'diagnostics');
     diagnostics.append(el('h2', '', 'Diagnostics'));
     const issues = [
