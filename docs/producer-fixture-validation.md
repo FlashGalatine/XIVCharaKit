@@ -1,6 +1,6 @@
 # Real producer fixture validation
 
-Status: four maintainer-supplied default exports have redistribution permission and stored-value regression checks. Partial exports, exact producer versions and independent producer-control expectations remain pending. Demo examples remain synthetic; private corpus admission does not close this gate.
+Status: four maintainer-supplied default exports have redistribution permission and stored-value regression checks. Partial exports are not available from the current Anamnesis and Ktisis (below); Brio's, exact producer versions and independent producer-control expectations remain pending. Demo examples remain synthetic; private corpus admission does not close this gate.
 
 ## Required evidence
 
@@ -8,8 +8,8 @@ Collect default exports from each producer and selective exports only where the 
 
 | Producer | Full export | Partial export | Reviewed expectations | Redistribution permission |
 | --- | --- | --- | --- | --- |
-| Anamnesis | Two default exports retained as fixtures | Pending | Stored-value tests passed; producer-control review pending | Granted by maintainer |
-| Ktisis | Default export retained as fixture | Pending | Stored-value tests passed; producer-control review pending | Granted by maintainer |
+| Anamnesis | Two default exports retained as fixtures | Not available in the current producer (v7.57.0.3, `3d63575`): every writer saves all sections and the save modes apply to import only. Builds before 2021-09-28 had a selective save and are not verified | Stored-value tests passed; producer-control review pending | Granted by maintainer |
+| Ktisis | Default export retained as fixture | Not available in current Ktisis (v0.3 and later, v0.4.1.2, `551bb23`): `Save()` always writes every section and the save modes apply to import only. The v0.2 line is not verified | Stored-value tests passed; producer-control review pending | Granted by maintainer |
 | Brio | Default export retained as fixture | Pending | Stored-value tests passed; producer-control review pending | Granted by maintainer |
 
 Use deliberately created test characters with invented metadata and no embedded image where the producer supports that option. Keep original exports unchanged for provenance. If sanitization is necessary, record the exact transformation and hashes of both versions privately, then review the sanitized copy separately. Do not describe an edited fixture as an untouched producer export.

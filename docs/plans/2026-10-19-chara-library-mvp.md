@@ -48,7 +48,7 @@ These are draft engineering choices, not additional user decisions. Revisit them
 | Input bounds | 8 MiB UTF-8 bytes, depth 32, 100,000 visited JSON nodes | Configurable; allows the previously observed image-bearing export while bounding work; these are proposed limits, not a universal format requirement |
 | Existing host limit | Keep XIV Dye Tools' 8 KiB import policy in its host adapter | The public library's compatibility policy must not silently change the existing web/bot policy |
 | Appearance policy | Extended values are active only when declared valid; preserve both palette and extended evidence | Port and document existing behavior before proposing policy changes |
-| Appearance heuristics | Existing off-grid threshold 6 DeltaE2000; historical eye correction requires both crossed matches within 1 DeltaE2000 and neither own match | Expose the policy and record applied corrections; parsing itself never swaps fields |
+| Appearance heuristics | Existing off-grid threshold 6 DeltaE2000; eye-pair correction (identifiers say "historical") requires both crossed matches within 1 DeltaE2000 and neither own match | Expose the policy and record applied corrections; parsing itself never swaps fields |
 | XIVAPI operations | 10-second request timeout; one retry for 429/503 only when the delay is at most 2 seconds; otherwise report unavailable | Never retry caller cancellation; accept a bounded Retry-After or use a 250 ms delay |
 | XIVAPI pages | Follow search cursors; default maximum 20 pages per operation | Reaching the bound yields an explicitly partial result, never a definitive missing-item answer |
 | Cache defaults | Complete positive rows 7 days; complete empty rows 10 minutes; refresh a changing `latest` alias after 10 minutes | Namespace by resolved version and response shape; no failed/partial negative entries |
@@ -191,10 +191,10 @@ Finalize these names when reopening the plan; subsequent tasks use them consiste
 **Interfaces:** Consumes `CharaInspection` and `PaletteProvider`; produces `resolveAppearance`, `AppearanceOptions`, `AppearanceInspection`, and the versioned default policy.
 
 - [x] Write failing cases for eyes/heterochromia, tribe/gender skin and hair, highlights disabled, face paint disabled, dark/light palette ranges and invalid gaps, Hrothgar fur-pattern versus lip color, lip alpha zero/absent/intermediate, and missing tribe/gender.
-- [x] Add creator-versus-shader disagreement, square-root decoding of verified gamma-2.0 extended values, absent/false extended-valid flags, custom off-grid values, float-only slots, and evidenced historical crossed-eye cases. Preserve all-zero values as stored evidence; ambiguous legacy semantics must be reported instead of silently identifying a producer or active color.
+- [x] Add creator-versus-shader disagreement, square-root decoding of verified gamma-2.0 extended values, absent/false extended-valid flags, custom off-grid values, float-only slots, and evidenced crossed-eye cases. Preserve all-zero values as stored evidence; ambiguous legacy semantics must be reported instead of silently identifying a producer or active color.
 - [x] Run `pnpm --filter './packages/chara' exec vitest run test/appearance.test.ts` and confirm meaningful failures.
 - [x] Port the minimal conversion/DeltaE/compositing math and resolution policy. Keep palette, shader, and extended colors separately visible. Record why a display interpretation was selected, why a slot is inactive/unresolved, and any eye-pair correction; corrections never overwrite parsed fields. Label lip composites as derived previews.
-- [x] Re-run against independently reviewed expected swatches, including indices/floats on either side of the 6 DeltaE threshold and the 1 DeltaE historical-match tolerance. Test injected providers as well as bundled data. Commit the appearance paths.
+- [x] Re-run against independently reviewed expected swatches, including indices/floats on either side of the 6 DeltaE threshold and the 1 DeltaE eye-match tolerance. Test injected providers as well as bundled data. Commit the appearance paths.
 
 **Exit:** Consumers can display understandable appearance swatches without an equipment service or dye database.
 

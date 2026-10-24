@@ -222,6 +222,66 @@
       "commit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
       "path": "Brio/Game/Actor/Interop/BrioHuman.cs",
       "sha256": "7099971db548c0c5c577c3af18228d8eb597ed7919c9fbc9263bd5beaf179f77"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Files/FileBase.cs",
+      "sha256": "78dd137493966cda79e9978c9d2e7ab05fd69939dbcf41a2cccf9525b626453c"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Core/Memory/Types/Color.cs",
+      "sha256": "f71d5ab0d45388df0bb7a2e0580d664148a533638d53a75d05df636652ecb67e"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Core/Memory/Types/Color4.cs",
+      "sha256": "db8c08d94dd9026dd217f7664cff3a7c0bc3c951a16dbc8a39276acf7c127f7b"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Serialization/Converters/VersionConverter.cs",
+      "sha256": "31fbbfe6942e67531408b3d329fce4998b407b33847aa841ea4f30dc600e6897"
+    },
+    {
+      "repository": "imchillin/Anamnesis",
+      "commit": "3d635757758ea9bd4e6d6d515cd6724bfabaa299",
+      "path": "Anamnesis/Core/Memory/Types/ObjectTypes.cs",
+      "sha256": "fe3fa01624048aad5083cddcf24f03769a58256f2277ef6aa02da9feba4fe172"
+    },
+    {
+      "repository": "Aether-Tools/AetherToolsWpf",
+      "commit": "8221958d1d10d8ad995ed89a4858058bf95daf07",
+      "path": "Math3D/Extensions/VectorExtensions.cs",
+      "sha256": "09726cbe440411ce25e945ca2a67b6570fb96a6eac2f87a60b475553cd47d2e8"
+    },
+    {
+      "repository": "ktisis-tools/Ktisis",
+      "commit": "551bb23f5726ecffd1426ee3b540caf34feab18a",
+      "path": "Ktisis/Structs/Characters/CustomizeContainer.cs",
+      "sha256": "4932531bedd7e24b3efe9024e284556b695d807645f284b8d28b51577e2d37dd"
+    },
+    {
+      "repository": "ktisis-tools/Ktisis",
+      "commit": "551bb23f5726ecffd1426ee3b540caf34feab18a",
+      "path": "Ktisis/Editor/Characters/EntityCharaConverter.cs",
+      "sha256": "35e643de5c8641cab1c70117c9c2cc91ab218d3c8ae95b64b9917ff1eabf74e0"
+    },
+    {
+      "repository": "ktisis-tools/Ktisis",
+      "commit": "551bb23f5726ecffd1426ee3b540caf34feab18a",
+      "path": "Ktisis/Interface/FileDialogManager.cs",
+      "sha256": "02fc3f5bfbc81ab12573fef5ddf61aa62d03dc8f10afc1437f4a23578f7a2a78"
+    },
+    {
+      "repository": "Etheirys/Brio",
+      "commit": "3f6f8e174ea447916c3ea4b86fdbedf56689f9c1",
+      "path": "Brio/Files/Converters/VectorConverters.cs",
+      "sha256": "d6485db23ac7cfc6b8b757a5f8cb0aa8f447416f7edc0ad6c19596cf04ea5b40"
     }
   ],
   "producerCompatibilityReview": {
@@ -258,6 +318,11 @@
       "date": "2026-10-23",
       "scope": "Source review of the files that give stored fields their meaning (lip-color enable bit, extended eye-color offsets); no producer binaries run and no in-game rendering observed",
       "findings": "All three producers treat bit 0x80 of Mouth as lip color enabled (Anamnesis ActorCustomizeMemory.EnableLipColor, Ktisis CustomizeEditorTab lip switch, Brio ActorCustomize.LipColorEnabled). Bit 0x80 of FacePaint is a mirror flag in Brio (RealFacepaint, FacepaintFlipped) and Ktisis (canFlip); Anamnesis passes the raw byte through. Brio stores RightEyeColor at 0x40 and LeftEyeColor at 0x50 while Anamnesis stores Left at 0x40 and Right at 0x50, and Brio copies the fields by name, so Brio exports from v0.7.2 onward carry each eye extended color under the other eye name relative to the stored indices."
+    },
+    "pinReview": {
+      "date": "2026-10-24",
+      "scope": "Files that define what a stored field means or how it is written, added to the pinned sources so that a producer refresh compares them: metadata and image fields, vector and color text formats, the Version and ObjectKind types, the Gender and Age enum names, the Ktisis writer and its output, and Brio vector converters. Source review only; no producer binary was run.",
+      "findings": "Each hash was computed from the raw file at the pinned commit (the AetherToolsWpf file at the commit that Anamnesis 3d63575 records as its Lib/XivToolsWpf submodule). Brio and Anamnesis write extended vectors as comma-separated decimal strings, which the reader accepts; Anamnesis never writes IsExtendedAppearanceValid, which Brio computes as true when any extended color is present."
     }
   }
 }

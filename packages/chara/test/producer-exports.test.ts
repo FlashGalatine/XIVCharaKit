@@ -152,3 +152,127 @@ describe('maintainer-supplied default producer exports', () => {
     ]);
   });
 });
+
+// Anamnesis never writes IsExtendedAppearanceValid (compatibility.md, "Extended colors by
+// producer"), so for its exports the stored extended colors are inactive evidence. Expected colors
+// come from the stored indices and the shipped tables, not from the library's own output.
+describe('an Anamnesis-shaped export, which never carries IsExtendedAppearanceValid', () => {
+  const fixture = async () =>
+    JSON.parse(
+      await readFile(
+        new URL(
+          '../../../fixtures/producer-exports/anamnesis-default.chara',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    );
+  const table = async (name: string) =>
+    JSON.parse(
+      await readFile(
+        new URL(`../src/palettes/data/${name}.json`, import.meta.url),
+        'utf8',
+      ),
+    );
+  const resolve = (fields: object) =>
+    resolveAppearance(inspectChara(readChara(JSON.stringify(fields))), {
+      palettes: createDefaultPaletteProvider(),
+    });
+  const COLORED = [
+    'leftEye',
+    'rightEye',
+    'hair',
+    'highlights',
+    'skin',
+    'limbal',
+  ] as const;
+
+  it('stores the colors without the flag, so each slot shows its palette color as inactive evidence', async () => {
+    const fields = await fixture();
+    expect(Object.hasOwn(fields, 'IsExtendedAppearanceValid')).toBe(false);
+    for (const key of [
+      'SkinColor',
+      'LeftEyeColor',
+      'RightEyeColor',
+      'LimbalRingColor',
+      'HairColor',
+      'HairHighlight',
+    ])
+      expect(typeof fields[key], key).toBe('string');
+    const { eyes } = await table('creator-shared');
+    const { hair } = await table('creator-race');
+    const result = await resolve(fields);
+    for (const slot of COLORED)
+      expect(result.slots[slot], slot).toMatchObject({
+        interpretation: 'palette',
+        reason: 'extendedInactive',
+        extendedActive: false,
+        active: true,
+      });
+    expect(result.slots.leftEye.displayHex).toBe(eyes[169]);
+    expect(result.slots.rightEye.displayHex).toBe(eyes[42]);
+    expect(result.slots.hair.displayHex).toBe(hair.Duskwight.Female[71]);
+    expect(result.corrections).toEqual([]);
+  });
+
+  it('keeps a custom stored color from changing anything while the flag is absent', async () => {
+    const fields = await fixture();
+    const plain = await resolve(fields);
+    const custom = await resolve({ ...fields, HairColor: '1, 0, 0' });
+    expect(custom.slots.hair).toMatchObject({
+      interpretation: 'palette',
+      reason: 'extendedInactive',
+      displayHex: plain.slots.hair.displayHex,
+    });
+  });
+
+  it('reads the same stored colors as live, and equal to the palette, once the flag is added', async () => {
+    const fields = await fixture();
+    const result = await resolve({
+      ...fields,
+      IsExtendedAppearanceValid: true,
+    });
+    for (const slot of COLORED)
+      expect(result.slots[slot], slot).toMatchObject({
+        interpretation: 'palette',
+        reason: 'paletteAgreement',
+        extendedActive: true,
+        deltaE: 0,
+      });
+  });
+
+  it('makes a custom color off-grid only with the flag', async () => {
+    const fields = await fixture();
+    const result = await resolve({
+      ...fields,
+      HairColor: '1, 0, 0',
+      IsExtendedAppearanceValid: true,
+    });
+    // Gamma 2: (1, 0, 0) decodes to 255, 0, 0.
+    expect(result.slots.hair).toMatchObject({
+      interpretation: 'offGrid',
+      displayHex: '#FF0000',
+    });
+  });
+
+  it('shows the palette lip where a Brio-shaped file with zero opacity shows none', async () => {
+    const fields = { ...(await fixture()), Mouth: 2 | 0x80 };
+    const { lipsDark } = await table('creator-shared');
+    const withoutFlag = await resolve(fields);
+    expect(withoutFlag.slots.lip).toMatchObject({
+      interpretation: 'palette',
+      reason: 'extendedInactive',
+      displayHex: lipsDark[53],
+    });
+    // MouthColor "0, 0, 0, 0" is a live opacity of zero once the flag is true.
+    const withFlag = await resolve({
+      ...fields,
+      IsExtendedAppearanceValid: true,
+    });
+    expect(withFlag.slots.lip).toMatchObject({
+      interpretation: 'inactive',
+      reason: 'noLip',
+      displayHex: null,
+    });
+  });
+});
