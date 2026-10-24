@@ -64,6 +64,28 @@ describe('the image string that is discarded before native parsing', () => {
     rejects(image('"abc'), 'INVALID_JSON');
     rejects('{"Hair":0,"Base64Image":"abc\\', 'INVALID_JSON');
   });
+  it('refuses every printable character that does not start a defined escape', () => {
+    // 0x20 to 0x7e, except the nine that JSON defines after a backslash: " \ / b f n r t u.
+    const defined = new Set([
+      '"',
+      String.fromCharCode(92),
+      '/',
+      'b',
+      'f',
+      'n',
+      'r',
+      't',
+      'u',
+    ]);
+    let tried = 0;
+    for (let code = 0x20; code <= 0x7e; code++) {
+      const char = String.fromCharCode(code);
+      if (defined.has(char)) continue;
+      tried++;
+      rejects(image(`"a\\${char}b"`), 'INVALID_JSON');
+    }
+    expect(tried).toBe(0x7e - 0x20 + 1 - 9);
+  });
   it('applies the same checks to strings nested inside the discarded value', () => {
     for (const nested of [
       '{"a":"bad\\qescape"}',
@@ -88,6 +110,25 @@ describe('the image string that is discarded before native parsing', () => {
     const long = 'A'.repeat(READ_DEFAULTS.maxStringLength + 1000);
     expect(readChara(image(`"${long}"`)).hasEmbeddedImage).toBe(true);
     rejects(`{"Hair":0,"Other":"${long}"}`, 'MAX_STRING_LENGTH');
+  });
+  it('exempts only the string right under the key, not strings nested in an object or array image', () => {
+    rejects('{"Hair":0,"Base64Image":{"a":"long"}}', 'MAX_STRING_LENGTH', {
+      maxStringLength: 1,
+    });
+    rejects(
+      '{"Hair":0,"Base64Image":{"a":{"b":"long"}}}',
+      'MAX_STRING_LENGTH',
+      {
+        maxStringLength: 1,
+      },
+    );
+    rejects('{"Hair":0,"Base64Image":["long"]}', 'MAX_STRING_LENGTH', {
+      maxStringLength: 1,
+    });
+    expect(
+      readChara('{"Hair":0,"Base64Image":"long"}', { maxStringLength: 1 })
+        .hasEmbeddedImage,
+    ).toBe(true);
   });
   it('still matches the key under any capitalisation', () => {
     expect(readChara('{"Hair":0,"BASE64IMAGE":"x"}').hasEmbeddedImage).toBe(
@@ -301,32 +342,47 @@ describe('the budget for a diagnostic path', () => {
     expect(total(path)).toBe(256);
   });
   it('counts the separator between segments', () => {
-    // 255 + 1 separator + 1 = 257 would not fit, so the second segment is shortened.
+    // 254 + 1 separator leaves room for one character, so the second segment becomes a bare ellipsis.
     const path = boundedPath(['a'.repeat(254), 'b'.repeat(10)]);
     expect(total(path)).toBeLessThanOrEqual(256);
     expect(path).toHaveLength(2);
     expect(String(path[1]).endsWith('…')).toBe(true);
   });
-  it('stops before a segment when only the separator would fit', () => {
+  it('never exceeds the budget when the prefix leaves room for only the separator', () => {
+    // The audit notes the following segments are then dropped without an ellipsis; only the bound
+    // is documented (docs/api.md), so that is all that is pinned.
     const path = boundedPath(['a'.repeat(255), 'b'.repeat(40), 'c']);
-    expect(path).toEqual(['a'.repeat(255)]);
+    expect(path[0]).toBe('a'.repeat(255));
     expect(total(path)).toBeLessThanOrEqual(256);
+  });
+  it('bounds the path of a diagnostic for a long top-level key, in the collector itself', () => {
+    const key = 'u'.repeat(1000);
+    const issue = readChara(`{"Hair":0,"${key}":1}`).issues[0];
+    expect(issue).toMatchObject({ code: 'UNSUPPORTED_FIELD' });
+    expect(issue?.path).toEqual([`${'u'.repeat(255)}…`]);
+    expect(total(issue?.path ?? [])).toBe(256);
+    const direct = new IssueCollector();
+    direct.add('X', ['a'.repeat(300)], 'm');
+    expect(direct.issues[0]?.path).toEqual([`${'a'.repeat(255)}…`]);
   });
   it('keeps short paths unchanged, numbers included', () => {
     expect(boundedPath(['Body', 'Dye', 3])).toEqual(['Body', 'Dye', 3]);
     expect(boundedPath([])).toEqual([]);
   });
-  it('is applied to the path of an image found below nested long keys', () => {
+  it('is applied to the path of an image found below nested long keys, in the issue and in the image metadata', () => {
     const key = (c: string) => c.repeat(100);
     const text = `{"Hair":0,"${key('a')}":{"${key('b')}":{"${key('c')}":{"Base64Image":"x"}}}}`;
-    const issue = readChara(text, { maxKeyLength: 100 }).issues.find(
+    const document = readChara(text, { maxKeyLength: 100 });
+    const issue = document.issues.find(
       (entry) => entry.code === 'IMAGE_OMITTED',
     );
-    expect(issue).toBeDefined();
-    expect(total(issue?.path ?? [])).toBeLessThanOrEqual(256);
-    expect(String(issue?.path.at(-1))).toMatch(/…$/);
-    expect(issue?.path[0]).toBe(key('a'));
-    expect(issue?.path[1]).toBe(key('b'));
+    const expected = [key('a'), key('b'), `${'c'.repeat(53)}…`];
+    expect(issue?.path).toEqual(expected);
+    // The reader bounds embeddedImages itself; the collector only bounds the issue.
+    expect(document.embeddedImages).toEqual([
+      { path: expected, type: 'string' },
+    ]);
+    expect(total(document.embeddedImages[0]?.path ?? [])).toBe(256);
   });
 });
 

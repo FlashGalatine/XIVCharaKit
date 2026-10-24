@@ -107,9 +107,29 @@ describe('the weapon worn or empty rule', () => {
   it('reports absent, null and non-object slots by their stored state', () => {
     const result = inspect({ HeadGear: null, Body: 'x' });
     expect(result.equipment.HeadGear.status).toBe('null');
+    expect(result.equipment.HeadGear.stored).toEqual({
+      state: 'null',
+      raw: null,
+    });
     expect(result.equipment.Body.status).toBe('invalid');
     expect(result.equipment.Legs.status).toBe('absent');
+    expect(result.equipment.Legs.stored).toEqual({ state: 'absent' });
   });
+  it.each([['x'], [[]], [5], [true], [['a']]])(
+    'calls a slot holding %j invalid (not unsupported), with INVALID_FIELD on the slot',
+    (stored) => {
+      const result = inspect({ Body: stored });
+      expect(result.equipment.Body.stored).toEqual({
+        state: 'invalid',
+        raw: stored,
+      });
+      expect(result.equipment.Body.status).toBe('invalid');
+      expect(result.equipment.Body.model).toBeNull();
+      expect(result.issues.map((issue) => [issue.code, issue.path])).toEqual([
+        ['INVALID_FIELD', ['Body']],
+      ]);
+    },
+  );
 });
 
 describe('the weapons of the producer exports', () => {
@@ -494,7 +514,8 @@ describe('metadata fields', () => {
 
 describe('the combined diagnostic cap', () => {
   it('holds the reader and the inspection issues to 64 together, with the marker last', () => {
-    // 60 unknown fields (reader) and 12 invalid fields (inspection): 72 issues in all.
+    // 60 unknown fields (reader) and 12 inspection issues (8 invalid byte fields, 4 unsupported
+    // identity values): 72 issues in all.
     const unknown = Object.fromEntries(
       Array.from({ length: 60 }, (_, i) => [`Unknown${i}`, 1]),
     );
@@ -536,5 +557,197 @@ describe('the combined diagnostic cap', () => {
     expect(result.issues.map((issue) => issue.code)).not.toContain(
       'ISSUES_TRUNCATED',
     );
+  });
+});
+
+describe('edge cases found in review', () => {
+  describe('which lanes make a model worn', () => {
+    it('does not count a variant for armor, either', () => {
+      const body = inspect({ Body: { ModelBase: 0, ModelVariant: 5 } })
+        .equipment.Body;
+      expect(body.status).toBe('empty');
+      expect(body.model).toEqual({ slot: 'Body', base: 0, variant: 5 });
+    });
+    it('accepts the largest lane values, and refuses one more', () => {
+      const worn = inspect({
+        Body: {
+          ModelBase: 65535,
+          ModelVariant: 65535,
+          DyeId: 65535,
+          DyeId2: 65535,
+        },
+      });
+      expect(worn.equipment.Body).toMatchObject({
+        status: 'worn',
+        model: { slot: 'Body', base: 65535, variant: 65535 },
+        dye1: { state: 'valid', value: 65535 },
+        dye2: { state: 'valid', value: 65535 },
+      });
+      expect(worn.issues).toEqual([]);
+      const over = inspect({
+        Body: { ModelBase: 1, ModelVariant: 1, DyeId: 65536, DyeId2: 65536 },
+      });
+      expect(over.equipment.Body.dye1.state).toBe('invalid');
+      expect(over.equipment.Body.dye2.state).toBe('invalid');
+      expect(over.issues.map((issue) => issue.path)).toEqual([
+        ['Body', 'DyeId'],
+        ['Body', 'DyeId2'],
+      ]);
+    });
+    it('names the exact lane in the issue for a lane that is stored but unusable', () => {
+      for (const slot of ['MainHand', 'OffHand'] as const)
+        for (const set of ['x', '5', -1, 65536, 1.5, true]) {
+          const result = inspect({
+            [slot]: { ModelSet: set, ModelBase: 1, ModelVariant: 1 },
+          });
+          expect(
+            result.issues.map((issue) => [issue.code, issue.path]),
+            `${slot} ${JSON.stringify(set)}`,
+          ).toEqual([
+            ['INVALID_FIELD', [slot, 'ModelSet']],
+            ['INCOMPLETE_MODEL', [slot]],
+          ]);
+        }
+      // A missing or null lane is not an invalid field, only an incomplete model.
+      for (const stored of [
+        { ModelBase: 1, ModelVariant: 1 },
+        { ModelSet: null, ModelBase: 1, ModelVariant: 1 },
+      ])
+        expect(
+          inspect({ MainHand: stored }).issues.map((issue) => [
+            issue.code,
+            issue.path,
+          ]),
+        ).toEqual([['INCOMPLETE_MODEL', ['MainHand']]]);
+      expect(
+        inspect({
+          Body: { ModelBase: 1, ModelVariant: 1, DyeId: 'x' },
+        }).issues.map((issue) => issue.path),
+      ).toEqual([['Body', 'DyeId']]);
+    });
+    it('accepts a ModelType of up to 32 bits', () => {
+      for (const value of [0, 70000, 4294967295])
+        expect(inspect({ ModelType: value }).identity.modelType).toMatchObject({
+          state: 'valid',
+          value,
+        });
+      for (const value of [4294967296, -1, 1.5, '1'])
+        expect(inspect({ ModelType: value }).identity.modelType.state).toBe(
+          'invalid',
+        );
+    });
+  });
+
+  describe('identity', () => {
+    it('does not fall back to Race when the Tribe is stored but unusable', () => {
+      for (const tribe of [300, 1.5, -1, true, [], {}]) {
+        const result = inspect({ Race: 'Hyur', Tribe: tribe });
+        expect(result.identity.canonicalRace, JSON.stringify(tribe)).toBeNull();
+        expect(result.identity.raceSource).toBeNull();
+        expect(result.issues.map((issue) => [issue.code, issue.path])).toEqual([
+          ['INVALID_FIELD', ['Tribe']],
+        ]);
+      }
+    });
+    it('reports no mismatch for a Race that has no value', () => {
+      expect(codes({ Race: 'FutureRace', Tribe: 'Dunesfolk' })).toEqual([
+        ['UNSUPPORTED_VALUE', 'Race'],
+      ]);
+      expect(codes({ Race: 300, Tribe: 'Dunesfolk' })).toEqual([
+        ['INVALID_FIELD', 'Race'],
+      ]);
+      expect(
+        inspect({ Race: 'FutureRace', Tribe: 'Dunesfolk' }).identity
+          .canonicalRace,
+      ).toBe('Lalafell');
+    });
+    it('does not read a number written as text', () => {
+      for (const [key, value] of [
+        ['Race', '1'],
+        ['Tribe', '13'],
+        ['Gender', '0'],
+        ['Age', '1'],
+        ['Age', '0'],
+      ] as const) {
+        const result = inspect({ [key]: value });
+        expect(
+          result.identity[key.toLowerCase() as 'race'].state,
+          `${key} ${value}`,
+        ).toBe('unsupported');
+        expect(result.issues.map((issue) => issue.code)).toEqual([
+          'UNSUPPORTED_VALUE',
+        ]);
+      }
+    });
+  });
+
+  describe('vectors', () => {
+    const skin = (value: unknown) =>
+      inspect({ SkinColor: value }).extended.SkinColor;
+    it('reads an exponent of either case and either sign, as .NET writes small floats', () => {
+      for (const [text, expected] of [
+        ['1E-05, 0.5, 0.25', [0.00001, 0.5, 0.25]],
+        ['1e-05, 0.5, 0.25', [0.00001, 0.5, 0.25]],
+        ['2.5e+3, 1, 1', [2500, 1, 1]],
+        ['-1E2, 0, 0', [-100, 0, 0]],
+        ['9.99E-05, 0, 0', [0.0000999, 0, 0]],
+      ] as const)
+        expect(skin(text), text).toMatchObject({
+          state: 'valid',
+          value: expected,
+        });
+      for (const text of ['1e, 0, 0', '1e+, 0, 0', '1E-, 0, 0', '1e5.5, 0, 0'])
+        expect(skin(text).state, text).toBe('invalid');
+    });
+    it('reads a four-lane record in either spelling, and refuses one lane short', () => {
+      const mouth = (value: unknown) =>
+        inspect({ MouthColor: value }).extended.MouthColor;
+      expect(mouth({ X: 0.5, Y: 0.25, Z: 0, W: 0.75 })).toMatchObject({
+        state: 'valid',
+        value: [0.5, 0.25, 0, 0.75],
+      });
+      expect(mouth({ R: 0.5, G: 0.25, B: 0, A: 0.75 })).toMatchObject({
+        state: 'valid',
+        value: [0.5, 0.25, 0, 0.75],
+      });
+      expect(mouth({ X: 0.5, Y: 0.25, Z: 0 }).state).toBe('invalid');
+      expect(mouth({ R: 0.5, G: 0.25, B: 0 }).state).toBe('invalid');
+    });
+    it('reads MouthColor from the committed Brio export that stores it as X, Y, Z and W', async () => {
+      const bytes = await readFile(
+        new URL('../../../fixtures/brio/extended.chara', import.meta.url),
+      );
+      const stored = JSON.parse(bytes.toString('utf8')).MouthColor;
+      expect(Object.keys(stored).sort()).toEqual(['W', 'X', 'Y', 'Z']);
+      const mouth = inspectChara(readChara(bytes)).extended.MouthColor;
+      expect(mouth).toMatchObject({
+        state: 'valid',
+        value: [stored.X, stored.Y, stored.Z, stored.W],
+      });
+    });
+  });
+
+  describe('facial feature lists', () => {
+    const flags = (value: unknown) =>
+      inspect({ FacialFeatures: value }).appearance.FacialFeatures;
+    it('combines names with OR, so a repeated name adds nothing', () => {
+      expect(flags('Seventh,Seventh')).toMatchObject({
+        state: 'valid',
+        value: 64,
+      });
+      expect(flags('LegacyTattoo,LegacyTattoo')).toMatchObject({
+        state: 'valid',
+        value: 128,
+      });
+      expect(flags('First,Second,First')).toMatchObject({
+        state: 'valid',
+        value: 3,
+      });
+    });
+    it('takes None only on its own', () => {
+      expect(flags('None, First').state).toBe('unsupported');
+      expect(flags('First,None').state).toBe('unsupported');
+      expect(flags('None')).toMatchObject({ state: 'valid', value: 0 });
+    });
   });
 });
