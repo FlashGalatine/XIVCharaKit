@@ -54,7 +54,7 @@ describe('fixture verification', () => {
     editManifest((m) => {
       m.fixtures = [];
     });
-    await expect(run()).rejects.toThrow();
+    await expect(run()).rejects.toThrow(/no character fixtures/);
   });
   it('fails for a .chara file the manifest does not list', async () => {
     writeFileSync(join(fixtures, 'partial', 'unlisted.chara'), '{"Hair":1}');

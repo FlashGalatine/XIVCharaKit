@@ -18,11 +18,12 @@ describe('running a tool whose output explains its failure', () => {
   });
   it('carries stdout and stderr of a failing tool in the error', () => {
     // TypeScript writes its diagnostics to stdout; execFileSync alone reports only the stderr.
+    // The markers are assembled at run time so they are not just echoed from the command line.
     let message = '';
     try {
       runTool(process.execPath, [
         '-e',
-        "console.log('error TS2322: DIAGNOSTIC-ON-STDOUT'); console.error('NOTE-ON-STDERR'); process.exit(2)",
+        "console.log(['error TS2322: DIAGNOSTIC', 'ON-STDOUT'].join('-')); console.error(['NOTE', 'ON', 'STDERR'].join('-')); process.exit(2)",
       ]);
     } catch (error) {
       message = (error as Error).message;
