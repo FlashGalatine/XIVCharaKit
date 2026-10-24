@@ -202,6 +202,6 @@ if (isMainThread) {
     await harness.close();
   }
   console.log(
-    'Installed tarball: shared smoke passed in Node, Node Worker, Chromium, module Web Worker and local Wrangler/workerd; 5 exports, zero native API requests.',
+    'Installed tarball: shared smoke passed in Node, Node Worker, Chromium, module Web Worker and local Wrangler/workerd; 5 exports, zero native API requests (one probe per runtime, to a closed loopback port).',
   );
 }
