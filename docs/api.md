@@ -93,7 +93,7 @@ Requests name `table: 'creator' | 'shader'`, a primitive string `palette`, a zer
 | `lipsLight`, `facePaintDark`, `facePaintLight` | yes | unavailable in this baseline | 0–95 |
 | `skin`, `hair` | yes | yes | 0–191, tribe/gender required |
 
-Colors include the request coordinates, canonical uppercase hex, RGB tuple, and `datasetVersion`. Returned colors are detached; changing one cannot poison later lookups. `PALETTE_METADATA` and the bundled provider's `metadata` are deeply frozen, with dataset/source schema versions, `gameVersion: "7.57"` from the maintainer-confirmed source, source hashes and artifact hashes/counts. The metadata contract permits null when a source version is unknown. Dataset schema 1 and upstream schema 2.0.0 do not establish a game patch.
+Colors include the request coordinates, canonical uppercase hex, RGB tuple, and `datasetVersion`. Returned colors are detached; changing one cannot poison later lookups. `PALETTE_METADATA` and the bundled provider's `metadata` are deeply frozen, with dataset/source schema versions, `gameVersion` (`"7.57"` for the current dataset, confirmed by the maintainer for its source), upstream source hashes (empty after a regeneration from another file) and artifact hashes/counts. The metadata contract permits null when a source version is unknown. Dataset schema 1 and upstream schema 2.0.0 do not establish a game patch.
 
 Loading/validation failure throws `PaletteDataError` with code `PALETTE_LOAD_FAILED` and a fixed message; native loader errors are not exposed. A host can implement `PaletteProvider` with its own `getColor` and optional metadata instead. Injected provider functions execute with host privileges and can have their own side effects; they are trusted JavaScript, not sandboxed data.
 
