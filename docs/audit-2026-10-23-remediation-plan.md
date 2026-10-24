@@ -2,7 +2,7 @@
 
 **Source:** [audit-2026-10-23.md](audit-2026-10-23.md), the audit of `014c6a0` (106 findings: 2 high, 28 medium, 76 low; 8 verifier disputes resolved by the maintainer, see its §7). Plus one finding added during the fixes (N001, FacePaint mirror flag).
 
-**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings and the seven Wave 3 findings, 25 in all. Partly fixed: F090 (warning only). Outstanding: 81. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
+**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings and the ten Wave 4 findings, 35 in all. Partly fixed: F090 (warning only). Outstanding: 71. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
 
 **Ordering:**
 1. One deploy unit per wave, each ending in a named gate or release. Waves are the equivalent of the sprints in the XIV Dye Tools remediation plans.
@@ -19,7 +19,7 @@
 | 1 | docs only | Documents that misstate the current state | 0 / 1 / 7 | ✅ done (5a4a6e9, 614ac34, 8d0d0b2, 0cd9f7f) |
 | 2 | packages/chara (xivapi) | The client was written against doubles that are not the real API | 0 / 3 / 4 | ✅ done (8959fc1, b20624f, e8cf5f9, ed0589a, ab358b0, b83c9de, dbf5b62, bdd1cbc, 298bd32) |
 | 3 | packages/chara (reader, inspect, xivapi) | Cross-realm input, re-read values, label accuracy; then publish | 0 / 0 / 7 | ✅ done (e965238, 60717a5, 7c49ade, d217c44) |
-| 4 | repo tooling (scripts, test/, CI) | Release and verification tooling that can pass vacuously | 0 / 1 / 9 | open |
+| 4 | repo tooling (scripts, test/, CI) | Release and verification tooling that can pass vacuously | 0 / 1 / 9 | ✅ done (27d3c5e to 3fbe8a7) |
 | 5 | apps/demo | State, focus and live-region fragility across re-renders | 0 / 2 / 6 | open |
 | 6 | apps/demo (tests) | Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03) | 0 / 4 / 4 | open |
 | 7 | packages/chara (tests) | Reader and inspection guards that can be deleted unnoticed | 0 / 4 / 7 | open |
@@ -103,25 +103,30 @@ Fixed test-first. **F001, G009, G010** were the same cross-realm `instanceof` pa
 
 **Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package` (Windows `tar`): 55 tooling, 463 package and 24 demo tests pass, and the tarball is now 43 files (a new shared chunk). A workflow review (two Opus reviewers, two verifiers per finding) confirmed seven gaps in the new code, none rejected; all were fixed (d217c44) and nine mutants of the new code are now killed. **Not done: the publish.** `package.json` is `0.1.0-beta.3`, which npm already lists, so a release needs a version bump (the maintainer chooses it) in `packages/chara/package.json` and the `expected_version` default in `.github/workflows/publish.yml`, a `CHANGELOG.md` release heading, then **Publish to npm** as a dry run first. The publish would carry Waves 0, 2 and 3.
 
-## Wave 4 — repo tooling (scripts, test/, CI): Release and verification tooling that can pass vacuously
+## Wave 4 — repo tooling (scripts, test/, CI): Release and verification tooling that can pass vacuously ✅ COMPLETED 2026-10-24 (27d3c5e to 3fbe8a7)
 
-**Anchor F029:** `build-palettes` write mode keeps the previous upstream provenance (`source`/`sources`). Also here: `--check` compares nothing (F030), `verify-palettes` does not require all four artifacts (F028), `verify-fixtures` can pass vacuously (F081), lost `tsc` diagnostics (F076), the cwd-relative esbuild paths (F077), the symlinked CLI entry guard (F078), unpinned artifact-policy branches (F079), unasserted preflight options (F080), and committed absolute paths (F088).
+Fixed test-first. Each tightened gate was shown failing against a deliberately broken input, and the new tests were mutation-checked (changes to the scripts that remove a guard are caught).
+- **F029, F030, F028:** `build-palettes --check` now exits 1 when the file would change the committed palettes and writes nothing; write mode empties `source`/`sources` unless `--keep-sources` is passed; `verify-palettes` requires exactly the four artifacts and prints a total computed from them. Both scripts are tested from a replica of the repository layout, so a regression cannot touch the real palettes.
+- **F081:** `verify-fixtures` fails on an empty manifest, on any `.chara` file that is not listed (found in any letter case, and never through a link) and on a changed `fixtures/expected/appearance.json`, which the manifest now pins.
+- **F076, F077:** tool errors carry the exit status and both output streams (`tsc` writes its diagnostics to stdout), and the esbuild paths are anchored to the package root.
+- **F078, F080:** the release script starts through a symlink or junction. Its logic is `runRelease`, and the preflight, prepare and verify modes are tested with injected inputs; the registry request's redirect option and 15 s timeout are pinned.
+- **F079, F088:** every branch of the public-artifact policy is pinned (including `CharaSamples`), and the committed absolute paths are gone.
 Nothing here ships in the package tarball; all of it is a gate that must still fail when it should.
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
-| F029 | Medium · P2 | `scripts/build-palettes.ts:77` | Write mode keeps the previous upstream `source`/`sources` provenance | Open |
-| F028 | Low · P3 | `scripts/verify-palettes.ts:17` | `verify-palettes` does not require all four artifacts and prints a hard-coded total | Open |
-| F030 | Low · P3 | `scripts/build-palettes.ts:72` | `--check` never compares anything; it exits 0 for any file of valid size | Open |
-| F081 | Low · P3 | `scripts/verify-fixtures.ts:16` | `verify-fixtures` can pass vacuously; unlisted fixtures and `appearance.json` are not hashed | Open |
-| F076 | Low · P3 | `scripts/test-package.ts:161` | `tsc` diagnostics from the installed-consumer check are lost | Open |
-| F077 | Low · P3 | `packages/chara/scripts/build.ts:12` | esbuild paths are relative to the working directory, but `dist` deletion is relative to the script | Open |
-| F078 | Low · P3 | `scripts/release.ts:238` | The CLI entry guard does nothing when the script is run through a symlink; `main()` wiring is untested | Open |
-| F079 | Low · P3 | `scripts/package-policy.ts:13` | Several artifact-policy branches are unpinned; the `CharaSamples` case is masked by another match | Open |
-| F080 | Low · P3 | `scripts/release.ts:162` | The registry preflight's `redirect` and timeout options are not asserted | Open |
-| F088 | Low · P3 | `test/package-policy.test.ts:30` | Committed absolute paths reveal the maintainer's directory layout | Open |
+| F029 | Medium · P2 | `scripts/build-palettes.ts:77` | Write mode keeps the previous upstream `source`/`sources` provenance | Fixed |
+| F028 | Low · P3 | `scripts/verify-palettes.ts:17` | `verify-palettes` does not require all four artifacts and prints a hard-coded total | Fixed |
+| F030 | Low · P3 | `scripts/build-palettes.ts:72` | `--check` never compares anything; it exits 0 for any file of valid size | Fixed |
+| F081 | Low · P3 | `scripts/verify-fixtures.ts:16` | `verify-fixtures` can pass vacuously; unlisted fixtures and `appearance.json` are not hashed | Fixed |
+| F076 | Low · P3 | `scripts/test-package.ts:161` | `tsc` diagnostics from the installed-consumer check are lost | Fixed |
+| F077 | Low · P3 | `packages/chara/scripts/build.ts:12` | esbuild paths are relative to the working directory, but `dist` deletion is relative to the script | Fixed |
+| F078 | Low · P3 | `scripts/release.ts:238` | The CLI entry guard does nothing when the script is run through a symlink; `main()` wiring is untested | Fixed |
+| F079 | Low · P3 | `scripts/package-policy.ts:13` | Several artifact-policy branches are unpinned; the `CharaSamples` case is masked by another match | Fixed |
+| F080 | Low · P3 | `scripts/release.ts:162` | The registry preflight's `redirect` and timeout options are not asserted | Fixed |
+| F088 | Low · P3 | `test/package-policy.test.ts:30` | Committed absolute paths reveal the maintainer's directory layout | Fixed |
 
-**Ends with:** `pnpm test` (tooling suite) and `pnpm verify-fixtures && pnpm verify-palettes`; for each tightened gate, show it failing against a deliberately broken input before trusting it.
+**Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package` (Windows `tar`): 123 tooling, 463 package and 24 demo tests pass, and the installed tarball is still 43 files. A workflow review found gaps in the first fixes (release wiring that no test ran, an unpinned timeout, fixture discovery that missed upper-case extensions and followed links, a tool error that lost its exit status); all were fixed (2e3887a, 6e18e8e, 3fbe8a7).
 
 ## Wave 5 — apps/demo: State, focus and live-region fragility across re-renders
 
