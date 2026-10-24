@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { EquipmentModel } from '../src/types.js';
 import {
@@ -799,6 +800,72 @@ describe('browser-style redirects and cached row order', () => {
     }).getStains([2, 5]);
     expect(second).toHaveBeenCalledTimes(1);
     expect(result.rows.map((r) => r.rowId)).toEqual([2, 5]);
+  });
+});
+
+describe('values from another realm and unusable signals', () => {
+  it('reads response chunks created in another realm', async () => {
+    const payload = JSON.stringify(page([wire()]));
+    const foreign = runInNewContext(
+      `new Uint8Array([${[...Buffer.from(payload)].join(',')}])`,
+    ) as Uint8Array;
+    expect(foreign instanceof Uint8Array).toBe(false);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(foreign);
+        controller.close();
+      },
+    });
+    const r = await client(async () => new Response(stream)).searchItems([
+      body,
+    ]);
+    expect(r.status).toBe('complete');
+    expect(r.rows[0]?.rowId).toBe(42);
+  });
+  it('honours a signal that is not an AbortSignal of this realm', async () => {
+    class OtherSignal extends EventTarget {
+      aborted = false;
+    }
+    const other = new OtherSignal();
+    const fetch = vi.fn(() => new Promise<Response>(() => {}));
+    const pending = client(fetch).searchItems([body], {
+      signal: other as unknown as AbortSignal,
+    });
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    other.aborted = true;
+    other.dispatchEvent(new Event('abort'));
+    expect((await pending).status).toBe('cancelled');
+  });
+  it.each([
+    ['an empty object', {}],
+    ['a string', 'x'],
+    ['a number', 1],
+    ['null', null],
+    ['an object without the listener methods', { aborted: false }],
+  ])(
+    'rejects %s as a signal before any request starts',
+    async (_name, signal) => {
+      const fetch = vi.fn(async () => json(page([wire()])));
+      const c = client(fetch);
+      const options = { signal } as unknown as { signal?: AbortSignal };
+      await expect(c.searchItems([body], options)).rejects.toMatchObject({
+        code: 'INVALID_LOOKUP',
+      });
+      await expect(c.getStains([2], options)).rejects.toMatchObject({
+        code: 'INVALID_LOOKUP',
+      });
+      await expect(c.getGlasses(8, options)).rejects.toMatchObject({
+        code: 'INVALID_LOOKUP',
+      });
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+  it('rejects request options that are not an object', async () => {
+    const fetch = vi.fn(async () => json(page([wire()])));
+    await expect(
+      client(fetch).searchItems([body], null as never),
+    ).rejects.toMatchObject({ code: 'INVALID_LOOKUP' });
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
 

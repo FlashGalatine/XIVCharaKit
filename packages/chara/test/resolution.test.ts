@@ -523,6 +523,21 @@ describe('incomplete evidence and facewear', () => {
     expect(r.items.Body?.status).toBe('notFound');
     expect(r.facewear).toMatchObject({ id: 8, status: 'matched' });
   });
+  it('accepts and honours a signal that is not an AbortSignal of this realm', async () => {
+    class OtherSignal extends EventTarget {
+      aborted = false;
+    }
+    const other = new OtherSignal();
+    const fetch = vi.fn(() => new Promise<Response>(() => {}));
+    const pending = resolver(fetch).resolve(
+      { models: [body] },
+      { signal: other as unknown as AbortSignal },
+    );
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    other.aborted = true;
+    other.dispatchEvent(new Event('abort'));
+    expect((await pending).items.Body?.status).toBe('cancelled');
+  });
   it('preserves caller cancellation for both item and facewear results', async () => {
     const abort = new AbortController();
     abort.abort();

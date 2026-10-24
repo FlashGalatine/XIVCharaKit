@@ -1,6 +1,21 @@
 import { modelKey } from '../models.js';
+import { isAbortSignalLike } from '../realm.js';
 import type { EquipmentModel, EquipmentSlot } from '../types.js';
 import type { Language } from './types.js';
+
+/** The caller's signal from request options, validated before any job is created. */
+export function signalFrom(requestOptions: unknown): AbortSignal | undefined {
+  if (
+    typeof requestOptions !== 'object' ||
+    requestOptions === null ||
+    Array.isArray(requestOptions)
+  )
+    throw new XivapiInputError('INVALID_LOOKUP');
+  const signal = (requestOptions as { signal?: unknown }).signal;
+  if (signal === undefined) return undefined;
+  if (!isAbortSignalLike(signal)) throw new XivapiInputError('INVALID_LOOKUP');
+  return signal;
+}
 
 export class XivapiInputError extends Error {
   constructor(readonly code: 'INVALID_OPTIONS' | 'INVALID_LOOKUP') {

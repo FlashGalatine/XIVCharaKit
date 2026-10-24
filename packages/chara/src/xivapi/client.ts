@@ -1,6 +1,7 @@
 import { isRecord } from '../field-spec.js';
 import { IssueCollector } from '../issues.js';
 import { readBoundedJson } from '../read.js';
+import { asBytes } from '../realm.js';
 import type { EquipmentModel } from '../types.js';
 import { admittedJson } from './cache.js';
 import {
@@ -13,6 +14,7 @@ import {
   type LookupSelection,
   lookupsFrom,
   type SlotLookup,
+  signalFrom,
   stainsFrom,
   XivapiInputError,
 } from './query.js';
@@ -308,17 +310,17 @@ export function createTransport(options: XivapiOptions = {}): Transport {
             consumed = true;
             break;
           }
-          if (!(chunk.value instanceof Uint8Array))
-            throw new Failure('BODY_UNAVAILABLE');
-          bytes += chunk.value.byteLength;
-          budget.bytes += chunk.value.byteLength;
+          const view = asBytes(chunk.value);
+          if (!view) throw new Failure('BODY_UNAVAILABLE');
+          bytes += view.byteLength;
+          budget.bytes += view.byteLength;
           if (bytes > 2 * 1024 * 1024 || budget.bytes > 10 * 1024 * 1024)
             throw new Failure('RESPONSE_LIMIT');
           if (
             response.ok ||
             (rowSheet !== undefined && response.status === 404)
           )
-            chunks.push(chunk.value);
+            chunks.push(view);
         }
         if (response.status === 429 || response.status === 503) {
           if (attempt !== 0) throw new Failure('UPSTREAM_UNAVAILABLE');
@@ -745,6 +747,7 @@ export function createTransport(options: XivapiOptions = {}): Transport {
   }
   return {
     async getStains(ids, requestOptions = {}) {
+      const signal = signalFrom(requestOptions);
       const stains = stainsFrom(ids);
       if (!stains.length)
         return {
@@ -772,10 +775,11 @@ export function createTransport(options: XivapiOptions = {}): Transport {
         JSON.stringify(['stains', stains]),
         (signal) => lookup({ stains }, newBudget(signal)),
         failure,
-        requestOptions.signal,
+        signal,
       )) as LookupResult<StainRow>;
     },
     async searchItems(models, requestOptions = {}) {
+      const signal = signalFrom(requestOptions);
       const selection = lookupsFrom(models);
       if (!selection.length)
         return {
@@ -789,10 +793,11 @@ export function createTransport(options: XivapiOptions = {}): Transport {
         JSON.stringify(['items', selection]),
         (signal) => lookup(selection, newBudget(signal)),
         failureResult,
-        requestOptions.signal,
+        signal,
       )) as LookupResult<ItemRow>;
     },
     async getGlasses(id, requestOptions = {}) {
+      const signal = signalFrom(requestOptions);
       if (
         typeof id !== 'number' ||
         !Number.isInteger(id) ||
@@ -804,7 +809,7 @@ export function createTransport(options: XivapiOptions = {}): Transport {
         JSON.stringify(['glasses', id]),
         (signal) => lookup(id, newBudget(signal)),
         failureResult,
-        requestOptions.signal,
+        signal,
       )) as LookupResult<GlassesRow>;
     },
     async resolveRows(models, glassesId, signal) {

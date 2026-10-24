@@ -20,7 +20,7 @@ The low-level `createXivapiClient().getStains(ids, options)` offers the same loo
 
 `readChara(input: string | Uint8Array, options?: ReadOptions): CharaDocument`
 
-Byte input uses fatal UTF-8 decoding. One initial BOM is accepted and included in byte accounting. For string input the UTF-8 size is counted without allocating an encoded copy; unpaired UTF-16 surrogates count as the UTF-8 replacement sequence, consistent with TextEncoder. JSON string escape sequences count toward their decoded UTF-16 length.
+Byte input must be a real `Uint8Array`, including a `Buffer` or one created in another realm (an iframe, a `vm` context or a test environment whose globals differ); an `ArrayBuffer`, another typed array, a `DataView` or an object that merely looks like one is rejected with `INVALID_INPUT`. Byte input uses fatal UTF-8 decoding. One initial BOM is accepted and included in byte accounting. For string input the UTF-8 size is counted without allocating an encoded copy; unpaired UTF-16 surrogates count as the UTF-8 replacement sequence, consistent with TextEncoder. JSON string escape sequences count toward their decoded UTF-16 length.
 
 The parser enforces structure during parsing and constructs null-prototype records at every retained object. Duplicate decoded keys in an object are rejected, including escaped equivalents. JSON numbers must be finite; integral results must be safe JavaScript integers. Other finite numbers use ordinary JavaScript precision, rather than retaining their original numeric spelling. A supported non-metadata field is required at the root. Top-level arrays/scalars, metadata-only objects, and pose-only objects are rejected.
 

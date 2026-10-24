@@ -6,7 +6,12 @@ import type {
   EquipmentSlot,
 } from '../types.js';
 import { createTransport } from './client.js';
-import { lookupsFrom, type SlotLookup, XivapiInputError } from './query.js';
+import {
+  lookupsFrom,
+  type SlotLookup,
+  signalFrom,
+  XivapiInputError,
+} from './query.js';
 import type {
   EquipmentCandidate,
   EquipmentResolution,
@@ -134,15 +139,7 @@ export function createXivapiResolver(
   return {
     async resolve(input, requestOptions = {}) {
       const request = capture(input);
-      if (
-        typeof requestOptions !== 'object' ||
-        requestOptions === null ||
-        Array.isArray(requestOptions) ||
-        (requestOptions.signal !== undefined &&
-          !(requestOptions.signal instanceof AbortSignal))
-      )
-        throw new XivapiInputError('INVALID_LOOKUP');
-      const signal = requestOptions.signal;
+      const signal = signalFrom(requestOptions);
       const { items, facewear } = await client.resolveRows(
         request.models,
         request.glassesId,
