@@ -35,6 +35,8 @@ export interface DemoState {
   resolution: EquipmentResolution | null;
   dyeNames: LookupResult<StainRow> | null;
   error: string | null;
+  /** Counts every time an error is raised, so a repeated message can be announced again. */
+  errorSerial: number;
   localStatus: string;
   reading: boolean;
   lookingUp: boolean;

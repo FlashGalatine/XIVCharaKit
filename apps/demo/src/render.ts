@@ -143,14 +143,26 @@ function rawPage(
     }
     nodes.push(entry);
   }
-  const pager = el('div', 'raw-pagination');
-  const range = el(
-    'p',
-    'caption',
+  // The pager and its status stay in the page between pages: a live region that is recreated
+  // with its text already in place is not reliably announced.
+  let pager = container.querySelector<HTMLElement>(':scope > .raw-pagination');
+  let range = pager?.querySelector<HTMLElement>(':scope > [role="status"]');
+  if (pager && range) {
+    for (const old of container.querySelectorAll(':scope > .raw-entry'))
+      old.remove();
+    for (const old of pager.querySelectorAll('button')) old.remove();
+    pager.before(...nodes);
+  } else {
+    pager = el('div', 'raw-pagination');
+    range = el('p', 'caption');
+    range.setAttribute('role', 'status');
+    pager.append(range);
+    container.replaceChildren(...nodes, pager);
+  }
+  setText(
+    range,
     `Fields ${keys.length ? offset + 1 : 0}–${Math.min(offset + 200, keys.length)} of ${keys.length}`,
   );
-  range.setAttribute('role', 'status');
-  pager.append(range);
   if (offset > 0)
     pager.append(
       button(
@@ -167,7 +179,6 @@ function rawPage(
         'button quiet',
       ),
     );
-  container.replaceChildren(...nodes, pager);
 }
 function icon(
   container: HTMLElement,
@@ -296,6 +307,119 @@ function candidates(
   });
   cell.append(details);
 }
+/**
+ * The parts of the page that are written once and then only updated in place. The status line,
+ * the alert and the lookup announcer are live regions: assistive technology announces a change to
+ * a region that is already in the page, but not one that is created with its text in place, so
+ * they must not be rebuilt with the rest of the page.
+ */
+interface Frame {
+  rail: HTMLElement;
+  main: HTMLElement;
+  status: HTMLElement;
+  alert: HTMLElement;
+  announcer: HTMLElement;
+  railNodes: Node[];
+  mainNodes: Node[];
+  errorSerial: number;
+}
+const frames = new WeakMap<HTMLElement, Frame>();
+function setText(node: HTMLElement, text: string): void {
+  if (node.textContent !== text) node.textContent = text;
+}
+function frameOf(root: HTMLElement): Frame {
+  const known = frames.get(root);
+  if (known) return known;
+  const header = el('header', 'masthead');
+  header.append(
+    el('span', 'wordmark', 'XIVCharaKit'),
+    el('span', 'demo-label', 'Library demo'),
+  );
+  const shell = el('div', 'shell');
+  const rail = el('aside', 'rail');
+  rail.setAttribute('aria-label', 'File controls');
+  const status = el('p', 'local-status');
+  status.setAttribute('role', 'status');
+  status.setAttribute('aria-live', 'polite');
+  rail.append(status);
+  const main = el('main', 'workspace');
+  const alert = el('p', 'error');
+  alert.setAttribute('role', 'alert');
+  main.append(
+    el('h1', '', 'Inspect a character file'),
+    el('p', 'intro', 'Local inspection for Anamnesis, Ktisis and Brio.'),
+    alert,
+  );
+  shell.append(rail, main);
+  const footer = el('footer', 'legal-notice caption');
+  footer.append(
+    el(
+      'p',
+      '',
+      'Original code is MIT-licensed. FINAL FANTASY XIV © SQUARE ENIX.',
+    ),
+    el(
+      'p',
+      '',
+      'Independent community project. Not affiliated with, sponsored by, or endorsed by Square Enix. Game-derived materials are not covered by the MIT code license.',
+    ),
+  );
+  const licenseLink = el('a', '', 'MIT license');
+  licenseLink.href = '/LICENSE.txt';
+  const noticesLink = el('a', '', 'Third-party notices');
+  noticesLink.href = '/THIRD_PARTY_NOTICES.txt';
+  const legalLinks = el('p');
+  legalLinks.append(licenseLink, document.createTextNode(' · '), noticesLink);
+  footer.append(legalLinks);
+  const announcer = el('p', 'sr-only');
+  announcer.id = 'lookup-announcer';
+  announcer.setAttribute('role', 'status');
+  announcer.setAttribute('aria-live', 'polite');
+  root.replaceChildren(header, shell, footer, announcer);
+  const frame: Frame = {
+    rail,
+    main,
+    status,
+    alert,
+    announcer,
+    railNodes: [],
+    mainNodes: [],
+    errorSerial: 0,
+  };
+  frames.set(root, frame);
+  return frame;
+}
+/** Replaces the previous content of a frame region without touching the regions around it. */
+function swap(
+  parent: HTMLElement,
+  old: Node[],
+  next: DocumentFragment,
+  before: Node | null,
+): Node[] {
+  const nodes = [...next.childNodes];
+  for (const node of old)
+    if (node.parentNode === parent) parent.removeChild(node);
+  parent.insertBefore(next, before);
+  return nodes;
+}
+function writeAlert(frame: Frame, state: DemoState): void {
+  const text = state.error ?? '';
+  const { alert } = frame;
+  const raisedAgain = text !== '' && frame.errorSerial !== state.errorSerial;
+  frame.errorSerial = state.errorSerial;
+  if (alert.textContent !== text) {
+    alert.textContent = text;
+    return;
+  }
+  if (!raisedAgain) return;
+  // The same message raised again: empty the region first so that this is a change to announce.
+  alert.textContent = '';
+  const serial = state.errorSerial;
+  setTimeout(() => {
+    if (alert.textContent === '' && state.errorSerial === serial)
+      alert.textContent = text;
+  }, 50);
+}
 let previousInspection: DemoState['inspection'] = null;
 export function render(root: HTMLElement, session: DemoSession): void {
   const state = session.state;
@@ -307,14 +431,8 @@ export function render(root: HTMLElement, session: DemoSession): void {
       : [];
   previousInspection = state.inspection;
   const focus = document.activeElement?.id;
-  const header = el('header', 'masthead');
-  header.append(
-    el('span', 'wordmark', 'XIVCharaKit'),
-    el('span', 'demo-label', 'Library demo'),
-  );
-  const shell = el('div', 'shell');
-  const rail = el('aside', 'rail');
-  rail.setAttribute('aria-label', 'File controls');
+  const frame = frameOf(root);
+  const rail = document.createDocumentFragment();
   rail.append(el('h2', '', 'Character file'));
   const fileArea = el('div', 'file-area');
   const glyph = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -375,20 +493,10 @@ export function render(root: HTMLElement, session: DemoSession): void {
       'Your file stays in this browser. Lookup sends equipment and dye IDs to XIVAPI only when you choose.',
     ),
   );
-  const main = el('main', 'workspace');
-  main.append(
-    el('h1', '', 'Inspect a character file'),
-    el('p', 'intro', 'Local inspection for Anamnesis, Ktisis and Brio.'),
-  );
-  const live = el('p', 'local-status', state.localStatus);
-  live.setAttribute('role', 'status');
-  live.setAttribute('aria-live', 'polite');
-  rail.append(live);
-  if (state.error) {
-    const alert = el('p', 'error', state.error);
-    alert.setAttribute('role', 'alert');
-    main.append(alert);
-  }
+  const main = document.createDocumentFragment();
+  setText(frame.status, state.localStatus);
+  writeAlert(frame, state);
+  setText(frame.announcer, state.lookupMessage);
   const inspection = state.inspection;
   if (!inspection) {
     const empty = el('section', 'empty');
@@ -536,9 +644,7 @@ export function render(root: HTMLElement, session: DemoSession): void {
       ),
     );
     if (state.lookupMessage) {
-      const status = el('p', 'lookup-status', state.lookupMessage);
-      status.setAttribute('role', 'status');
-      equipment.append(status);
+      equipment.append(el('p', 'lookup-status', state.lookupMessage));
     }
     const wrap = el('div', 'table-wrap');
     const table = el('table');
@@ -738,28 +844,8 @@ export function render(root: HTMLElement, session: DemoSession): void {
     }
     main.append(diagnostics);
   }
-  shell.append(rail, main);
-  const footer = el('footer', 'legal-notice caption');
-  footer.append(
-    el(
-      'p',
-      '',
-      'Original code is MIT-licensed. FINAL FANTASY XIV © SQUARE ENIX.',
-    ),
-    el(
-      'p',
-      '',
-      'Independent community project. Not affiliated with, sponsored by, or endorsed by Square Enix. Game-derived materials are not covered by the MIT code license.',
-    ),
-  );
-  const licenseLink = el('a', '', 'MIT license');
-  licenseLink.href = '/LICENSE.txt';
-  const noticesLink = el('a', '', 'Third-party notices');
-  noticesLink.href = '/THIRD_PARTY_NOTICES.txt';
-  const legalLinks = el('p');
-  legalLinks.append(licenseLink, document.createTextNode(' · '), noticesLink);
-  footer.append(legalLinks);
-  root.replaceChildren(header, shell, footer);
+  frame.railNodes = swap(frame.rail, frame.railNodes, rail, frame.status);
+  frame.mainNodes = swap(frame.main, frame.mainNodes, main, null);
   renderIcons(root, state);
   for (const id of opened) {
     const node = document.getElementById(id);

@@ -13,6 +13,7 @@ export class DemoSession {
     resolution: null,
     dyeNames: null,
     error: null,
+    errorSerial: 0,
     localStatus: 'Choose a file or try a synthetic example.',
     reading: false,
     lookingUp: false,
@@ -27,6 +28,10 @@ export class DemoSession {
   private exampleController: AbortController | null = null;
   private dyeResolver: DyeNameResolver | undefined;
   constructor(private readonly changed: (kind?: 'icons') => void) {}
+  private raise(message: string): void {
+    this.state.error = message;
+    this.state.errorSerial++;
+  }
   private stopWorker(): void {
     this.worker?.terminate();
     this.worker = null;
@@ -102,7 +107,9 @@ export class DemoSession {
       if (committed) {
         this.state.appearanceStatus = 'unavailable';
         this.state.reading = false;
-        this.state.error = `${code}: Appearance could not be resolved. The selected file remains inspected.`;
+        this.raise(
+          `${code}: Appearance could not be resolved. The selected file remains inspected.`,
+        );
         this.state.localStatus =
           'File inspected locally. Color evidence unavailable.';
         this.changed();
@@ -144,7 +151,9 @@ export class DemoSession {
     );
   }
   private reject(code: string): void {
-    this.state.error = `${code}: Could not finish local inspection. Your previous valid file is retained.`;
+    this.raise(
+      `${code}: Could not finish local inspection. Your previous valid file is retained.`,
+    );
     this.state.reading = false;
     this.state.localStatus = 'File rejected or processing incomplete.';
     // begin() stopped the worker that was still resolving the retained file's colors.
