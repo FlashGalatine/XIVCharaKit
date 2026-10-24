@@ -213,16 +213,33 @@ export function createTransport(given: XivapiOptions = {}): Transport {
   if (typeof given !== 'object' || given === null || Array.isArray(given))
     return invalid();
   // Each option is read once, and a getter that throws makes the options invalid, as it does for
-  // createDyeNameResolver. The cache's two methods are read here too, so that a getter on them is caught as well; the cache object itself is kept, because its methods may rely on this.
+  // createDyeNameResolver. The same goes for what an option holds: the languages are copied by index
+  // (a hole or a getter in the list is caught here, not later) and the cache's two methods are read
+  // once and called on the cache, which may rely on this.
   const options: XivapiOptions = {};
   try {
     for (const key of OPTION_KEYS) {
       const value = given[key];
       if (value !== undefined) Object.assign(options, { [key]: value });
     }
+    if (Array.isArray(options.languages)) {
+      const length = options.languages.length;
+      if (!Number.isInteger(length) || length < 1 || length > 4)
+        return invalid();
+      const copy: unknown[] = [];
+      for (let i = 0; i < length; i++) copy.push(options.languages[i]);
+      options.languages = copy as Language[];
+    }
     if (typeof options.cache === 'object' && options.cache !== null) {
-      void options.cache.get;
-      void options.cache.set;
+      const target = options.cache;
+      const get = target.get;
+      const set = target.set;
+      if (typeof get !== 'function' || typeof set !== 'function')
+        return invalid();
+      options.cache = {
+        get: (key) => get.call(target, key),
+        set: (key, value, ttlMs) => set.call(target, key, value, ttlMs),
+      };
     }
   } catch {
     return invalid();

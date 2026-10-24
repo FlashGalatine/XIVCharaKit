@@ -169,6 +169,8 @@ describe('Retry-After forms that are not waited for', () => {
     ['a signed positive number', '+1'],
     ['a number with a trailing point', '1.'],
     ['a number in exponent form', '1e3'],
+    ['an exponent that would be within the cap', '1e0'],
+    ['a negative exponent that would be within the cap', '2e-1'],
     ['an ISO 8601 date', '2026-01-01T00:00:00Z'],
     ['an ISO 8601 date in the future', '2026-01-01T00:00:01Z'],
     ['an RFC 850 date', 'Thursday, 01-Jan-26 00:00:01 GMT'],
@@ -179,6 +181,26 @@ describe('Retry-After forms that are not waited for', () => {
     ],
     ['an IMF date after other text', 'x Thu, 01 Jan 2026 00:00:01 GMT'],
     ['an IMF date before other text', 'Thu, 01 Jan 2026 00:00:01 GMT x'],
+    [
+      'an IMF date followed by a comment',
+      'Thu, 01 Jan 2026 00:00:01 GMT (UTC)',
+    ],
+    ['an IMF date followed by an offset', 'Thu, 01 Jan 2026 00:00:01 GMT+0000'],
+    [
+      'an IMF date with only the month in lower case',
+      'Thu, 01 jan 2026 00:00:01 GMT',
+    ],
+    ['an IMF date with an unknown weekday', 'Xyz, 01 Jan 2026 00:00:01 GMT'],
+    [
+      'an IMF date with the weekday written out',
+      'Thursday, 01 Jan 2026 00:00:01 GMT',
+    ],
+    ['an IMF date with a two-digit year', 'Thu, 01 Jan 26 00:00:01 GMT'],
+    ['an IMF date with a one-digit hour', 'Thu, 01 Jan 2026 0:00:01 GMT'],
+    [
+      'an IMF date with the zone in lower case',
+      'Thu, 01 Jan 2026 00:00:01 gmt',
+    ],
     ['an IMF date with the zone UTC', 'Thu, 01 Jan 2026 00:00:01 UTC'],
     ['an IMF date with a one-digit day', 'Thu, 1 Jan 2026 00:00:01 GMT'],
     ['an IMF date in lower case', 'thu, 01 jan 2026 00:00:01 gmt'],
@@ -192,6 +214,31 @@ describe('Retry-After forms that are not waited for', () => {
   ])('refuses %s with RETRY_LIMIT after one request', async (_name, header) => {
     const { result, calls } = await refused(header);
     expect(result.status).toBe('unavailable');
+    expect(code(result)).toEqual(['RETRY_LIMIT']);
+    expect(calls).toBe(1);
+  });
+
+  it('refuses an asctime date that is one second ahead in the time zone of the machine, whatever that is', async () => {
+    const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const MONTHS = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const two = (n: number) => String(n).padStart(2, '0');
+    const ahead = new Date(NOW.getTime() + 1000);
+    // asctime has no zone, so an engine that reads it reads it as local time: this is that moment.
+    const asctime = `${DAYS[ahead.getDay()]} ${MONTHS[ahead.getMonth()]} ${String(ahead.getDate()).padStart(2, ' ')} ${two(ahead.getHours())}:${two(ahead.getMinutes())}:${two(ahead.getSeconds())} ${ahead.getFullYear()}`;
+    const { result, calls } = await refused(asctime);
     expect(code(result)).toEqual(['RETRY_LIMIT']);
     expect(calls).toBe(1);
   });

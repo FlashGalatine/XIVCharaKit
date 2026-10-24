@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { createDyeNameResolver } from '../src/dyes/index.js';
 import type { EquipmentModel } from '../src/types.js';
 import {
+  createMemoryCache,
   createXivapiClient,
   createXivapiResolver,
   type GlassesRow,
   type ItemRow,
+  type Language,
   type StainRow,
   type XivapiOptions,
 } from '../src/xivapi/index.js';
@@ -207,6 +209,138 @@ describe('lookups that differ only in the order or repeats of their input share 
   });
 });
 
+describe('what the languages and the cache hold', () => {
+  const withLanguages = (languages: unknown): XivapiOptions =>
+    ({ languages }) as unknown as XivapiOptions;
+  const invalid = expect.objectContaining({
+    name: 'XivapiInputError',
+    code: 'INVALID_OPTIONS',
+  });
+  const creators = [
+    createDyeNameResolver,
+    createXivapiClient,
+    createXivapiResolver,
+  ];
+  it('refuses a list of languages with a hole, with every entry point', () => {
+    // biome-ignore lint/suspicious/noSparseArray: the case under test
+    const holes = ['en', , 'de'] as unknown as readonly Language[];
+    const empty = new Array(1) as unknown as readonly Language[];
+    for (const languages of [holes, empty])
+      for (const create of creators)
+        expect(() => create(withLanguages(languages))).toThrow(invalid);
+  });
+
+  it('refuses a list of languages whose element or length is a getter that throws', () => {
+    const element = Object.defineProperty(['en'], 0, {
+      get() {
+        throw new Error('boom');
+      },
+    });
+    const length = new Proxy(['en'], {
+      get(target, key, receiver) {
+        if (key === 'length') throw new Error('boom');
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    for (const languages of [element, length])
+      for (const create of creators)
+        expect(() => create(withLanguages(languages))).toThrow(invalid);
+  });
+
+  it.each([
+    ['no methods', {}],
+    ['no set', { get: async () => null }],
+    ['no get', { set: async () => {} }],
+    ['a get that is not a function', { get: 'x', set: async () => {} }],
+    ['a set that is not a function', { get: async () => null, set: 1 }],
+  ])('refuses a cache with %s, with every entry point', (_name, cache) => {
+    for (const create of creators)
+      expect(() => create({ cache: cache as never })).toThrow(invalid);
+  });
+
+  it('reads each language once, and refuses a list that is too long without reading it', () => {
+    const reads: string[] = [];
+    const watched = new Proxy(['en', 'de'], {
+      get(target, key, receiver) {
+        if (typeof key === 'string' && /^[0-9]+$/.test(key)) reads.push(key);
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    createXivapiClient(withLanguages(watched));
+    expect(reads).toEqual(['0', '1']);
+    const touched: string[] = [];
+    const long = new Proxy(new Array(1_000_000_000), {
+      get(target, key, receiver) {
+        if (typeof key === 'string' && /^[0-9]+$/.test(key)) touched.push(key);
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    expect(() => createXivapiClient(withLanguages(long))).toThrow(invalid);
+    // The length is checked first: no element of a list that long is read.
+    expect(touched).toEqual([]);
+  });
+
+  it('calls the methods of the cache on the cache, which may rely on this', async () => {
+    class Store {
+      readonly kept = new Map<string, unknown>();
+      async get(key: string) {
+        return (this.kept.get(key) ?? null) as never;
+      }
+      async set(key: string, value: unknown) {
+        this.kept.set(key, value);
+      }
+    }
+    const store = new Store();
+    const fetch = vi.fn(async () =>
+      json({ version: V, schema: S, results: [] }),
+    );
+    const client = createXivapiClient({
+      fetch,
+      version: V,
+      schema: S,
+      languages: ['en'],
+      cache: store as never,
+    });
+    await client.searchItems([body]);
+    await client.searchItems([body]);
+    expect(store.kept.size).toBe(1);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads the two methods of the cache once, and calls them on the cache', async () => {
+    const reads = { get: 0, set: 0 };
+    class Store {
+      readonly kept = new Map<string, unknown>();
+      get get() {
+        reads.get++;
+        return async (key: string) => (this.kept.get(key) ?? null) as never;
+      }
+      get set() {
+        reads.set++;
+        return async (key: string, value: unknown) => {
+          this.kept.set(key, value);
+        };
+      }
+    }
+    const store = new Store();
+    const fetch = vi.fn(async () =>
+      json({ version: V, schema: S, results: [] }),
+    );
+    const client = createXivapiClient({
+      fetch,
+      version: V,
+      schema: S,
+      languages: ['en'],
+      cache: store as never,
+    });
+    await client.searchItems([body]);
+    await client.searchItems([body]);
+    expect(reads).toEqual({ get: 1, set: 1 });
+    expect(store.kept.size).toBe(1);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('an option whose getter throws', () => {
   it('is INVALID_OPTIONS when it is a method of the cache that has the getter', () => {
     for (const method of ['get', 'set']) {
@@ -251,6 +385,31 @@ describe('an option whose getter throws', () => {
   const invalid = expect.objectContaining({
     name: 'XivapiInputError',
     code: 'INVALID_OPTIONS',
+  });
+
+  const VALID: Record<(typeof KEYS)[number], unknown> = {
+    fetch: async () => new Response('{}'),
+    baseUrl: 'https://example.test/api',
+    version: V,
+    schema: S,
+    languages: ['en'],
+    maxPages: 5,
+    timeoutMs: 1000,
+    cache: createMemoryCache(),
+  };
+  it.each(KEYS)('is read once, whether it has a value or not: %s', (key) => {
+    for (const create of [createXivapiClient, createXivapiResolver]) {
+      let reads = 0;
+      const options = Object.defineProperty({}, key, {
+        enumerable: true,
+        get() {
+          reads++;
+          return VALID[key];
+        },
+      });
+      create(options as XivapiOptions);
+      expect(reads).toBe(1);
+    }
   });
 
   it.each(KEYS)('is read once by the client and the resolver: %s', (key) => {
