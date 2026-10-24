@@ -114,6 +114,24 @@ function interruptible<T>(
     );
   });
 }
+/**
+ * A host cache call gets the per-request timeout on top of the operation's own signal. A call
+ * that hangs is a miss or a failed write, never a failed lookup.
+ */
+function cacheCall<T>(
+  promise: Promise<T>,
+  signal: AbortSignal,
+  ms: number,
+): Promise<T> {
+  const local = new AbortController();
+  const abort = () => local.abort(reason(signal));
+  signal.addEventListener('abort', abort, { once: true });
+  const timer = setTimeout(() => local.abort(new Failure('CACHE_TIMEOUT')), ms);
+  return interruptible(promise, local.signal).finally(() => {
+    clearTimeout(timer);
+    signal.removeEventListener('abort', abort);
+  });
+}
 async function delay(ms: number, signal: AbortSignal): Promise<void> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -403,7 +421,11 @@ export function createTransport(options: XivapiOptions = {}): Transport {
         pin && canonicalSchema(schemaPin) ? keyFor(pin, schemaPin) : null;
       if (cache && key) {
         try {
-          const hit: unknown = await interruptible(cache.get(key), signal);
+          const hit: unknown = await cacheCall(
+            cache.get(key),
+            signal,
+            timeoutMs,
+          );
           const text = admittedJson(hit);
           const data: unknown = text === null ? null : JSON.parse(text);
           if (
@@ -562,19 +584,22 @@ export function createTransport(options: XivapiOptions = {}): Transport {
           complete: true,
           rows: resultRows,
         };
+        // The result is complete before this write starts, so the write is best effort: a host
+        // cache that rejects, hangs or outlives the deadline must not lower the status.
         try {
           const text = admittedJson(value);
           if (text !== null)
-            await interruptible(
+            await cacheCall(
               cache.set(
                 namespace,
                 JSON.parse(text) as CachedRows,
                 resultRows.length ? 7 * 86400_000 : 600_000,
               ),
               signal,
+              timeoutMs,
             );
         } catch {
-          if (signal.aborted) throw reason(signal);
+          // ignored on purpose
         }
       }
       if (upstreamVersion && upstreamSchema && complete) {

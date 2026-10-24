@@ -4,6 +4,7 @@ import {
   type CachedRows,
   createMemoryCache,
   createXivapiClient,
+  type ResolutionCache,
   type XivapiOptions,
 } from '../src/xivapi/index.js';
 
@@ -755,5 +756,81 @@ describe('browser-style redirects and cached row order', () => {
     }).getStains([2, 5]);
     expect(second).toHaveBeenCalledTimes(1);
     expect(result.rows.map((r) => r.rowId)).toEqual([2, 5]);
+  });
+});
+
+describe('host caches that hang', () => {
+  const stains = () =>
+    json({
+      version: V,
+      schema: S,
+      rows: [{ row_id: 2, fields: { 'Name@lang(en)': 'Ash Grey' } }],
+    });
+  const options = (cache: ResolutionCache) => ({
+    cache,
+    languages: ['en' as const],
+    timeoutMs: 20,
+  });
+  it('keeps a fully fetched result complete when the cache write never settles', async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn(async () => stains());
+    const pending = client(
+      fetch,
+      options({
+        get: async () => null,
+        set: () => new Promise<void>(() => {}),
+      }),
+    ).getStains([2]);
+    await vi.advanceTimersByTimeAsync(30_000);
+    const result = await pending;
+    expect(result).toMatchObject({ status: 'complete', issues: [] });
+    expect(result.rows.map((r) => r.rowId)).toEqual([2]);
+  });
+  it('treats a cache read that never settles as a miss after the request timeout', async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn(async () => stains());
+    const pending = client(
+      fetch,
+      options({ get: () => new Promise<null>(() => {}), set: async () => {} }),
+    ).getStains([2]);
+    await vi.advanceTimersByTimeAsync(30_000);
+    const result = await pending;
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ status: 'complete', issues: [] });
+  });
+  it('keeps a complete result complete when the operation deadline expires during the cache write', async () => {
+    vi.useFakeTimers();
+    let calls = 0;
+    // Three pages of 9.9 s each end just before the 30 s operation deadline.
+    const fetch = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          const n = ++calls;
+          setTimeout(
+            () =>
+              resolve(
+                json(page([wire(40 + n)], n < 3 ? `cursor-${n}` : undefined)),
+              ),
+            9_900,
+          );
+        }),
+    );
+    const pending = client(fetch, {
+      cache: { get: async () => null, set: () => new Promise<void>(() => {}) },
+    }).searchItems([body]);
+    await vi.advanceTimersByTimeAsync(40_000);
+    const result = await pending;
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(result).toMatchObject({ status: 'complete', issues: [] });
+    expect(result.rows.map((r) => r.rowId)).toEqual([41, 42, 43]);
+  });
+  it('still reports cancellation while a cache call is pending', async () => {
+    const abort = new AbortController();
+    const pending = client(
+      vi.fn(async () => stains()),
+      options({ get: () => new Promise<null>(() => {}), set: async () => {} }),
+    ).getStains([2], { signal: abort.signal });
+    abort.abort();
+    expect((await pending).status).toBe('cancelled');
   });
 });
