@@ -12,7 +12,7 @@ The full MVP includes:
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
 - A small website demonstrating the library's public API with local files and synthetic examples.
 
-The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. Try the [live demo](https://charakit.projectgalatine.com), hosted with Workers Static Assets; see [Cloudflare hosting and deployment](docs/cloudflare-hosting.md). Beta.2 retains the same library API and behavior as beta.1.
+The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. Try the [live demo](https://charakit.projectgalatine.com), hosted with Workers Static Assets; see [Cloudflare hosting and deployment](docs/cloudflare-hosting.md). Beta.2 retained the beta.1 library API and behavior; beta.3 keeps the public API signatures and adds the `Helion` normalization.
 
 ## License and attribution
 

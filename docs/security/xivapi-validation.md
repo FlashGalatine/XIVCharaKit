@@ -1,6 +1,6 @@
 # XIVAPI transport validation
 
-This page records the Task 5 transport/cache milestone as it stood then. Task 6 candidate matching, Task 7 browser/demo checks and Task 8 runtime/CI checks were completed afterwards: see [implementation progress](../implementation-progress.md), the [live integration evidence](../demo.md#live-integration-evidence) and [distribution validation](distribution-validation.md). This is implementation evidence, not a security certification.
+This page records the Task 5 transport/cache milestone and, under [Candidate resolution](#candidate-resolution), the Task 6 matching milestone, each as it stood then. Task 7 browser/demo checks and Task 8 runtime/CI checks were completed afterwards: see [implementation progress](../implementation-progress.md), the [live integration evidence](../demo.md#live-integration-evidence) and [distribution validation](distribution-validation.md). This is implementation evidence, not a security certification.
 
 Transport tests use synthetic responses and injected fetch. No private corpus values were sent to XIVAPI, and automated resource-limit tests never contacted production. Official docs/OpenAPI and commit-pinned public sources supply the protocol reference.
 

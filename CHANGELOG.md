@@ -8,13 +8,13 @@
 - Add an `EYE_PAIRING_UNCONFIRMED` warning when one eye's extended color lands on the opposite eye's shader color but a custom color on the other eye hides the second match (Brio v0.7.2+ stores the two eye colors crossed). Colors are not swapped in that case. Document the Brio crossing and pin the reviewed producer sources in the fixture manifest.
 - Pin the corrections, per-eye swatches and lip state of the four real producer exports in regression tests.
 
-### 0.1.0-beta.3 candidate
+## 0.1.0-beta.3 — 2026-10-22
 
 - Normalize legacy tribe `Helion` to `Helions` while preserving stored evidence, Hrothgar race derivation and palette interpretation. Keep numeric tribe IDs unchanged. This fix is not included in published beta.2.
 - Refresh official Anamnesis, Ktisis and Brio release/export/serialization references and record their unchanged format contracts.
 - Configure manual demo deployment to `charakit.projectgalatine.com` with shared generated security headers, a `no-transform` response policy and Cloudflare hosting checks in CI.
 - Record the verified initial demo deployment and draft the separate XIV Dye Tools integration plan.
-- Prepare beta.3 metadata and manual publication instructions with the existing `next` tag and protected approval workflow. Publication remains a separate action.
+- Prepare beta.3 metadata and manual publication instructions with the existing `next` tag and protected approval workflow.
 
 ## 0.1.0-beta.2 — 2026-10-22
 

@@ -4,7 +4,7 @@ Plan: `docs/plans/2026-10-19-chara-library-mvp.md`.
 Implementation reopened by the maintainer on 2026-10-19.
 
 The reader foundation covers Task 0 evidence and Tasks 1–2. The second milestone implements Tasks 3–4 (palettes and appearance); independent review is complete and both reported findings are fixed.
-Tasks 5–6 add portable XIVAPI transport/cache and equipment candidate resolution. Task 7 adds the local demo and recorded live browser integration. Task 8 adds installed-runtime acceptance and CI configuration; hosted CI passed on Ubuntu and Windows, and PR 2 is merged. Publication, deployment, and XIV Dye Tools migration remain separate gates.
+Tasks 5–6 add portable XIVAPI transport/cache and equipment candidate resolution. Task 7 adds the local demo and recorded live browser integration. Task 8 adds installed-runtime acceptance and CI configuration; hosted CI passed on Ubuntu and Windows, and PR 2 is merged. Publication and deployment were completed later (see the pointer at the end); XIV Dye Tools migration remains a separate gate.
 
 ## Decisions
 
@@ -292,4 +292,4 @@ No library implementation, palette, dependency or lockfile change is included. N
 
 ## After beta.2 (pointer, 2026-10-23)
 
-This log stops at the beta.2 preparation. Later work is recorded elsewhere: beta.3 (legacy `Helion` normalization and demo hosting configuration) was published on 2026-10-22, see the [publication runbook](npm-publication-readiness.md); the initial demo deployment is in [Cloudflare hosting](cloudflare-hosting.md); the [changelog](../CHANGELOG.md) lists everything since; and the 2026-10-23 code-review audit and its wave plan are [audit-2026-10-23.md](audit-2026-10-23.md) and [the remediation plan](audit-2026-10-23-remediation-plan.md).
+This log stops at the beta.2 preparation. Later work is recorded elsewhere: beta.3 (legacy `Helion` normalization; its release PR also added the demo hosting configuration) was published on 2026-10-22, see the [publication runbook](npm-publication-readiness.md); the initial demo deployment is in [Cloudflare hosting](cloudflare-hosting.md); the [changelog](../CHANGELOG.md) lists everything since; and the 2026-10-23 code-review audit and its wave plan are [audit-2026-10-23.md](audit-2026-10-23.md) and [the remediation plan](audit-2026-10-23-remediation-plan.md).
