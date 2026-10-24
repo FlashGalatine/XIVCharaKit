@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { realpathSync } from 'node:fs';
 import { appendFile, readFile, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 interface Metadata {
@@ -235,8 +236,21 @@ async function main(): Promise<void> {
     );
 }
 
-if (
-  process.argv[1] &&
-  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-)
-  await main();
+/**
+ * Whether this module is the script Node was started with. Node realpaths a module's URL but not
+ * argv[1], so a script reached through a symlink or junction never compared equal and exited 0
+ * without doing anything; compare real paths instead.
+ */
+export function isEntryPoint(
+  moduleUrl: string,
+  argv1: string | undefined,
+): boolean {
+  if (!argv1) return false;
+  try {
+    return realpathSync(argv1) === realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return false;
+  }
+}
+
+if (isEntryPoint(import.meta.url, process.argv[1])) await main();
