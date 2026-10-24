@@ -362,6 +362,13 @@ test.describe('the file admission gate', () => {
     await load(page, padded(MIB8 + 1), 'over.chara');
     await expect(page.getByRole('alert')).toContainText('FILE_TOO_LARGE');
     await expect(page.getByRole('alert')).not.toContainText('INPUT_TOO_LARGE');
+    // The message says why: the limit, and that a large embedded image can pass it.
+    await expect(page.getByRole('alert')).toContainText('up to 8 MiB');
+    await expect(page.getByRole('alert')).toContainText('embedded image');
+    // Other refusals do not carry the hint.
+    await load(page, { Tribe: 'Midlander' }, 'x.json');
+    await expect(page.getByRole('alert')).toContainText('FILE_EXTENSION');
+    await expect(page.getByRole('alert')).not.toContainText('embedded image');
     await expect(page.getByTestId('identity')).toContainText('Au Ra');
   });
 
