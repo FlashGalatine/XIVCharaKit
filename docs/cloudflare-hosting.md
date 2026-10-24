@@ -72,6 +72,8 @@ $env:DEMO_BASE_URL = 'https://charakit.projectgalatine.com'
 pnpm --filter @xivcharakit/demo exec playwright test --config playwright.cloudflare.config.ts hosting/hosting.spec.ts
 ```
 
+The spec compares the served `index.html` with the local `apps/demo/dist/index.html` and takes the hashed worker file name from the local `apps/demo/dist/assets/`. Check out the commit that is deployed and run `pnpm build` first: a local build from a different commit fails with an `index.html` body mismatch or a 404 for the worker asset.
+
 For an ordinary, low-volume live XIVAPI check using only the public synthetic example:
 
 ```powershell

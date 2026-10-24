@@ -10,7 +10,7 @@ The full MVP includes:
 - Appearance swatches backed by versioned creator and shader palettes.
 - Optional cached XIVAPI dye names alongside both stored dye IDs, without a bundled name dataset.
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
-- A small website demonstrating the library's public API with local files and anonymized examples.
+- A small website demonstrating the library's public API with local files and synthetic examples.
 
 The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. Try the [live demo](https://charakit.projectgalatine.com), hosted with Workers Static Assets; see [Cloudflare hosting and deployment](docs/cloudflare-hosting.md). Beta.2 retains the same library API and behavior as beta.1.
 
@@ -56,7 +56,7 @@ const appearance = await resolveAppearance(inspection, {
   palettes: createDefaultPaletteProvider(),
 });
 const hair = appearance.slots.hair;
-// creatorHex, shaderHex, extendedHex, interpretation, displayHex, and issues
+// creatorHex, shaderHex, extendedHex, interpretation and displayHex; diagnostics are on appearance.issues
 ```
 
 Install the public beta with `npm install xivcharakit@next`, or use the checked tarball in a local consumer. Reading, inspection, bundled palette lookup, and appearance interpretation perform no network or storage operations. Main-entry imports exclude optional code/data; palette tables load only when requested. Embedded image fields are omitted; all remaining stored values are untrusted data.

@@ -1,6 +1,6 @@
 # Optional XIVAPI transport
 
-The optional `xivcharakit/xivapi` export provides `createXivapiResolver`, `createXivapiClient`, `createMemoryCache`, and their types. Tasks 5–6 implement transport/cache and candidate matching. Importing the export or creating a client/resolver performs no I/O. The adapter has no runtime dependencies and uses standard fetch, readable streams, URL, and AbortSignal APIs.
+The optional `xivcharakit/xivapi` export provides `createXivapiResolver`, `createXivapiClient`, `createMemoryCache`, the `XivapiInputError` class, and their types. Tasks 5–6 implement transport/cache and candidate matching. Importing the export or creating a client/resolver performs no I/O. The adapter has no runtime dependencies and uses standard fetch, readable streams, URL, and AbortSignal APIs.
 
 ```ts
 import { createXivapiClient, createMemoryCache } from 'xivcharakit/xivapi';
@@ -54,7 +54,7 @@ Bodies require bounded readable streams: 2 MiB per response, 10 MiB aggregate ex
 
 Only complete positive sets use seven-day TTL and complete empty sets ten minutes; partial/failed/cancelled sets are never cached. Inputs undergo iterative structural/JSON-shape/cycle admission before copying/serialization, then identity/completeness/association/row checks. Invalid entries are misses; oversized complete results remain usable without caching. Cache errors cannot manufacture complete data. The optional memory cache caps 128 LRU entries and 8 MiB serialized data including keys, with TTL and detached values. Custom adapters own capacity/storage policy. Object property order does not affect validity; unknown/invalid fields remain rejected.
 
-Protocol references, verified 2026-10-19: official [search/pagination](https://v2.xivapi.com/docs/guides/search/), [fields/languages/row lists](https://v2.xivapi.com/docs/guides/sheets/), [pinning](https://v2.xivapi.com/docs/guides/pinning/), and [OpenAPI](https://v2.xivapi.com/api/openapi.json); commit-pinned source conventions are linked in the implementation plan. [Installed-package consumers](security/distribution-validation.md) now verify the mocked contract in Node/Node Worker, Chromium/module Web Worker and local workerd. Task 7's [live browser check](demo.md#live-integration-evidence) verified direct CORS, canonical upstream identities, and two icons from localhost in Chromium. A future deployed origin still requires acceptance checks.
+Protocol references, verified 2026-10-19: official [search/pagination](https://v2.xivapi.com/docs/guides/search/), [fields/languages/row lists](https://v2.xivapi.com/docs/guides/sheets/), [pinning](https://v2.xivapi.com/docs/guides/pinning/), and [OpenAPI](https://v2.xivapi.com/api/openapi.json); commit-pinned source conventions are linked in the implementation plan. [Installed-package consumers](security/distribution-validation.md) now verify the mocked contract in Node/Node Worker, Chromium/module Web Worker and local workerd. Task 7's [live browser check](demo.md#live-integration-evidence) verified direct CORS, canonical upstream identities, and two icons from localhost in Chromium. The deployed origin was accepted on 2026-10-22, including direct CORS from that origin ([Cloudflare hosting](cloudflare-hosting.md#deployment-verified-on-2026-10-22)); recheck it after hosting or upstream changes.
 
 ## Equipment candidate resolution
 
