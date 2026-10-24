@@ -2,7 +2,7 @@
 
 **Source:** [audit-2026-10-23.md](audit-2026-10-23.md), the audit of `014c6a0` (106 findings: 2 high, 28 medium, 76 low; 8 verifier disputes resolved by the maintainer, see its §7). Plus one finding added during the fixes (N001, FacePaint mirror flag).
 
-**Status basis:** 107 findings in all. Fixed in the working tree (uncommitted): F096, F092, N001. Partly fixed: F090 (warning only). Outstanding: 103. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
+**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0) and the eight Wave 1 documents, 11 in all. Partly fixed: F090 (warning only). Outstanding: 95. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
 
 **Ordering:**
 1. One deploy unit per wave, each ending in a named gate or release. Waves are the equivalent of the sprints in the XIV Dye Tools remediation plans.
@@ -15,8 +15,8 @@
 
 | Wave | Unit | Theme | H / M / L | Status |
 |---|---|---|---|---|
-| 0 | packages/chara (appearance) | Done in this session | 2 / 0 / 1 + N001 | ✅ done, uncommitted |
-| 1 | docs only | Documents that misstate the current state | 0 / 1 / 7 | open |
+| 0 | packages/chara (appearance) | Done in this session | 2 / 0 / 1 + N001 | ✅ done (04fbeff) |
+| 1 | docs only | Documents that misstate the current state | 0 / 1 / 7 | ✅ done (5a4a6e9, 614ac34, 8d0d0b2, 0cd9f7f) |
 | 2 | packages/chara (xivapi) | The client was written against doubles that are not the real API | 0 / 3 / 4 | open |
 | 3 | packages/chara (reader, inspect, xivapi) | Cross-realm input, re-read values, label accuracy; then publish | 0 / 0 / 7 | open |
 | 4 | repo tooling (scripts, test/, CI) | Release and verification tooling that can pass vacuously | 0 / 1 / 9 | open |
@@ -30,9 +30,9 @@
 
 Severities are the verifiers' consensus; "Tier" follows the remediation-planner scale (P1 high, P2 medium, P3 low). IDs are defined in [the audit report](audit-2026-10-23.md), which carries the problem, failure scenario, evidence and fix for each.
 
-## Wave 0 — packages/chara (appearance): Done in this session ✅ COMPLETED 2026-10-23 (working tree, uncommitted)
+## Wave 0 — packages/chara (appearance): Done in this session ✅ COMPLETED 2026-10-23 (04fbeff)
 
-Fixed test-first in the working tree, **uncommitted**. Appearance policy is now `1.1.0` (unreleased).
+Fixed test-first and committed in `04fbeff`. Appearance policy is now `1.1.0` (unreleased; not in the published beta.3).
 - **F096:** bit `0x80` of `Mouth` now gates the lip (`lipDisabled`; unknown when `Mouth` is missing or invalid; Hrothgar ignores it; an unknown race is active only when the bit is set).
 - **F090:** the eye-pair rule is unchanged and documented as covering current Brio output; a new `EYE_PAIRING_UNCONFIRMED` warning flags a one-sided crossed match. **Residual:** custom eye colors on Brio v0.7.2+ exports are still not swapped (see Open decisions).
 - **F092:** corrections, per-eye swatches and lip state of the four real exports are pinned in tests.
@@ -45,25 +45,25 @@ Fixed test-first in the working tree, **uncommitted**. Appearance policy is now 
 | F092 | Low · P3 | `packages/chara/test/producer-exports.test.ts:58` | No test pins the eye correction or per-eye output for the real Brio export | Fixed |
 | N001 | Low · P3 | `packages/chara/src/appearance/resolve.ts` | `FacePaint` 128 (no paint, mirrored) is reported as paint present; bit `0x80` is a mirror flag in Brio and Ktisis | Fixed |
 
-**Ends with:** Verified 2026-10-23: build, type-check, lint, `verify-fixtures`, `verify-palettes`, 55 tooling + 376 package + 24 demo tests, and `pnpm test:package` (with the Windows `tar`). Publishing is Wave 3.
+**Ends with:** Verified 2026-10-23 (independent Opus review: pass with notes, all applied): build, type-check, lint, `verify-fixtures`, `verify-palettes`, 55 tooling + 376 package + 24 demo tests, and `pnpm test:package` (with the Windows `tar`). Publishing is Wave 3.
 
-## Wave 1 — docs only: Documents that misstate the current state
+## Wave 1 — docs only: Documents that misstate the current state ✅ COMPLETED 2026-10-23 (5a4a6e9, 614ac34, 8d0d0b2, 0cd9f7f)
 
 Cheap, no release, no code. **Anchor F075:** `SECURITY.md` accepts reports only for beta.1 and `main`, while npm `next` resolves to beta.3.
 Check every claim against the code before editing (each finding names both locations); do not describe behaviour that Waves 2-3 are about to change.
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
-| F075 | Medium · P2 | `SECURITY.md:15` | Supported-version policy still names only beta.1 | Open |
-| F083 | Low · P3 | `docs/security/THREAT_MODEL.md:9` | Completed gates are still listed as open; `xivapi-validation.md` contradicts itself | Open |
-| F082 | Low · P3 | `docs/data-provenance.md:3` | Stale version numbers; also says the package contains synthetic examples | Open |
-| F084 | Low · P3 | `README.md:59` | README says an appearance slot exposes `issues` | Open |
-| F053 | Low · P3 | `docs/xivapi.md:3` | The export list omits `XivapiInputError` | Open |
-| F085 | Low · P3 | `CONTRIBUTING.md:22` | Says tests and CI use only synthetic inputs, but real producer exports are read | Open |
-| F087 | Low · P3 | `docs/cloudflare-hosting.md:68` | The deployed-origin check silently needs a matching local build | Open |
-| F089 | Low · P3 | `README.md:13` | README calls the synthetic demo examples "anonymized" | Open |
+| F075 | Medium · P2 | `SECURITY.md:15` | Supported-version policy still names only beta.1 | Fixed |
+| F083 | Low · P3 | `docs/security/THREAT_MODEL.md:9` | Completed gates are still listed as open; `xivapi-validation.md` contradicts itself | Fixed |
+| F082 | Low · P3 | `docs/data-provenance.md:3` | Stale version numbers; also says the package contains synthetic examples | Fixed |
+| F084 | Low · P3 | `README.md:59` | README says an appearance slot exposes `issues` | Fixed |
+| F053 | Low · P3 | `docs/xivapi.md:3` | The export list omits `XivapiInputError` | Fixed |
+| F085 | Low · P3 | `CONTRIBUTING.md:22` | Says tests and CI use only synthetic inputs, but real producer exports are read | Fixed |
+| F087 | Low · P3 | `docs/cloudflare-hosting.md:68` | The deployed-origin check silently needs a matching local build | Fixed |
+| F089 | Low · P3 | `README.md:13` | README calls the synthetic demo examples "anonymized" | Fixed |
 
-**Ends with:** `pnpm lint`; then re-read each edited document against the cited code. No release.
+**Ends with:** Done. Every changed claim was checked against the npm registry, the publish run, the code and the cited documents; a link and anchor check over the edited files found 0 broken (96 links); `pnpm test:tooling` passes (55 tests). An independent Opus review (pass with notes) found the same staleness in nearby documents (changelog, CONTRIBUTING, migration, compatibility, runbook, hosting record); those were fixed in the same wave (`0cd9f7f`). No release.
 
 ## Wave 2 — packages/chara (xivapi): The client was written against doubles that are not the real API
 
