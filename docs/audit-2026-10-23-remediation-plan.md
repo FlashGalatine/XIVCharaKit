@@ -2,7 +2,7 @@
 
 **Source:** [audit-2026-10-23.md](audit-2026-10-23.md), the audit of `014c6a0` (106 findings: 2 high, 28 medium, 76 low; 8 verifier disputes resolved by the maintainer, see its §7). Plus one finding added during the fixes (N001, FacePaint mirror flag).
 
-**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings, the ten Wave 4 findings, the eight Wave 5 findings, the eight Wave 6 findings, the eleven Wave 7 findings and the fifteen Wave 8 findings, 77 in all. Partly fixed: F090 (warning only). Outstanding: 29. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
+**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings, the ten Wave 4 findings, the eight Wave 5 findings, the eight Wave 6 findings, the eleven Wave 7 findings, the fifteen Wave 8 findings, the fourteen Wave 9 findings, the eight Wave 10 findings and the seven Wave 11 findings, 106 in all. Partly fixed: F090 (warning only). Outstanding: 0. Nothing is published or deployed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
 
 **Ordering:**
 1. One deploy unit per wave, each ending in a named gate or release. Waves are the equivalent of the sprints in the XIV Dye Tools remediation plans.
@@ -24,9 +24,9 @@
 | 6 | apps/demo (tests) | Evidence for the privacy and CSP gates (THREAT_MODEL SEC-03) | 0 / 4 / 4 | ✅ done (5d5574e to ba6353d) |
 | 7 | packages/chara (tests) | Reader and inspection guards that can be deleted unnoticed | 0 / 4 / 7 | ✅ done (8a1b3fd to 726a01b) |
 | 8 | packages/chara (tests) | Appearance maths and palette provider assertions | 0 / 6 / 9 | ✅ done (d5d064e to 0defad7) |
-| 9 | packages/chara (tests) | XIVAPI budgets, cache admission and resolver scope (SEC-05) | 0 / 3 / 11 | open |
-| 10 | apps/demo (tests) | State-machine and UI behaviour tests | 0 / 2 / 6 | open |
-| 11 | docs + fixtures manifest | Producer compatibility record and refresh method | 0 / 2 / 5 | open |
+| 9 | packages/chara (tests) | XIVAPI budgets, cache admission and resolver scope (SEC-05) | 0 / 3 / 11 | ✅ done (96ce158 to add1f8b) |
+| 10 | apps/demo (tests) | State-machine and UI behaviour tests | 0 / 2 / 6 | ✅ done (151b33d, 11ff323, 90d8b28) |
+| 11 | docs + fixtures manifest | Producer compatibility record and refresh method | 0 / 2 / 5 | ✅ done (a80c0c9, 2ddb227) |
 
 Severities are the verifiers' consensus; "Tier" follows the remediation-planner scale (P1 high, P2 medium, P3 low). IDs are defined in [the audit report](audit-2026-10-23.md), which carries the problem, failure scenario, evidence and fix for each.
 
@@ -224,66 +224,73 @@ Two small changes to shipped code: `colors()` in the default palette provider re
 
 **Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`: 174 tooling, 1079 package, 18 demo unit and 72 demo browser tests pass. A workflow review (three lenses, two verifiers per finding) confirmed twenty findings, none disputed: seventeen were gaps in what the tests pin (the Lab and encoder knees, the hue wrap thresholds, the skin slot, the lip composite guard, the race index limit and tribe check before loading, the integer check on the index, retry after a failed validation, and whether the size gate runs before the read) and three were errors in the commit messages (an index limit called equivalent, F033 labelled F037, and a description of an old gate message that never existed); all were fixed (d5d064e to 0defad7). Test-only apart from the two changes above.
 
-## Wave 9 — packages/chara (tests): XIVAPI budgets, cache admission and resolver scope (SEC-05)
+## Wave 9 — packages/chara (tests): XIVAPI budgets, cache admission and resolver scope (SEC-05) ✅ COMPLETED 2026-10-24 (96ce158 to add1f8b)
 
-**Anchors F042, F043, F056:** the transport depth/node budgets, most cache-admission gates and the `sameData` rejection path can be removed without a test failing. Plus the LRU touch, schema memo, duplicate-row, redirect, Retry-After, cursor and 2 MiB budget tests, the row/ID limits (F044-F049, F055, F057-F059), and G007: the default native-fetch transport never runs in Node, Node Worker or workerd.
-Do this after Wave 2 so the new tests pin the corrected client rather than the old one.
-
-| ID | Sev · Tier | Location | Item | Status |
-|---|---|---|---|---|
-| F042 | Medium · P2 | `packages/chara/test/xivapi-client.test.ts:398` | Transport depth/node budgets unpinned; malformed-structure test asserts only the status | Open |
-| F043 | Medium · P2 | `packages/chara/src/xivapi/cache.ts:28` | Most `admittedJson` cache-admission gates untested | Open |
-| F056 | Medium · P2 | `packages/chara/src/xivapi/rows.ts:175` | The `sameData` rejection path in `cachedRow` is untested | Open |
-| F044 | Low · P3 | `packages/chara/src/xivapi/cache.ts:105` | The memory cache's LRU touch is untested (a FIFO cache would pass) | Open |
-| F045 | Low · P3 | `packages/chara/src/xivapi/client.ts:357` | Expiry, cap and isolation of the default-schema memo are untested | Open |
-| F046 | Low · P3 | `packages/chara/src/xivapi/client.ts:387` | The duplicate-rowId check and row accounting on cache hits are untested | Open |
-| F047 | Low · P3 | `packages/chara/test/xivapi-client.test.ts:325` | The redirect test does not pin `REDIRECT_REFUSED` | Open |
-| F048 | Low · P3 | `packages/chara/src/xivapi/client.ts:269` | The Retry-After cap boundary and the retry-once rule are untested | Open |
-| F049 | Low · P3 | `packages/chara/src/xivapi/client.ts:477` | Cursor, 2 MiB and version-list budgets are tested only above the limit, and the cursor test is masked | Open |
-| F055 | Low · P3 | `packages/chara/src/xivapi/rows.ts:67` | The range and sheet guards on item rows are untested | Open |
-| F057 | Low · P3 | `packages/chara/src/xivapi/query.ts:65` | The 64-ID / 24-model limits are tested only on the rejecting side; the dye error code is unpinned | Open |
-| F058 | Low · P3 | `packages/chara/src/dyes/index.ts:23` | The options guard, which other code relies on, is untested | Open |
-| F059 | Low · P3 | `packages/chara/src/xivapi/resolve.ts:158` | The `items`/`facewear` scope prefix on issues and the mixed off-hand case are unpinned | Open |
-| G007 | Low · P3 | `test/runtime/smoke.ts:9` | The default native-fetch transport never runs in Node, Node Worker or workerd | Open |
-
-**Ends with:** `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package`. Test-only.
-
-## Wave 10 — apps/demo (tests): State-machine and UI behaviour tests
-
-Replacement/abort/timeout paths and weak assertions: clear or replacement aborting a lookup and re-enabling Resolve (F067), the worker-termination and deadline test (F068), the Cancel control (F062), post-commit timeout and worker `onerror` (F063), admission limits (F065), the example-fetch failure path (F066), the "Show previous" tautology (F070), and the facewear filter covered only by the skipped live test (F071).
-Do this after Wave 5 so the tests pin the fixed state machine.
+Two changes to shipped code, both found by reviews of the new tests. A `Retry-After` is waited for only when it is delay-seconds or an HTTP date in the IMF-fixdate form: before, `Date.parse` decided, and V8 reads `-1`, `+1` and `1.` as 1 January 2001, so the same response was retried at once in one browser and refused in another. And `createXivapiClient` and `createXivapiResolver` read each option once and answer `INVALID_OPTIONS` for an option whose getter throws, a `languages` list with a hole or a throwing element, and a cache without `get` and `set` (before, the raw error escaped). Everything else is tests.
+- **F043, F044, F046, F056 (`xivapi-cache.test.ts`, `xivapi-cache-edges.test.ts`):** each cache-admission gate from both sides, the memory cache's capacity, recency and expiry rules (the key counts toward the 8 MiB), that a cache hit reproduces what a fresh response gives, and that cached rows count against the 5,000 rows of a resolution.
+- **F042, F045, F047, F048, F049 (`xivapi-budgets.test.ts`, `xivapi-transport-edges.test.ts`):** the transport limits from both sides (nesting, string and key length, node count, 500 results, the 2 MiB page and 10 MiB resolution budgets, cursor and page limits, the version list), every redirect status, every `Retry-After` form, and the ten-minute lifetime of the learned schema and of a resolved alias.
+- **F055, F057, F058, F059 (`xivapi-rows.test.ts`, `xivapi-rows-edges.test.ts`, `xivapi-limits.test.ts`, `xivapi-resolver-scope.test.ts`):** the row guards, the dye and model count limits, the option guards and the scope of the resolver's issues.
+- **G007 (`test/runtime/smoke.ts`):** the default native-fetch transport now runs once in each runtime, against a closed loopback port, so an option a runtime refuses is seen (shown with `integrity`, which workerd refuses).
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
-| F067 | Medium · P2 | `apps/demo/src/state.ts:46` | No test confirms that clear or replacement aborts a lookup and re-enables Resolve | Open |
-| F068 | Medium · P2 | `apps/demo/e2e/inspection.spec.ts:4` | Timeout test cannot observe worker termination, and the deadline is pinned only from above | Open |
-| F062 | Low · P3 | `apps/demo/src/state.ts:64` | No test exercises the "Cancel lookup" control | Open |
-| F063 | Low · P3 | `apps/demo/src/state.ts:104` | The timeout path after inspection has committed, and the worker `onerror` handler, are untested | Open |
-| F065 | Low · P3 | `apps/demo/src/state.ts:79` | The size/extension admission gate is tested only from above | Open |
-| F066 | Low · P3 | `apps/demo/src/state.ts:154` | Failure and abort of the example fetch, and the diagnostics cap, are untested | Open |
-| F070 | Low · P3 | `apps/demo/e2e/resolution.spec.ts:75` | The "Show previous" assertion is a substring tautology | Open |
-| F071 | Low · P3 | `apps/demo/src/state.ts:198` | The facewear filter and rendering are covered only by the skipped live test | Open |
+| F042 | Medium · P2 | `packages/chara/test/xivapi-client.test.ts:398` | Transport depth/node budgets unpinned; malformed-structure test asserts only the status | Fixed |
+| F043 | Medium · P2 | `packages/chara/src/xivapi/cache.ts:28` | Most `admittedJson` cache-admission gates untested | Fixed |
+| F056 | Medium · P2 | `packages/chara/src/xivapi/rows.ts:175` | The `sameData` rejection path in `cachedRow` is untested | Fixed |
+| F044 | Low · P3 | `packages/chara/src/xivapi/cache.ts:105` | The memory cache's LRU touch is untested (a FIFO cache would pass) | Fixed |
+| F045 | Low · P3 | `packages/chara/src/xivapi/client.ts:357` | Expiry, cap and isolation of the default-schema memo are untested | Fixed |
+| F046 | Low · P3 | `packages/chara/src/xivapi/client.ts:387` | The duplicate-rowId check and row accounting on cache hits are untested | Fixed |
+| F047 | Low · P3 | `packages/chara/test/xivapi-client.test.ts:325` | The redirect test does not pin `REDIRECT_REFUSED` | Fixed |
+| F048 | Low · P3 | `packages/chara/src/xivapi/client.ts:269` | The Retry-After cap boundary and the retry-once rule are untested | Fixed |
+| F049 | Low · P3 | `packages/chara/src/xivapi/client.ts:477` | Cursor, 2 MiB and version-list budgets are tested only above the limit, and the cursor test is masked | Fixed |
+| F055 | Low · P3 | `packages/chara/src/xivapi/rows.ts:67` | The range and sheet guards on item rows are untested | Fixed |
+| F057 | Low · P3 | `packages/chara/src/xivapi/query.ts:65` | The 64-ID / 24-model limits are tested only on the rejecting side; the dye error code is unpinned | Fixed |
+| F058 | Low · P3 | `packages/chara/src/dyes/index.ts:23` | The options guard, which other code relies on, is untested | Fixed |
+| F059 | Low · P3 | `packages/chara/src/xivapi/resolve.ts:158` | The `items`/`facewear` scope prefix on issues and the mixed off-hand case are unpinned | Fixed |
+| G007 | Low · P3 | `test/runtime/smoke.ts:9` | The default native-fetch transport never runs in Node, Node Worker or workerd | Fixed |
 
-**Ends with:** `pnpm --filter @xivcharakit/demo test` and `pnpm test:demo:cloudflare`. Test-only.
+**Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test` (174 tooling, 1451 package, 18 demo unit and 108 demo browser tests), `pnpm test:demo:cloudflare` (110 passed) and `pnpm test:package` pass. A workflow review (three lenses, two verifiers per finding) reported 34 confirmed findings and rejected one: gaps in what the tests pin (the Retry-After forms, cache-hit row accounting, the option snapshot), wrong "equivalent mutant" claims in the commit messages and the two code changes above; all were fixed (96ce158 to add1f8b). The mutants that stay alive are equivalent and are listed in the commit messages.
 
-## Wave 11 — docs + fixtures manifest: Producer compatibility record and refresh method
+## Wave 10 — apps/demo (tests): State-machine and UI behaviour tests ✅ COMPLETED 2026-10-24 (151b33d, 11ff323, 90d8b28)
 
-**Anchor F091 (partly done):** the refresh method compares the bytes of a few pinned serializer files, which cannot see meaning mismatches. Wave 0 already pinned four semantic source files and documented the Brio eye crossing. Remaining: pin Brio `VectorConverters.cs` and the Ktisis and Anamnesis files in F093 and F095, add a semantic-comparison step to the refresh method in `AGENTS.md` and `docs/compatibility.md`, and reword the remaining "historical" prose.
-- **F097:** Anamnesis exports never carry `IsExtendedAppearanceValid`, so their extended colors are never live; disclose it.
-- **F098, F094:** the Anamnesis and Ktisis "Partial export: Pending" gates cannot be met; record "unsupported by current producer" with the legacy-build caveat.
-- **F099:** Anamnesis files with a large embedded image exceed the 8 MiB default; record the producer limit and give the demo a specific message (whether to raise the default is the maintainer's call).
+One change to shipped demo code: a file over the 8 MiB limit is refused with a note that says why (an Anamnesis file saved with a large embedded image can be bigger, and the library can read most such files when `maxBytes` is raised, up to 64 MiB), also when the previous file's colors are resumed afterwards (the demo part of F099). Everything else is tests, driven by a helper that holds the XIVAPI requests and records which ones the page gave up on, and by a paused clock that probes the five-second deadline to the millisecond.
+- **F067, F062 (`lookup-lifecycle.spec.ts`):** Clear, a replacement file and Cancel abort the held request (seen on the network as failed), Resolve works again, nothing comes back from an abandoned request, and the result of a finished lookup is not shown for the next file.
+- **F068, F063:** no alert at 4,999 ms and PROCESSING_TIMEOUT at 5,000, what the timed-out worker posts later is ignored, also when the previous file's colors were still loading and are resumed; no timeout is reported once the colors have arrived; APPEARANCE_TIMEOUT and PROCESSING_FAILED keep the inspection or the previous file.
+- **F065, F066:** a file of exactly 8 MiB and the file-name patterns, the three ways an example fails or is abandoned, and the diagnostics list (64 entries in full, 65 list 64 and say that more were omitted: `diagnostics.spec.ts`).
+- **F070, F071:** "Show previous" (a regex that had lost its backslash), and the Glasses id sent, or not sent, as a facewear lookup.
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
-| F091 | Medium · P2 | `docs/compatibility.md:15` | Compatibility review never pinned the eye-field semantics, and calls current Brio behaviour "historical" | Open |
-| F094 | Low · P3 | `docs/producer-fixture-validation.md:12` | Ktisis partial export is listed "Pending", but current Ktisis cannot export selectively | Open |
-| F093 | Low · P3 | `docs/compatibility.md:15` | The Ktisis sources for enums and the writer are not pinned | Open |
-| F095 | Low · P3 | `docs/compatibility.md:15` | The Anamnesis files that define metadata and colour/vector formats are not pinned | Open |
-| F097 | Medium · P2 | `packages/chara/src/appearance/resolve.ts:140` | Anamnesis exports never carry `IsExtendedAppearanceValid`, so their extended colours are never live; this is not disclosed | Open |
-| F098 | Low · P3 | `docs/producer-fixture-validation.md:11` | The Anamnesis "Partial export: Pending" gate cannot be met | Open |
-| F099 | Low · P3 | `packages/chara/src/read.ts:13` | The default 8 MiB budget rejects Anamnesis exports with images Anamnesis itself accepts; not documented | Open |
+| F067 | Medium · P2 | `apps/demo/src/state.ts:46` | No test confirms that clear or replacement aborts a lookup and re-enables Resolve | Fixed |
+| F068 | Medium · P2 | `apps/demo/e2e/inspection.spec.ts:4` | Timeout test cannot observe worker termination, and the deadline is pinned only from above | Fixed |
+| F062 | Low · P3 | `apps/demo/src/state.ts:64` | No test exercises the "Cancel lookup" control | Fixed |
+| F063 | Low · P3 | `apps/demo/src/state.ts:104` | The timeout path after inspection has committed, and the worker `onerror` handler, are untested | Fixed |
+| F065 | Low · P3 | `apps/demo/src/state.ts:79` | The size/extension admission gate is tested only from above | Fixed |
+| F066 | Low · P3 | `apps/demo/src/state.ts:154` | Failure and abort of the example fetch, and the diagnostics cap, are untested | Fixed |
+| F070 | Low · P3 | `apps/demo/e2e/resolution.spec.ts:75` | The "Show previous" assertion is a substring tautology | Fixed |
+| F071 | Low · P3 | `apps/demo/src/state.ts:198` | The facewear filter and rendering are covered only by the skipped live test | Fixed |
 
-**Ends with:** `pnpm verify-fixtures`; any new pin needs its SHA-256 recomputed from the raw file at the pinned commit. Refresh dates and commits per `AGENTS.md`.
+**Ends with:** Code done. `pnpm --filter @xivcharakit/demo test` (18 unit and 108 browser tests) and `pnpm test:demo:cloudflare` (110 passed) pass. The same workflow review as Wave 11 (below) confirmed nine findings in the demo tests, none disputed: the retained colors resumed after a timeout, the deadline after a success, `reading` after a refusal, a finished lookup carried into the next file, the diagnostics cap and the size note on the resumed path were unpinned; two assertions could not fail; one regex had lost its backslash; and the pause time of the clock left a second of margin. All were fixed (151b33d, 11ff323, 90d8b28). One mutant stays alive: the worker's error handler without `preventDefault`, which no check tells from the original.
+
+## Wave 11 — docs + fixtures manifest: Producer compatibility record and refresh method ✅ COMPLETED 2026-10-24 (a80c0c9, 2ddb227)
+
+Documentation, the fixture manifest and one regression test; no library code. The manifest pins 32 upstream files in all, each with the SHA-256 of the raw file at the pinned commit (all re-hashed), and the refresh method now compares meaning as well as bytes (`AGENTS.md`, `docs/compatibility.md`).
+- **F091, F093, F095:** the files that give stored values their form and meaning are pinned (metadata and image fields, the color and vector formats, the enum names, the Ktisis writer, Brio's vector converters), and so are the three files that the stated limits rest on.
+- **F097:** which producer writes extended colors and `IsExtendedAppearanceValid`. Anamnesis never writes the flag and Ktisis writes no extended colors, so an Anamnesis export's stored block is inactive evidence. The lip differs from a Brio-shaped file only when the lip-color bit of `Mouth` is set. Pinned by an Anamnesis-shaped test in `producer-exports.test.ts`.
+- **F094, F098:** none of Anamnesis v7.57.0.3, Ktisis v0.4.1.2 and Brio v0.8.0.12 can export selectively, so the "Partial export" gates are recorded as unavailable in the current producers (legacy builds are not verified).
+- **F099 (the record):** the Anamnesis embedded-image limit and the size at which it passes the 8 MiB budget; the demo message is in Wave 10. Raising the default budget stays open (D3).
+
+| ID | Sev · Tier | Location | Item | Status |
+|---|---|---|---|---|
+| F091 | Medium · P2 | `docs/compatibility.md:15` | Compatibility review never pinned the eye-field semantics, and calls current Brio behaviour "historical" | Fixed |
+| F094 | Low · P3 | `docs/producer-fixture-validation.md:12` | Ktisis partial export is listed "Pending", but current Ktisis cannot export selectively | Fixed |
+| F093 | Low · P3 | `docs/compatibility.md:15` | The Ktisis sources for enums and the writer are not pinned | Fixed |
+| F095 | Low · P3 | `docs/compatibility.md:15` | The Anamnesis files that define metadata and colour/vector formats are not pinned | Fixed |
+| F097 | Medium · P2 | `packages/chara/src/appearance/resolve.ts:140` | Anamnesis exports never carry `IsExtendedAppearanceValid`, so their extended colours are never live; this is not disclosed | Fixed |
+| F098 | Low · P3 | `docs/producer-fixture-validation.md:11` | The Anamnesis "Partial export: Pending" gate cannot be met | Fixed |
+| F099 | Low · P3 | `packages/chara/src/read.ts:13` | The default 8 MiB budget rejects Anamnesis exports with images Anamnesis itself accepts; not documented | Fixed |
+
+**Ends with:** `pnpm verify-fixtures` passes. A workflow review of Waves 9 to 11 confirmed 36 findings, none disputed. In the record they were claims wider than the evidence (a reader that "does not depend on any one separator" splits on a comma only, the lip consequence, a Brio partial export that was not available, limits resting on unpinned files, a broken anchor, "historical" prose, the clipboard-image size) and the Brio `SkinGloss: null` shape that F091 asked to record; in the tests, the live gate of the extended-only paths, the own-shader guard of the eye-pair rule, all six slots of the Anamnesis export and a color value that tells the decodings apart. All were fixed (a80c0c9, 2ddb227).
 
 ## Open decisions
 
@@ -292,7 +299,7 @@ Do this after Wave 5 so the tests pin the fixed state machine.
 | D1 | F090 residual: swap eye colors heuristically when only one crossed match is visible? | A one-sided match next to a custom color is evidence, not proof; a false swap mirrors correct colors, and the library has no producer routing by design. | Keep the warning only. |
 | D2 | Bump `wrangler` to clear the three `undici` advisories (1 high, 2 moderate, dev dependency only) | `pnpm audit` newly fails and CI runs it; not an audit finding, found while verifying. | Leave; fix before the next CI run that must be green. |
 | D3 | Whether to raise the 8 MiB default read budget (F099) | Anamnesis can write files above it; the budget is a documented trade-off. | Keep; document the limit. |
-| D4 | Version for the next publish | `0.1.0-beta.3` is already on npm, and Wave 0 changes the appearance policy and the `AppearanceReason` union. | `0.1.0-beta.4` on `next`. |
+| D4 | Version for the next publish | `0.1.0-beta.3` is already on npm, and Wave 0 changes the appearance policy and the `AppearanceReason` union. | Decided 2026-10-24: the version is bumped to `0.1.0-beta.4` (tag `next`) in the pull request. Publishing it stays a separate step: dry run, then protected approval. |
 
 ## Not scheduled
 
