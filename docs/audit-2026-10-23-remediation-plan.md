@@ -2,7 +2,7 @@
 
 **Source:** [audit-2026-10-23.md](audit-2026-10-23.md), the audit of `014c6a0` (106 findings: 2 high, 28 medium, 76 low; 8 verifier disputes resolved by the maintainer, see its §7). Plus one finding added during the fixes (N001, FacePaint mirror flag).
 
-**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0) and the eight Wave 1 documents, 11 in all. Partly fixed: F090 (warning only). Outstanding: 95. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
+**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents and the seven Wave 2 findings, 18 in all. Partly fixed: F090 (warning only). Outstanding: 88. Nothing is pushed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
 
 **Ordering:**
 1. One deploy unit per wave, each ending in a named gate or release. Waves are the equivalent of the sprints in the XIV Dye Tools remediation plans.
@@ -17,7 +17,7 @@
 |---|---|---|---|---|
 | 0 | packages/chara (appearance) | Done in this session | 2 / 0 / 1 + N001 | ✅ done (04fbeff) |
 | 1 | docs only | Documents that misstate the current state | 0 / 1 / 7 | ✅ done (5a4a6e9, 614ac34, 8d0d0b2, 0cd9f7f) |
-| 2 | packages/chara (xivapi) | The client was written against doubles that are not the real API | 0 / 3 / 4 | open |
+| 2 | packages/chara (xivapi) | The client was written against doubles that are not the real API | 0 / 3 / 4 | ✅ done (8959fc1, b20624f, e8cf5f9, ed0589a, ab358b0, b83c9de, dbf5b62, bdd1cbc, 298bd32) |
 | 3 | packages/chara (reader, inspect, xivapi) | Cross-realm input, re-read values, label accuracy; then publish | 0 / 0 / 7 | open |
 | 4 | repo tooling (scripts, test/, CI) | Release and verification tooling that can pass vacuously | 0 / 1 / 9 | open |
 | 5 | apps/demo | State, focus and live-region fragility across re-renders | 0 / 2 / 6 | open |
@@ -65,24 +65,24 @@ Check every claim against the code before editing (each finding names both locat
 
 **Ends with:** Done. Every changed claim was checked against the npm registry, the publish run, the code and the cited documents; a link and anchor check over the edited files found 0 broken (96 links); `pnpm test:tooling` passes (55 tests). An independent Opus review (pass with notes) found the same staleness in nearby documents (changelog, CONTRIBUTING, migration, compatibility, runbook, hosting record); those were fixed in the same wave (`0cd9f7f`). No release.
 
-## Wave 2 — packages/chara (xivapi): The client was written against doubles that are not the real API
+## Wave 2 — packages/chara (xivapi): The client was written against doubles that are not the real API ✅ COMPLETED 2026-10-23 (8959fc1, b20624f, e8cf5f9, ed0589a, ab358b0, b83c9de, dbf5b62, bdd1cbc, 298bd32)
 
 **Anchor F051:** the live XIVAPI answers HTTP 404 for a whole `rows=` batch when any row is missing, so one unknown Stain or Glasses ID makes the whole lookup `unavailable`; the documented `notFound` and missing-row states cannot occur, and the test doubles return a 200 the real API never does.
-- **Fix direction:** fetch the whole Stain sheet (about 129 rows, one request) and select locally, or bisect within the 40-request budget and return `partial`; replace the doubles with recorded real responses.
-- **G008:** the documented resolver reuse coalesces lookups across Cloudflare Worker requests (error 1101 or stranded jobs). The audit inferred this from workerd source and docs and did not run it: reproduce under `wrangler dev`/workerd first, then make coalescing request-local or document per-request construction.
-- **G011, F052, F040, F050, F039:** option handling in `createDyeNameResolver`, the all-zero off-hand pairing, the hung-`set()` downgrade, cache-hit ordering, and the browser opaque-redirect code. F052 and F040 were ruled low findings.
+- **Done (8959fc1):** the whole-sheet read does not work for Glasses (over 500 rows, no `next`), so the client recognises the live API's exact missing-row 404 for the requested sheet, drops that row and retries the rest, at most one extra request per missing row; the doubles now return the real 404. Verified against the live API.
+- **G008 (b83c9de), docs only:** reproduced under local workerd on 2026-10-23, worse than inferred: with a module-scope client a queued lookup hung for 30 s and a later request on the isolate failed with `DEADLINE`. A client created per request completed every scenario, so the guides now say to create it per request and share only the cache. Module-scope reuse on Workers is still unsafe; fixing that in code would mean redesigning the scheduler.
+- **G011, F052, F040, F050, F039:** all fixed test-first: option handling in `createDyeNameResolver`, the all-zero off-hand pairing, host cache calls capped at the request timeout (a hung write can no longer lower a complete result, and after one timeout the rest of the operation skips the cache), cache-hit ordering, and the browser opaque-redirect code. F052 and F040 were ruled low findings.
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
-| F051 | Medium · P2 | `packages/chara/src/xivapi/client.ts:272` | One nonexistent Stain/Glasses row makes the whole batch `unavailable` (the real API answers 404) | Open |
-| G008 | Medium · P2 | `packages/chara/src/xivapi/client.ts:576` | The documented resolver reuse coalesces lookups across Cloudflare Worker requests (error 1101 / stranded jobs) | Open |
-| G011 | Medium · P2 | `packages/chara/src/dyes/index.ts:26` | `createDyeNameResolver` drops inherited and non-enumerable options and silently falls back to defaults | Open |
-| F052 | Low · P3 | `packages/chara/src/xivapi/resolve.ts:95` | An all-zero off-hand pairs with any main-hand weapon whose ModelSub is 0 | Open |
-| F040 | Low · P3 | `packages/chara/src/xivapi/client.ts:364` | A hung host-cache `set()` downgrades a fully fetched lookup to `partial`/`DEADLINE` | Open |
-| F050 | Low · P3 | `packages/chara/src/xivapi/client.ts:385` | A cache hit returns rows in stored order, and unsorted entries are accepted | Open |
-| F039 | Low · P3 | `packages/chara/src/xivapi/client.ts:236` | In browsers an opaque redirect is reported as `BODY_UNAVAILABLE`, not `REDIRECT_REFUSED` | Open |
+| F051 | Medium · P2 | `packages/chara/src/xivapi/client.ts:272` | One nonexistent Stain/Glasses row makes the whole batch `unavailable` (the real API answers 404) | Fixed |
+| G008 | Medium · P2 | `packages/chara/src/xivapi/client.ts:576` | The documented resolver reuse coalesces lookups across Cloudflare Worker requests (error 1101 / stranded jobs) | Fixed (docs; reproduced under workerd) |
+| G011 | Medium · P2 | `packages/chara/src/dyes/index.ts:26` | `createDyeNameResolver` drops inherited and non-enumerable options and silently falls back to defaults | Fixed |
+| F052 | Low · P3 | `packages/chara/src/xivapi/resolve.ts:95` | An all-zero off-hand pairs with any main-hand weapon whose ModelSub is 0 | Fixed |
+| F040 | Low · P3 | `packages/chara/src/xivapi/client.ts:364` | A hung host-cache `set()` downgrades a fully fetched lookup to `partial`/`DEADLINE` | Fixed |
+| F050 | Low · P3 | `packages/chara/src/xivapi/client.ts:385` | A cache hit returns rows in stored order, and unsorted entries are accepted | Fixed |
+| F039 | Low · P3 | `packages/chara/src/xivapi/client.ts:236` | In browsers an opaque redirect is reported as `BODY_UNAVAILABLE`, not `REDIRECT_REFUSED` | Fixed |
 
-**Ends with:** `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package`. Recorded real-API fixtures must not trigger live traffic in CI.
+**Ends with:** Done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test`, then `pnpm test:package` (Windows `tar`): 55 tooling, 413 package and 24 demo tests pass. Two independent Opus reviews found a version-alias race, a hung cache spending a whole resolution's deadline, and several tests that could be weakened unnoticed; all were fixed (bdd1cbc, 298bd32), with mutation checks showing the new tests fail when the guards are removed. Not released: this publish is Wave 3.
 
 ## Wave 3 — packages/chara (reader, inspect, xivapi): Cross-realm input, re-read values, label accuracy; then publish
 
