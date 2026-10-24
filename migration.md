@@ -16,7 +16,7 @@ The legacy `Helion` → `Helions` compatibility fix is implemented and regressio
 
 `xivcharakit@0.1.0-beta.2` is published; its registry integrity and trusted-publisher provenance were verified on 2026-10-22. The integration target is exactly `xivcharakit@0.1.0-beta.3` (published 2026-10-22) once its registry artifact and provenance are verified, including the alias fix. Do not install a moving dist-tag for a reproducible migration. XIV Dye Tools' existing 24-hour release-age policy still applies.
 
-For local development, run `pnpm test:package` to build and validate `.superpowers/package-smoke/xivcharakit-0.1.0-beta.3.tgz`. A fresh local consumer can install that tarball with `pnpm add <absolute-tarball-path>`. The artifact name follows the committed library version; a local tarball is not a replacement for reviewing the registry dependency used in the target's release.
+For local development, run `pnpm test:package` to build and validate `.superpowers/package-smoke/xivcharakit-0.1.0-beta.4.tgz`. A fresh local consumer can install that tarball with `pnpm add <absolute-tarball-path>`. The artifact name follows the committed library version; a local tarball is not a replacement for reviewing the registry dependency used in the target's release.
 
 ```ts
 import { readChara, inspectChara } from 'xivcharakit';
