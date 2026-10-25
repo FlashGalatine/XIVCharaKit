@@ -18,6 +18,19 @@ The demo is verified in Chromium with a module Web Worker. Installed-tarball che
 
 Original library, demo and tooling code is covered by the [MIT license](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md) for upstream attribution and separate data rights. FINAL FANTASY XIV © SQUARE ENIX. This independent community project is not affiliated with, sponsored by, or endorsed by Square Enix. Game-derived materials are not covered by the MIT code license.
 
+## Connect with me
+
+**Flash Galatine** | Midgardsormr (Aether)
+
+- 🎮 **FFXIV**: [Lodestone Character](https://na.finalfantasyxiv.com/lodestone/character/7677106/)
+- 💻 **GitHub**: [@FlashGalatine](https://github.com/FlashGalatine)
+- 🐦 **X/Twitter**: [@AsheJunius](https://x.com/AsheJunius)
+- 📺 **Twitch**: [flashgalatine](https://www.twitch.tv/flashgalatine)
+- 🌐 **BlueSky**: [projectgalatine.com](https://bsky.app/profile/projectgalatine.com)
+- ❤️ **Patreon**: [ProjectGalatine](https://patreon.com/ProjectGalatine)
+- ☕ **Ko-Fi**: [flashgalatine](https://ko-fi.com/flashgalatine)
+- 💬 **Discord**: [Join Server](https://discord.gg/5VUSKTZCe5)
+
 ## Develop locally
 
 Use Node 22.21.0 and pnpm 10.27.0 (pinned in the repository).
