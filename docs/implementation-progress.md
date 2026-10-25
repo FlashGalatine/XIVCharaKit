@@ -125,7 +125,7 @@ Task 7 baseline: `dd1ffda`, clean working tree. Execution stayed inline on the e
 Rulings and interfaces:
 
 - Preserve the previous valid inspection on rejected replacement; if appearance fails after a new inspection succeeds, keep the new stored evidence and mark swatches unavailable. Cost: two distinct failure paths with honest status messages.
-- File admission uses extension and 8 MiB size before reading, then library content recognition. Terminate superseded/five-second worker jobs, abort network work, and guard every asynchronous result by generation. Clear releases references and revokes icon URLs without claiming memory erasure.
+- File admission uses extension and 16 MiB size (8 MiB until the 2026-10-24 decision to raise the default) before reading, then library content recognition. Terminate superseded/five-second worker jobs, abort network work, and guard every asynchronous result by generation. Clear releases references and revokes icon URLs without claiming memory erasure.
 - Raw children page in reversible groups of 200; candidate lists page in groups of ten. Bounded previews distinguish JSON scalar types. This bounds rendering while retaining all admitted evidence and candidates for navigation.
 - Fetch optional icons only through validated numeric/version-derived XIVAPI asset paths, bounded PNG bodies/dimensions, and revocable local Blob URLs. Icon failures do not invalidate equipment. No backend, telemetry, persistent storage or automatic API lookup was introduced.
 - Public examples are exact copies of three reviewed synthetic fixtures. Fixture verification now checks those copies. No private samples, raw game source, generated concept images, or local review screenshots are shipped.

@@ -45,7 +45,7 @@ These are draft engineering choices, not additional user decisions. Revisit them
 | Repository/package identity | Public GitHub repository `FlashGalatine/ffxiv-chara`; npm package identity unassigned | Repository setup is authorized; npm naming and publication remain separate decisions |
 | Structure | `packages/chara` plus private `apps/demo` | One published package, one example consumer |
 | JavaScript support | ES2022 ESM, TypeScript declarations, browser/Node/Worker-compatible APIs | Test installed-package imports in each target; avoid Node built-ins in library code |
-| Input bounds | 8 MiB UTF-8 bytes, depth 32, 100,000 visited JSON nodes | Configurable; allows the previously observed image-bearing export while bounding work; these are proposed limits, not a universal format requirement |
+| Input bounds | 8 MiB UTF-8 bytes (raised to 16 MiB on 2026-10-24), depth 32, 100,000 visited JSON nodes | Configurable; allows the previously observed image-bearing export while bounding work; these are proposed limits, not a universal format requirement |
 | Existing host limit | Keep XIV Dye Tools' 8 KiB import policy in its host adapter | The public library's compatibility policy must not silently change the existing web/bot policy |
 | Appearance policy | Extended values are active only when declared valid; preserve both palette and extended evidence | Port and document existing behavior before proposing policy changes |
 | Appearance heuristics | Existing off-grid threshold 6 DeltaE2000; eye-pair correction (identifiers say "historical") requires both crossed matches within 1 DeltaE2000 and neither own match | Expose the policy and record applied corrections; parsing itself never swaps fields |

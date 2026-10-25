@@ -63,7 +63,7 @@ These are starting values to validate against sanitized producer fixtures and wo
 
 | Boundary | Proposed default | Limit behavior |
 |---|---|---|
-| File | 8 MiB UTF-8, root depth 1 with maximum depth 32, 100,000 nodes | Fatal rejection; count each value/container and each object property toward the node budget |
+| File | 16 MiB UTF-8 (8 MiB until beta.3), root depth 1 with maximum depth 32, 100,000 nodes | Fatal rejection; count each value/container and each object property toward the node budget |
 | Keys / ordinary strings | 1,024 / 65,536 decoded UTF-16 code units | Fatal rejection; only omitted image strings have the exception above |
 | Diagnostics | At most 64 issues including a final truncation marker; 256 code units per displayed path/message | Report omitted details; no raw native exceptions |
 | Demo raw-value UI | 200 visible entries per page/expansion batch, 2,048 code units per scalar preview | Lazy expansion/pagination, labelled truncation, no full-tree DOM creation |
@@ -75,7 +75,7 @@ These are starting values to validate against sanitized producer fixtures and wo
 | Resolver concurrency | 2 active requests, at most 16 pending operations per resolver instance | Reject excess queued work with a fixed issue; demo starts one lookup operation per selected file |
 | Optional in-memory row cache | 128 entries and 8 MiB serialized normalized data, with LRU/TTL eviction | Both limits apply; serialized size is not a JavaScript heap guarantee; oversized entries are not cached |
 
-The demo will not raise these limits automatically after rejection. Compatibility evidence can justify a revised documented default. Large image-bearing files are only admitted if the complete file fits the byte budget; ignoring an image does not make its bytes free to read. Producer evidence for the budget (2026-10-24): Anamnesis accepts a browsed image of up to 6 MiB (8,388,608 base64 characters, about 9.05 MB with `+` escaped) and clipboard images without a limit, so its files can exceed 8 MiB once the image passes about 5.56 MiB; a file with a browsed image reads with `maxBytes` of 16 MiB, and a clipboard image has no upper bound. The largest file in the maintainer's corpus is 3,128,021 bytes ([compatibility](../compatibility.md#producer-limits)).
+The demo will not raise these limits automatically after rejection. Compatibility evidence can justify a revised documented default. Large image-bearing files are only admitted if the complete file fits the byte budget; ignoring an image does not make its bytes free to read. Producer evidence for the budget (2026-10-24): Anamnesis accepts a browsed image of up to 6 MiB (8,388,608 base64 characters, about 9.05 MB with `+` escaped) and clipboard images without a limit, so its files could exceed the former 8 MiB default once the image passed about 5.56 MiB. The maintainer raised the default to 16 MiB on 2026-10-24, which a browsed image fits; a clipboard image has no upper bound. The largest file in the maintainer's corpus is 3,128,021 bytes ([compatibility](../compatibility.md#producer-limits)).
 
 ## XIVAPI and cache requirements
 
