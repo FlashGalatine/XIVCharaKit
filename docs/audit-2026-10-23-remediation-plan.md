@@ -34,14 +34,14 @@ Severities are the verifiers' consensus; "Tier" follows the remediation-planner 
 
 Fixed test-first and committed in `04fbeff`. Appearance policy is now `1.1.0` (unreleased; not in the published beta.3).
 - **F096:** bit `0x80` of `Mouth` now gates the lip (`lipDisabled`; unknown when `Mouth` is missing or invalid; Hrothgar ignores it; an unknown race is active only when the bit is set).
-- **F090:** the eye-pair rule is unchanged and documented as covering current Brio output; a new `EYE_PAIRING_UNCONFIRMED` warning flagged a one-sided crossed match. **Closed 2026-10-24:** the maintainer decided to swap on that evidence, so a one-sided crossed match next to a custom color now swaps the colors and carries an `EYE_PAIRING_INFERRED` warning, while `EYE_PAIRING_UNCONFIRMED` marks what `historicalEyeCorrection: false` left uncorrected (3609f8e). Known limits, accepted with D1: two custom colors on a crossed export, and eyes that share an index, stay as stored without a warning.
+- **F090:** the eye-pair rule is unchanged and documented as covering current Brio output; a new `EYE_PAIRING_UNCONFIRMED` warning flagged a one-sided crossed match. **Closed 2026-10-24:** the maintainer decided to swap on that evidence, so a one-sided crossed match next to a custom color now swaps the colors and carries an `EYE_PAIRING_INFERRED` warning, while `EYE_PAIRING_UNCONFIRMED` marks what `historicalEyeCorrection: false` left uncorrected (3609f8e). Known limits, accepted with D1: two custom colors on a crossed export, and eyes that share an index, stay as stored without a warning; and a file that stores the colors uncrossed (in practice a Brio export from before v0.7.2), with one eye on the other eye's shader beside a custom color, is swapped wrongly (`EYE_PAIRING_INFERRED` is the signal and `historicalEyeCorrection: false` the remedy).
 - **F092:** corrections, per-eye swatches and lip state of the four real exports are pinned in tests.
 - **N001 (not in the original catalog):** bit `0x80` of `FacePaint` is a mirror flag in Brio and Ktisis; `FacePaint` 128 (no paint) showed a face-paint swatch. Fixed the same way.
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
 | F096 | High · P1 | `packages/chara/src/appearance/resolve.ts:170` | Lip swatch is reported active even when the lip-colour flag (0x80) in the `Mouth` byte is clear | Fixed |
-| F090 | High · P1 | `packages/chara/src/appearance/resolve.ts:38` | Brio v0.7.2+ stores each eye's extended colour crossed relative to `LEyeColor`/`REyeColor`; only the exact on-grid crossing is repaired | Fixed (one-sided crossing; known limits: two custom colors, a shared index) |
+| F090 | High · P1 | `packages/chara/src/appearance/resolve.ts:38` | Brio v0.7.2+ stores each eye's extended colour crossed relative to `LEyeColor`/`REyeColor`; only the exact on-grid crossing is repaired | Fixed (one-sided crossing; known limits: two custom colors, a shared index, a wrong swap of an uncrossed file) |
 | F092 | Low · P3 | `packages/chara/test/producer-exports.test.ts:58` | No test pins the eye correction or per-eye output for the real Brio export | Fixed |
 | N001 | Low · P3 | `packages/chara/src/appearance/resolve.ts` | `FacePaint` 128 (no paint, mirrored) is reported as paint present; bit `0x80` is a mirror flag in Brio and Ktisis | Fixed |
 
