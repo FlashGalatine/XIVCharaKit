@@ -270,6 +270,21 @@ describe('an Anamnesis-shaped export, which never carries IsExtendedAppearanceVa
       });
   });
 
+  it('raises no eye pairing warning for the unmodified export with the flag added, with the correction on or off', async () => {
+    const fields = { ...(await fixture()), IsExtendedAppearanceValid: true };
+    for (const historicalEyeCorrection of [true, false]) {
+      const result = await resolveAppearance(
+        inspectChara(readChara(JSON.stringify(fields))),
+        {
+          palettes: createDefaultPaletteProvider(),
+          policy: { historicalEyeCorrection },
+        },
+      );
+      expect(result.corrections, String(historicalEyeCorrection)).toEqual([]);
+      expect(result.issues, String(historicalEyeCorrection)).toEqual([]);
+    }
+  });
+
   it('makes a custom color off-grid only with the flag', async () => {
     const fields = await fixture();
     const result = await resolve({

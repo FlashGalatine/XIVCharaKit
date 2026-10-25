@@ -515,14 +515,23 @@ test.describe('the example files', () => {
 
 test.describe('the file admission gate', () => {
   const MIB16 = 16 * 1024 * 1024;
-  /** A valid document padded with spaces to exactly this many bytes. */
+  /**
+   * A valid document of exactly this many bytes, with its one meaningful field after the bulk (an
+   * embedded image the reader discards), so that reading it all is what shows the race.
+   */
   const padded = (bytes: number) => {
-    const text = '{"Tribe":"Midlander"}';
-    return text + ' '.repeat(bytes - text.length);
+    const open = '{"Base64Image":"';
+    const close = '","Tribe":"Midlander"}';
+    return open + 'A'.repeat(bytes - open.length - close.length) + close;
   };
 
-  test('accepts a file of exactly 16 MiB', async ({ page }) => {
+  test('accepts a file of exactly 16 MiB, and reads all of it', async ({
+    page,
+  }) => {
+    // The caption under the file chooser states the limit.
+    await expect(page.getByText('Up to 16 MiB', { exact: true })).toBeVisible();
     await load(page, padded(MIB16), 'exact.chara');
+    // Tribe is the last field of the document, after 16 MiB of image.
     await expect(page.getByTestId('identity')).toContainText('Hyur');
     await expect(page.getByRole('alert')).toHaveText('');
   });

@@ -751,6 +751,74 @@ describe('historical eye pairing and thresholds', () => {
       ).toContain('correction is disabled');
       expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
     });
+    it.each([
+      ['straight on-grid pair', '#FF0000', '#0000FF', {}],
+      ['two custom colors', '#00FF00', '#FFFF00', {}],
+      ['equal indices', '#0000FF', '#00FF00', { REyeColor: 0 }],
+      [
+        'one crossed eye beside an eye on its own shader',
+        '#0000FF',
+        '#0000FF',
+        {},
+      ],
+      [
+        'one crossed eye beside an eye on its own shader (mirrored)',
+        '#FF0000',
+        '#FF0000',
+        {},
+      ],
+      [
+        'an inactive extended block',
+        '#0000FF',
+        '#00FF00',
+        { IsExtendedAppearanceValid: false },
+      ],
+    ])(
+      'raises no pairing warning for %s when the correction is disabled',
+      async (_name, leftHex, rightHex, extra) => {
+        const result = await resolve(
+          {
+            ...live,
+            LeftEyeColor: color(leftHex as string),
+            RightEyeColor: color(rightHex as string),
+            ...(extra as object),
+          },
+          provider,
+          { historicalEyeCorrection: false },
+        );
+        expect(result.corrections).toEqual([]);
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([]);
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
+      },
+    );
+    it.each([0, 1])(
+      'swaps nothing and reports the missing reference when the shader of eye %i cannot be found',
+      async (missing) => {
+        const noShader: PaletteProvider = {
+          async getColor(request) {
+            return request.table === 'shader' &&
+              request.palette === 'eyes' &&
+              request.index === missing
+              ? null
+              : provider.getColor(request);
+          },
+        };
+        const result = await resolve(
+          {
+            ...live,
+            LeftEyeColor: color('#0000FF'),
+            RightEyeColor: color('#FF0000'),
+          },
+          noShader,
+        );
+        expect(result.corrections).toEqual([]);
+        expect(
+          issuesWith(result, 'MISSING_SHADER_REFERENCE').length,
+        ).toBeGreaterThan(0);
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([]);
+      },
+    );
   });
   // Neutral-axis CIEDE2000 distances from #808080: #909090 < 6; #919191 = 6.06269.
   it.each([

@@ -326,6 +326,45 @@ describe('the eye-pair rule needs both extended colors to miss their own shader'
   });
 });
 
+describe('the custom-color test of the eye-pair rule', () => {
+  // The left color is exactly the right eye's shader, so the left eye is crossed. The right color is
+  // next to its own shader: whether it counts as custom, which makes the crossing a one-sided one
+  // that is swapped on partial evidence, depends on whether it lands on its own shader within the
+  // eye tolerance, compared on the shader table (the creator table answers a far color).
+  const colors = { 'eyes:0': '#FF0000', 'eyes:1': '#0000FF' };
+  const rightNearOwn = '#0000FE';
+  const distance = hexDeltaE(rightNearOwn, '#0000FF');
+  const run = (eyeMatchDeltaE: number) =>
+    resolveAppearance(
+      inspect({
+        LEyeColor: 0,
+        REyeColor: 1,
+        LeftEyeColor: gamma('#0000FF'),
+        RightEyeColor: gamma(rightNearOwn),
+        IsExtendedAppearanceValid: true,
+      }),
+      { palettes: spy(colors, '#00FF00'), policy: { eyeMatchDeltaE } },
+    );
+  it('is small but not zero', () => {
+    expect(distance).toBeGreaterThan(0);
+    expect(distance).toBeLessThan(1);
+  });
+  it('counts a color exactly at the tolerance of its own shader as its own: nothing is swapped or reported', async () => {
+    const result = await run(distance);
+    expect(result.corrections).toEqual([]);
+    expect(result.issues).toEqual([]);
+  });
+  it('counts the same color a hair beyond the tolerance as custom: the crossed left eye swaps the pair, with a warning', async () => {
+    const result = await run(distance * (1 - 1e-9));
+    expect(result.corrections).toEqual([
+      { code: 'HISTORICAL_EYE_PAIR_SWAP', slots: ['leftEye', 'rightEye'] },
+    ]);
+    expect(result.issues.map((issue) => issue.code)).toEqual([
+      'EYE_PAIRING_INFERRED',
+    ]);
+  });
+});
+
 describe('the eye match threshold at exactly its value', () => {
   // Each eye's extended color sits next to the other eye's shader color.
   const leftNearRight = '#0000FE';
