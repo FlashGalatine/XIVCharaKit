@@ -2,7 +2,7 @@
 
 **Source:** [audit-2026-10-23.md](audit-2026-10-23.md), the audit of `014c6a0` (106 findings: 2 high, 28 medium, 76 low; 8 verifier disputes resolved by the maintainer, see its §7). Plus one finding added during the fixes (N001, FacePaint mirror flag).
 
-**Status basis:** 107 findings in all. Fixed and committed: F096, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings, the ten Wave 4 findings, the eight Wave 5 findings, the eight Wave 6 findings, the eleven Wave 7 findings, the fifteen Wave 8 findings, the fourteen Wave 9 findings, the eight Wave 10 findings and the seven Wave 11 findings, 106 in all. Partly fixed: F090 (warning only). Outstanding: 0. Nothing is published or deployed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
+**Status basis:** 107 findings in all. Fixed and committed: F096, F090, F092, N001 (Wave 0), the eight Wave 1 documents, the seven Wave 2 findings, the seven Wave 3 findings, the ten Wave 4 findings, the eight Wave 5 findings, the eight Wave 6 findings, the eleven Wave 7 findings, the fifteen Wave 8 findings, the fourteen Wave 9 findings, the eight Wave 10 findings and the seven Wave 11 findings, 107 in all. Outstanding: 0. Nothing is published or deployed. Superseded: 0. Not scheduled (register below): 5 ruled info or no-defect, 2 refuted, 22 unverified observations.
 
 **Ordering:**
 1. One deploy unit per wave, each ending in a named gate or release. Waves are the equivalent of the sprints in the XIV Dye Tools remediation plans.
@@ -15,7 +15,7 @@
 
 | Wave | Unit | Theme | H / M / L | Status |
 |---|---|---|---|---|
-| 0 | packages/chara (appearance) | Done in this session | 2 / 0 / 1 + N001 | ✅ done (04fbeff) |
+| 0 | packages/chara (appearance) | Done in this session | 2 / 0 / 1 + N001 | ✅ done (04fbeff, 3609f8e) |
 | 1 | docs only | Documents that misstate the current state | 0 / 1 / 7 | ✅ done (5a4a6e9, 614ac34, 8d0d0b2, 0cd9f7f) |
 | 2 | packages/chara (xivapi) | The client was written against doubles that are not the real API | 0 / 3 / 4 | ✅ done (8959fc1, b20624f, e8cf5f9, ed0589a, ab358b0, b83c9de, dbf5b62, bdd1cbc, 298bd32) |
 | 3 | packages/chara (reader, inspect, xivapi) | Cross-realm input, re-read values, label accuracy; then publish | 0 / 0 / 7 | ✅ done (e965238, 60717a5, 7c49ade, d217c44) |
@@ -30,18 +30,18 @@
 
 Severities are the verifiers' consensus; "Tier" follows the remediation-planner scale (P1 high, P2 medium, P3 low). IDs are defined in [the audit report](audit-2026-10-23.md), which carries the problem, failure scenario, evidence and fix for each.
 
-## Wave 0 — packages/chara (appearance): Done in this session ✅ COMPLETED 2026-10-23 (04fbeff)
+## Wave 0 — packages/chara (appearance): Done in this session ✅ COMPLETED 2026-10-23 (04fbeff, 3609f8e)
 
 Fixed test-first and committed in `04fbeff`. Appearance policy is now `1.1.0` (unreleased; not in the published beta.3).
 - **F096:** bit `0x80` of `Mouth` now gates the lip (`lipDisabled`; unknown when `Mouth` is missing or invalid; Hrothgar ignores it; an unknown race is active only when the bit is set).
-- **F090:** the eye-pair rule is unchanged and documented as covering current Brio output; a new `EYE_PAIRING_UNCONFIRMED` warning flags a one-sided crossed match. **Residual:** custom eye colors on Brio v0.7.2+ exports are still not swapped (see Open decisions).
+- **F090:** the eye-pair rule is unchanged and documented as covering current Brio output; a new `EYE_PAIRING_UNCONFIRMED` warning flagged a one-sided crossed match. **Closed 2026-10-24:** the maintainer decided to swap on that evidence, so a one-sided crossed match next to a custom color now swaps the colors and carries an `EYE_PAIRING_INFERRED` warning, while `EYE_PAIRING_UNCONFIRMED` marks what `historicalEyeCorrection: false` left uncorrected (3609f8e). Known limits, accepted with D1: two custom colors on a crossed export, and eyes that share an index, stay as stored without a warning.
 - **F092:** corrections, per-eye swatches and lip state of the four real exports are pinned in tests.
 - **N001 (not in the original catalog):** bit `0x80` of `FacePaint` is a mirror flag in Brio and Ktisis; `FacePaint` 128 (no paint) showed a face-paint swatch. Fixed the same way.
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
 | F096 | High · P1 | `packages/chara/src/appearance/resolve.ts:170` | Lip swatch is reported active even when the lip-colour flag (0x80) in the `Mouth` byte is clear | Fixed |
-| F090 | High · P1 | `packages/chara/src/appearance/resolve.ts:38` | Brio v0.7.2+ stores each eye's extended colour crossed relative to `LEyeColor`/`REyeColor`; only the exact on-grid crossing is repaired | Partly fixed: warning only |
+| F090 | High · P1 | `packages/chara/src/appearance/resolve.ts:38` | Brio v0.7.2+ stores each eye's extended colour crossed relative to `LEyeColor`/`REyeColor`; only the exact on-grid crossing is repaired | Fixed (one-sided crossing; known limits: two custom colors, a shared index) |
 | F092 | Low · P3 | `packages/chara/test/producer-exports.test.ts:58` | No test pins the eye correction or per-eye output for the real Brio export | Fixed |
 | N001 | Low · P3 | `packages/chara/src/appearance/resolve.ts` | `FacePaint` 128 (no paint, mirrored) is reported as paint present; bit `0x80` is a mirror flag in Brio and Ktisis | Fixed |
 
@@ -249,14 +249,14 @@ Two changes to shipped code, both found by reviews of the new tests. A `Retry-Af
 | F059 | Low · P3 | `packages/chara/src/xivapi/resolve.ts:158` | The `items`/`facewear` scope prefix on issues and the mixed off-hand case are unpinned | Fixed |
 | G007 | Low · P3 | `test/runtime/smoke.ts:9` | The default native-fetch transport never runs in Node, Node Worker or workerd | Fixed |
 
-**Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test` (174 tooling, 1458 package, 18 demo unit and 110 demo browser tests), `pnpm test:demo:cloudflare` (112 passed) and `pnpm test:package` pass. A workflow review (three lenses, two verifiers per finding) reported 34 confirmed findings and rejected one: gaps in what the tests pin (the Retry-After forms, cache-hit row accounting, the option snapshot), wrong "equivalent mutant" claims in the commit messages and the two code changes above; all were fixed (96ce158 to f356f5e, 3b67d55, add1f8b). The mutants that stay alive are equivalent and are listed in the commit messages.
+**Ends with:** Code done. `pnpm build && pnpm type-check && pnpm lint && pnpm verify-fixtures && pnpm verify-palettes && pnpm test` (197 tooling, 1473 package, 18 demo unit and 110 demo browser tests), `pnpm test:demo:cloudflare` (112 passed) and `pnpm test:package` pass. A workflow review (three lenses, two verifiers per finding) reported 34 confirmed findings and rejected one: gaps in what the tests pin (the Retry-After forms, cache-hit row accounting, the option snapshot), wrong "equivalent mutant" claims in the commit messages and the two code changes above; all were fixed (96ce158 to f356f5e, 3b67d55, add1f8b). The mutants that stay alive are equivalent and are listed in the commit messages.
 
 ## Wave 10 — apps/demo (tests): State-machine and UI behaviour tests ✅ COMPLETED 2026-10-24 (151b33d, 11ff323, 90d8b28, 355fb2c)
 
-One change to shipped demo code: a file over the 8 MiB limit is refused with a note that says why (an Anamnesis file saved with a large embedded image can be bigger, and the library can read most such files when `maxBytes` is raised, up to 64 MiB), also when the previous file's colors are resumed afterwards (the demo part of F099). Everything else is tests, driven by a helper that holds the XIVAPI requests and records which ones the page gave up on, and by a paused clock that probes the five-second deadline to the millisecond.
+One change to shipped demo code: a file over the demo limit (8 MiB then, 16 MiB since 2026-10-24, 448e753) is refused with a note that says why (an Anamnesis file saved with a large embedded image can be bigger, and the library can read most such files when `maxBytes` is raised, up to 64 MiB), also when the previous file's colors are resumed afterwards (the demo part of F099). Everything else is tests, driven by a helper that holds the XIVAPI requests and records which ones the page gave up on, and by a paused clock that probes the five-second deadline to the millisecond.
 - **F067, F062 (`lookup-lifecycle.spec.ts`):** Clear, a replacement file and Cancel abort the held request (seen on the network as failed), Resolve works again, nothing comes back from an abandoned request, and the result of a finished lookup is not shown for the next file.
 - **F068, F063:** no alert at 4,999 ms and PROCESSING_TIMEOUT at 5,000, what the timed-out worker posts later is ignored, also when the previous file's colors were still loading and are resumed; no timeout is reported once the colors have arrived; APPEARANCE_TIMEOUT and PROCESSING_FAILED keep the inspection or the previous file.
-- **F065, F066:** a file of exactly 8 MiB and the file-name patterns, the three ways an example fails or is abandoned, and the diagnostics list (64 entries in full, 65 list 64 and say that more were omitted: `diagnostics.spec.ts`).
+- **F065, F066:** a file of exactly 8 MiB (16 MiB since 2026-10-24) and the file-name patterns, the three ways an example fails or is abandoned, and the diagnostics list (64 entries in full, 65 list 64 and say that more were omitted: `diagnostics.spec.ts`).
 - **F070, F071:** "Show previous" (a regex that had lost its backslash), and the Glasses id sent, or not sent, as a facewear lookup.
 
 | ID | Sev · Tier | Location | Item | Status |
@@ -278,7 +278,7 @@ Documentation, the fixture manifest and one regression test; no library code. Th
 - **F091, F093, F095:** the files that give stored values their form and meaning are pinned (metadata and image fields, the color and vector formats, the enum names, the Ktisis writer, Brio's vector converters), and so are the three files that the stated limits rest on.
 - **F097:** which producer writes extended colors and `IsExtendedAppearanceValid`. Anamnesis never writes the flag and Ktisis writes no extended colors, so an Anamnesis export's stored block is inactive evidence. For a race with a lip palette index the lip differs from a Brio-shaped file only when the lip-color bit of `Mouth` is set; a Hrothgar's lip is a fur pattern and a stored lip color shows only with the flag. Pinned by an Anamnesis-shaped test in `producer-exports.test.ts`.
 - **F094, F098:** none of Anamnesis v7.57.0.3, Ktisis v0.4.1.2 and Brio v0.8.0.12 can export selectively, so the "Partial export" gates are recorded as unavailable in the current producers (legacy builds are not verified).
-- **F099 (the record):** the Anamnesis embedded-image limit and the size at which it passes the 8 MiB budget; the demo message is in Wave 10. Raising the default budget stays open (D3).
+- **F099 (the record):** the Anamnesis embedded-image limit and the size at which it passes the 8 MiB budget; the demo message is in Wave 10. Raising the default budget was decided on 2026-10-24: the default is 16 MiB (D3; d2d8c60, 448e753).
 
 | ID | Sev · Tier | Location | Item | Status |
 |---|---|---|---|---|
@@ -296,9 +296,9 @@ Documentation, the fixture manifest and one regression test; no library code. Th
 
 | # | Decision | Why it is open | Default if nobody decides |
 |---|---|---|---|
-| D1 | F090 residual: swap eye colors heuristically when only one crossed match is visible? | A one-sided match next to a custom color is evidence, not proof; a false swap mirrors correct colors, and the library has no producer routing by design. | Keep the warning only. |
-| D2 | Clear the three `undici` advisories (1 high, 2 moderate, development dependency only) reached through `wrangler` and `miniflare` | `pnpm audit` newly fails and CI and the publish workflow run it; not an audit finding, found while verifying. Even wrangler 4.152.0 ships `undici` 7.29.1, so bumping wrangler does not help. | Decided 2026-10-24: an exact override `miniflare>undici: 7.30.1` in `pnpm-workspace.yaml`; `pnpm audit` reports nothing. Drop it when wrangler ships a patched miniflare. |
-| D3 | Whether to raise the 8 MiB default read budget (F099) | Anamnesis can write files above it; the budget is a documented trade-off. | Keep; document the limit. |
+| D1 | F090 residual: swap eye colors heuristically when only one crossed match is visible? | A one-sided match next to a custom color is evidence, not proof; a false swap mirrors correct colors, and the library has no producer routing by design. | Decided 2026-10-24: swap, with an `EYE_PAIRING_INFERRED` warning; `historicalEyeCorrection: false` turns it off. |
+| D2 | Clear the three `undici` advisories (1 high, 2 moderate, development dependency only) reached through `wrangler` and `miniflare` | `pnpm audit` newly fails and CI and the publish workflow run it; not an audit finding, found while verifying. Even wrangler 4.152.0 ships `undici` 7.29.1, so bumping wrangler does not help. | Decided 2026-10-24: an exact override `miniflare>undici: 7.30.1` in `pnpm-workspace.yaml`; `pnpm audit` reports nothing. Drop it when wrangler ships a patched miniflare: `pnpm check:undici-override` says when, and the weekly workflow `undici-override.yml` opens an issue. |
+| D3 | Whether to raise the 8 MiB default read budget (F099) | Anamnesis can write files above it; the budget is a documented trade-off. | Decided 2026-10-24: the default is 16 MiB (the host ceiling stays 64 MiB); the demo limit follows. |
 | D4 | Version for the next publish | `0.1.0-beta.3` is already on npm, and Wave 0 changes the appearance policy and the `AppearanceReason` union. | Decided 2026-10-24: the version is bumped to `0.1.0-beta.4` (tag `next`) in the pull request. Publishing it stays a separate step: dry run, then protected approval. |
 
 ## Not scheduled

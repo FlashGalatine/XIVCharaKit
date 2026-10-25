@@ -20,7 +20,7 @@ Reviewed local sources on **2026-10-22**. The initial draft used target `d50927c
 
 | Component | Reviewed baseline | Relevant implementation |
 | --- | --- | --- |
-| XIVCharaKit | Target `0.1.0-beta.4` (decided 2026-10-24; prepared, not yet published); beta.3 was the target when this plan was written, source `39b849fb585eb2bb7d31ce139593fab5afaeb530` | Five public exports; eventual registry artifact/provenance remains an adoption gate; beta.2 is the historical comparison baseline |
+| XIVCharaKit | Reviewed baseline: beta.3 at source `39b849fb585eb2bb7d31ce139593fab5afaeb530`. Target `0.1.0-beta.4` (decided 2026-10-24; prepared, not yet published; its source commit comes from its release manifest) | Five public exports; eventual registry artifact/provenance remains an adoption gate; beta.2 is the historical comparison baseline |
 | Core | `5.14.0` | `packages/core/src/services/chara/{chara-parser,chara-resolver,chara-models,chara-shader-colors}.ts` |
 | Web app | `5.15.5` | `chara-file-loader.ts` → shared `CharaSessionService` → Swatch Matcher / Glamour Reader |
 | Shared bot logic | `4.10.0` | `packages/bot-logic/src/commands/{swatch,glamour}.ts` |
@@ -46,7 +46,7 @@ FINDING-004 is an existing adjacent collection-import defect, not a direct chara
 
 ## Global constraints
 
-- Keep `MAX_CHARA_FILE_BYTES = 8_192`. Check browser `File.size` before reading and Discord metadata plus actual streamed bytes before parsing. Pass `{ maxBytes: MAX_CHARA_FILE_BYTES }` to the new reader adapter as a second boundary. Do not lower shared image-upload limits or inherit the library's 8 MiB default.
+- Keep `MAX_CHARA_FILE_BYTES = 8_192`. Check browser `File.size` before reading and Discord metadata plus actual streamed bytes before parsing. Pass `{ maxBytes: MAX_CHARA_FILE_BYTES }` to the new reader adapter as a second boundary. Do not lower shared image-upload limits or inherit the library's default (16 MiB in beta.4, 8 MiB through beta.3).
 - Honor `minimumReleaseAge: 1440` and the existing `allowBuilds` policy. Wait for an eligible package release; do not add a standing exception or install-script permission for this integration.
 - Original library code is MIT; retain its complete code license, third-party notices and Square Enix attribution/non-affiliation language. Game-derived data has separate notices. Do not redistribute raw `human.cmp`.
 - Import through public exports only. Runtime imports are `xivcharakit` and `xivcharakit/appearance`; `PaletteProvider` types can come from `xivcharakit/palettes`. The first migration does not import the bundled default palette provider, `/dyes`, or `/xivapi` into application code.
@@ -106,7 +106,7 @@ Use the existing host provider first. This avoids shipping a second palette corp
 | Explicitly disabled highlight or face-paint control | Old parser treats missing controls permissively | Preserve explicit `active: false` and inactive interpretation; no automatic matching. This differs from unknown activation. |
 | Missing/null/invalid highlight or face-paint control with a resolved color | Old host can treat missing controls permissively | Keep library `active: null`, `interpretation`, `displayHex` and `reason` intact. Show a localized activity-unknown preview/warning; set host `matchHex: null` so automatic matching, matched-color saves and appearance exports exclude it. Do not fabricate unresolved color or inactive status. |
 | Lip alpha zero with extended data inactive | Old resolver makes the lip inert whenever stored alpha is zero | Follow library activation: inactive stored alpha must not suppress an indexed lip. Pin this corrected behavior in both web and bot tests. |
-| Crossed eyes (every current Brio export) | Old resolver and library have distinct guard conditions | Use library correction only with its complete evidence and live extended data. Keep original fields out of output mutation; show the effective corrected preview. |
+| Crossed eyes (every current Brio export) | Old resolver and library have distinct guard conditions | Use the library correction with live extended data: it swaps an exact crossing silently, and a one-sided crossed match beside a custom color with an `EYE_PAIRING_INFERRED` warning (`EYE_PAIRING_UNCONFIRMED` only when the correction is disabled). Keep original fields out of output mutation; show the effective corrected preview and surface the inferred-swap warning. Decide explicitly whether the host keeps `historicalEyeCorrection` at its default. |
 | Missing shader reference | Old resolver falls back to creator comparison | Remain unresolved; do not use creator color as a pretend shader reference. |
 | Embedded image under 8 KiB | Current parser ignores a populated `Base64Image` | Preserve omission, including null/empty placeholders; do not introduce a new blanket image-field rejection. The byte cap still refuses large image-bearing files. |
 | Duplicate keys, depth/node limits, unsafe numbers | Current native JSON behavior is less restrictive | Accept the library's bounded refusal, with fixed localized errors and prior-session retention. |
