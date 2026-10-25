@@ -265,6 +265,43 @@ describe('Retry-After forms that are not waited for', () => {
     }
   });
 
+  // The fields of an IMF date are bounded as well. V8 reads 24:00:00 as the next day and the leap
+  // second 60 as 00, so it would retry at once on those two; it finds no date in the other three, but
+  // that is the engine's choice, so none of the five may reach Date.parse.
+  it.each([
+    ['day 00', 'Thu, 00 Jan 2026 00:00:00 GMT'],
+    ['day 32', 'Wed, 32 Dec 2025 00:00:00 GMT'],
+    ['hour 24', 'Wed, 31 Dec 2025 24:00:00 GMT'],
+    ['minute 60', 'Wed, 31 Dec 2025 23:60:00 GMT'],
+    ['second 60', 'Wed, 31 Dec 2025 23:59:60 GMT'],
+  ])(
+    'refuses an IMF date with %s with RETRY_LIMIT, without parsing it',
+    async (_name, header) => {
+      const parse = vi.spyOn(Date, 'parse');
+      const { result, calls } = await refused(header);
+      expect(code(result)).toEqual(['RETRY_LIMIT']);
+      expect(calls).toBe(1);
+      expect(parse).not.toHaveBeenCalled();
+      parse.mockRestore();
+    },
+  );
+
+  it('waits for an IMF date whose day, hour, minute and second are at their maximum', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2025-12-31T23:59:58Z'));
+    let calls = 0;
+    const pending = client(async () =>
+      ++calls === 1
+        ? json({}, 429, { 'Retry-After': 'Wed, 31 Dec 2025 23:59:59 GMT' })
+        : json(page([wire()])),
+    ).searchItems([body]);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(calls).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(calls).toBe(2);
+    expect((await pending).status).toBe('complete');
+  });
+
   it.each([
     [429, 429],
     [429, 503],

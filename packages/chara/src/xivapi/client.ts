@@ -40,11 +40,16 @@ import type {
 /**
  * The two forms of Retry-After that are waited for: delay-seconds (with an optional fraction) and an
  * HTTP date in the IMF-fixdate form. Date.parse accepts many more strings and reads them differently
- * in different engines ("-1" and "+1" are 1 January 2001 in V8), so everything else is refused.
+ * in different engines ("-1" and "+1" are 1 January 2001 in V8), so everything else is refused. The
+ * date's fields are bounded too (day 01-31, hour 00-23, minute and second 00-59), since V8 reads a
+ * second of 60 or more as 00, the leap second 60 that RFC 9110 allows included, and 24:00:00 as the
+ * next day. The date as a whole is not checked, and V8 still reads some accepted strings loosely: a
+ * day past the end of its month rolls over (31 Feb 2026 is 3 March), a year from 0000 to 0099 is
+ * taken as two digits (0026 is 2026), and the weekday is not compared with the date.
  */
 const DELAY_SECONDS = /^\d+(?:\.\d+)?$/;
 const IMF_FIXDATE =
-  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d{2}:\d{2}:\d{2} GMT$/;
+  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), (?:0[1-9]|[12]\d|3[01]) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} (?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d GMT$/;
 
 class Failure extends Error {
   constructor(readonly code: string) {
