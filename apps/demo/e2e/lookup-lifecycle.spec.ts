@@ -514,15 +514,15 @@ test.describe('the example files', () => {
 });
 
 test.describe('the file admission gate', () => {
-  const MIB8 = 8 * 1024 * 1024;
+  const MIB16 = 16 * 1024 * 1024;
   /** A valid document padded with spaces to exactly this many bytes. */
   const padded = (bytes: number) => {
     const text = '{"Tribe":"Midlander"}';
     return text + ' '.repeat(bytes - text.length);
   };
 
-  test('accepts a file of exactly 8 MiB', async ({ page }) => {
-    await load(page, padded(MIB8), 'exact.chara');
+  test('accepts a file of exactly 16 MiB', async ({ page }) => {
+    await load(page, padded(MIB16), 'exact.chara');
     await expect(page.getByTestId('identity')).toContainText('Hyur');
     await expect(page.getByRole('alert')).toHaveText('');
   });
@@ -532,11 +532,11 @@ test.describe('the file admission gate', () => {
   }) => {
     await load(page, { Tribe: 'Xaela' });
     await expect(page.getByTestId('identity')).toContainText('Au Ra');
-    await load(page, padded(MIB8 + 1), 'over.chara');
+    await load(page, padded(MIB16 + 1), 'over.chara');
     await expect(page.getByRole('alert')).toContainText('FILE_TOO_LARGE');
     await expect(page.getByRole('alert')).not.toContainText('INPUT_TOO_LARGE');
     // The message says why: the limit, and that a large embedded image can pass it.
-    await expect(page.getByRole('alert')).toContainText('up to 8 MiB');
+    await expect(page.getByRole('alert')).toContainText('up to 16 MiB');
     await expect(page.getByRole('alert')).toContainText('embedded image');
     // Other refusals do not carry the hint.
     await load(page, { Tribe: 'Midlander' }, 'x.json');
@@ -546,7 +546,7 @@ test.describe('the file admission gate', () => {
     await load(page, { Bone: {} }, 'renamed.chara');
     await expect(page.getByRole('alert')).toContainText('NOT_CHARACTER');
     await expect(page.getByRole('alert')).not.toContainText('embedded image');
-    await expect(page.getByRole('alert')).not.toContainText('up to 8 MiB');
+    await expect(page.getByRole('alert')).not.toContainText('up to 16 MiB');
     await expect(page.getByTestId('identity')).toContainText('Au Ra');
   });
 

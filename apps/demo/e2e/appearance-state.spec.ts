@@ -91,14 +91,14 @@ test('keeps the size note when a file over the limit was refused and resuming th
   });
   await page.getByRole('button', { name: 'Anamnesis', exact: true }).click();
   await expect(page.getByTestId('swatches')).toContainText('Loading');
-  const MIB8 = 8 * 1024 * 1024;
+  const MIB16 = 16 * 1024 * 1024;
   const text = '{"Tribe":"Xaela"}';
-  await load(page, text + ' '.repeat(MIB8 + 1 - text.length), 'over.chara');
+  await load(page, text + ' '.repeat(MIB16 + 1 - text.length), 'over.chara');
   await expect(page.getByRole('alert')).toContainText('APPEARANCE_UNAVAILABLE');
   // The rejection of the file the user chose stays visible, with the reason, and the sentence about
   // the colors comes before the note, so that "previous file" is what it refers to.
   await expect(page.getByRole('alert')).toHaveText(
-    /^FILE_TOO_LARGE: .*retained\. APPEARANCE_UNAVAILABLE: The previous file's colors could not be resolved\. The demo reads files up to 8 MiB\. .*embedded image/,
+    /^FILE_TOO_LARGE: .*retained\. APPEARANCE_UNAVAILABLE: The previous file's colors could not be resolved\. The demo reads files up to 16 MiB\. .*embedded image/,
   );
   await expect(page.getByRole('alert')).not.toContainText(
     'selected file remains',

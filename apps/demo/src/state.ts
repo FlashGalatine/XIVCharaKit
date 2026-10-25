@@ -3,11 +3,11 @@ import type { DyeNameResolver } from 'xivcharakit/dyes';
 import { loadIcons } from './icons.js';
 import type { DemoState, WorkerReply } from './types.js';
 
-const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_BYTES = 16 * 1024 * 1024;
 /** Why a file was refused for its size: Anamnesis can save an image that takes it past the limit. */
 const sizeHint = (code: string): string =>
   code === 'FILE_TOO_LARGE' || code === 'INPUT_TOO_LARGE'
-    ? ' The demo reads files up to 8 MiB. An Anamnesis file saved with a large embedded image can be bigger; the library can read most of those when its maxBytes option is raised (up to 64 MiB).'
+    ? ' The demo reads files up to 16 MiB. An Anamnesis file saved with a very large embedded image can be bigger; the library can read most of those when its maxBytes option is raised (up to 64 MiB).'
     : '';
 export class DemoSession {
   readonly state: DemoState = {

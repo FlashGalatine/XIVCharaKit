@@ -571,7 +571,7 @@ export function render(root: HTMLElement, session: DemoSession): void {
     'button primary',
   );
   choose.id = 'choose-file';
-  fileArea.append(glyph, choose, input, el('p', 'caption', 'Up to 8 MiB'));
+  fileArea.append(glyph, choose, input, el('p', 'caption', 'Up to 16 MiB'));
   rail.append(fileArea);
   if (state.fileName) {
     rail.append(el('div', 'filename', state.fileName));

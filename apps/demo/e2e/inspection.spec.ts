@@ -167,7 +167,7 @@ test('preserves a valid inspection on rejected replacements and checks extension
   for (const [content, name, reason] of [
     [{ Bone: {} }, 'renamed.chara', 'NOT_CHARACTER'],
     [{ Tribe: 'Xaela' }, 'test.pose', 'FILE_EXTENSION'],
-    ['x'.repeat(8 * 1024 * 1024 + 1), 'big.chara', 'FILE_TOO_LARGE'],
+    ['x'.repeat(16 * 1024 * 1024 + 1), 'big.chara', 'FILE_TOO_LARGE'],
   ]) {
     await load(page, content, String(name));
     await expect(page.getByRole('alert')).toContainText(String(reason));
