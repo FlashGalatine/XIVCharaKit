@@ -4,6 +4,7 @@ import {
   compareVersions,
   describeStatus,
   pinnedOverride,
+  run,
 } from '../scripts/check-undici-override.js';
 
 // The workspace pins undici for miniflare (pnpm-workspace.yaml) because the newest wrangler still
@@ -166,5 +167,60 @@ describe('asking the registry what the newest wrangler pulls in', () => {
     await expect(
       checkOverride({ workspaceYaml: workspace, request: noUndici }),
     ).rejects.toThrow(/undici/);
+  });
+});
+
+describe('the exit status of the check', () => {
+  const answer = (undici: string) =>
+    vi.fn(async (input: string | URL | Request) =>
+      String(input).includes('/wrangler/')
+        ? Response.json({
+            version: '4.152.0',
+            dependencies: { miniflare: '5.1.0' },
+          })
+        : Response.json({ dependencies: { undici } }),
+    ) as unknown as typeof fetch;
+  const workspaceYaml = 'overrides:\n  miniflare>undici: 7.30.1\n';
+
+  it('is 0 and says so while the override is still needed, strict or not', async () => {
+    for (const strict of [false, true]) {
+      const log = vi.fn();
+      expect(
+        await run({ workspaceYaml, request: answer('7.29.1'), strict, log }),
+      ).toBe(0);
+      expect(log).toHaveBeenCalledTimes(1);
+      expect(log.mock.calls[0]?.[0]).toContain('still needed');
+    }
+  });
+  it('is 0 without --strict when the override can be dropped, and says so', async () => {
+    const log = vi.fn();
+    expect(
+      await run({
+        workspaceYaml,
+        request: answer('7.30.1'),
+        strict: false,
+        log,
+      }),
+    ).toBe(0);
+    expect(log.mock.calls[0]?.[0]).toContain('can be dropped');
+  });
+  it('is 2 with --strict when the override can be dropped, apart from the 1 of a failure', async () => {
+    const log = vi.fn();
+    expect(
+      await run({
+        workspaceYaml,
+        request: answer('7.31.0'),
+        strict: true,
+        log,
+      }),
+    ).toBe(2);
+    expect(log.mock.calls[0]?.[0]).toContain('can be dropped');
+    // A registry or workspace failure is an error, not an exit status that could be mistaken for 2.
+    const down = vi.fn(
+      async () => new Response('no', { status: 503 }),
+    ) as unknown as typeof fetch;
+    await expect(
+      run({ workspaceYaml, request: down, strict: true, log }),
+    ).rejects.toThrow(/503/);
   });
 });

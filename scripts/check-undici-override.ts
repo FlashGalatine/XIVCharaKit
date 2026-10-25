@@ -5,8 +5,8 @@ import { isEntryPoint } from './release.js';
 // pnpm-workspace.yaml pins undici for miniflare because wrangler's newest release still resolves a
 // vulnerable one (the three advisories that make `pnpm audit` fail). This reports when the newest
 // wrangler no longer needs the pin, so that the override can be dropped. It reads the public npm
-// registry only; run it with `pnpm check:undici-override`, or with `--strict` to fail once the
-// override can go.
+// registry only; run it with `pnpm check:undici-override`, or with `--strict`, which exits with 2 once
+// the override can go (an error exits with 1).
 
 const KEY = 'miniflare>undici';
 const VERSION = /^\d+\.\d+\.\d+$/;
@@ -125,15 +125,32 @@ export function describeStatus(status: OverrideStatus): string {
     : `The override ${KEY}=${status.pinned} is still needed: ${facts}.`;
 }
 
+/** The exit status: 0, or 2 when --strict is given and the override can be dropped. A failure throws. */
+export async function run({
+  workspaceYaml,
+  request = fetch,
+  strict,
+  log = console.log,
+}: {
+  workspaceYaml: string;
+  request?: typeof fetch;
+  strict: boolean;
+  log?: (message: string) => void;
+}): Promise<number> {
+  const status = await checkOverride({ workspaceYaml, request });
+  log(describeStatus(status));
+  return strict && status.droppable ? 2 : 0;
+}
+
 async function main(): Promise<void> {
   const workspaceYaml = await readFile(
     fileURLToPath(new URL('../pnpm-workspace.yaml', import.meta.url)),
     'utf8',
   );
-  const status = await checkOverride({ workspaceYaml });
-  console.log(describeStatus(status));
-  if (process.argv.includes('--strict') && status.droppable)
-    process.exitCode = 1;
+  process.exitCode = await run({
+    workspaceYaml,
+    strict: process.argv.includes('--strict'),
+  });
 }
 
 if (isEntryPoint(import.meta.url, process.argv[1])) await main();
