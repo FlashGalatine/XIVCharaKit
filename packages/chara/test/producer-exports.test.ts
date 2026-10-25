@@ -127,7 +127,7 @@ describe('maintainer-supplied default producer exports', () => {
     });
   });
 
-  it('flags, without swapping, a Brio export whose crossing a custom eye color hides', async () => {
+  it('swaps back, and says it inferred it, for a Brio export whose crossing a custom eye color hides', async () => {
     const fields = JSON.parse(
       await readFile(
         new URL(
@@ -143,13 +143,26 @@ describe('maintainer-supplied default producer exports', () => {
       inspectChara(readChara(JSON.stringify(edited))),
       { palettes: createDefaultPaletteProvider() },
     );
-    expect(appearance.corrections).toEqual([]);
-    expect(appearance.issues).toEqual([
-      expect.objectContaining({
-        code: 'EYE_PAIRING_UNCONFIRMED',
-        path: [],
-      }),
+    // LeftEyeColor still lands on the right eye's shader (the crossing) and the custom color is
+    // under RightEyeColor, so the colors are swapped back on that evidence and the swap is reported
+    // as inferred: the custom color belongs to the left eye, and the right eye is on its palette.
+    expect(appearance.corrections).toEqual([
+      { code: 'HISTORICAL_EYE_PAIR_SWAP', slots: ['leftEye', 'rightEye'] },
     ]);
+    expect(appearance.issues).toEqual([
+      expect.objectContaining({ code: 'EYE_PAIRING_INFERRED', path: [] }),
+    ]);
+    // Gamma 2: sqrt(0.8) * 255 = 228.1 (0xE4), sqrt(0.01) * 255 = 25.5 (0x1A after rounding).
+    expect(appearance.slots.leftEye).toMatchObject({
+      correction: 'historicalEyePairSwap',
+      interpretation: 'offGrid',
+      displayHex: '#E41A1A',
+    });
+    expect(appearance.slots.rightEye).toMatchObject({
+      correction: 'historicalEyePairSwap',
+      interpretation: 'palette',
+      effectiveExtendedHex: appearance.slots.leftEye.extendedHex,
+    });
   });
 });
 

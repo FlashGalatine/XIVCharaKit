@@ -352,13 +352,21 @@ describe('the eye match threshold at exactly its value', () => {
     expect(near).toBeGreaterThan(0);
     expect(near).toBeLessThan(1);
   });
-  it('corrects a crossed pair whose distance equals the threshold, and not one just under it', async () => {
-    expect((await run({ eyeMatchDeltaE: near })).corrections).toEqual([
-      { code: 'HISTORICAL_EYE_PAIR_SWAP', slots: ['leftEye', 'rightEye'] },
+  it('corrects a crossed pair whose distance equals the threshold silently, and one just under it only as an inference', async () => {
+    const swap = {
+      code: 'HISTORICAL_EYE_PAIR_SWAP',
+      slots: ['leftEye', 'rightEye'],
+    };
+    const exact = await run({ eyeMatchDeltaE: near });
+    expect(exact.corrections).toEqual([swap]);
+    expect(exact.issues).toEqual([]);
+    // One eye's color now misses the other eye's shader by a hair while the other still lands on
+    // it: the swap rests on one crossed match and a color that fits neither, and is reported.
+    const under = await run({ eyeMatchDeltaE: near * (1 - 1e-9) });
+    expect(under.corrections).toEqual([swap]);
+    expect(under.issues.map((issue) => issue.code)).toEqual([
+      'EYE_PAIRING_INFERRED',
     ]);
-    expect(
-      (await run({ eyeMatchDeltaE: near * (1 - 1e-9) })).corrections,
-    ).toEqual([]);
   });
   it('corrects at the default threshold of 1, and does not once the threshold is zero', async () => {
     expect((await run()).corrections).toHaveLength(1);

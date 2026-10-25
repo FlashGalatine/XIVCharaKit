@@ -126,7 +126,19 @@ function pairEyes(
   const crossedRight =
     lands(right.extendedHex, left.shaderHex) &&
     !lands(right.extendedHex, right.shaderHex);
-  if (crossedLeft && crossedRight && policy.historicalEyeCorrection) {
+  // A custom color on one eye hides the second match, so one crossed match next to a color that
+  // fits neither shader is the remaining evidence: it is what a Brio export of a custom eye color
+  // looks like, and no other way of storing these colors is known to produce it.
+  const bothCrossed = crossedLeft && crossedRight;
+  const custom = (hex: string) =>
+    !lands(hex, left.shaderHex as string) &&
+    !lands(hex, right.shaderHex as string);
+  const oneSided =
+    !bothCrossed &&
+    ((crossedLeft && custom(right.extendedHex)) ||
+      (crossedRight && custom(left.extendedHex)));
+  if (!bothCrossed && !oneSided) return;
+  if (policy.historicalEyeCorrection) {
     left.effectiveExtendedHex = right.extendedHex;
     right.effectiveExtendedHex = left.extendedHex;
     left.correction = right.correction = 'historicalEyePairSwap';
@@ -134,29 +146,22 @@ function pairEyes(
       code: 'HISTORICAL_EYE_PAIR_SWAP',
       slots: ['leftEye', 'rightEye'],
     });
+    // The exact crossing is silent; a swap on partial evidence is reported as inferred.
+    if (oneSided)
+      issues.add(
+        'EYE_PAIRING_INFERRED',
+        [],
+        'Extended eye colors were swapped on partial evidence: one color matches the shader color of the other eye and the other color fits neither shader.',
+      );
     return;
   }
-  // A custom color on one eye hides the second match, so one crossed match next
-  // to a color that fits neither shader is the remaining evidence. Flag it
-  // without swapping: no producer routing, and the colors stay as stored.
-  const custom = (hex: string) =>
-    !lands(hex, left.shaderHex as string) &&
-    !lands(hex, right.shaderHex as string);
-  if (crossedLeft && crossedRight)
-    issues.add(
-      'EYE_PAIRING_UNCONFIRMED',
-      [],
-      'Extended eye colors appear crossed relative to the stored indices; the historical correction is disabled.',
-    );
-  else if (
-    (crossedLeft && custom(right.extendedHex)) ||
-    (crossedRight && custom(left.extendedHex))
-  )
-    issues.add(
-      'EYE_PAIRING_UNCONFIRMED',
-      [],
-      'Extended eye colors may be crossed relative to the stored indices and could not be confirmed.',
-    );
+  issues.add(
+    'EYE_PAIRING_UNCONFIRMED',
+    [],
+    bothCrossed
+      ? 'Extended eye colors appear crossed relative to the stored indices; the historical correction is disabled.'
+      : 'Extended eye colors may be crossed relative to the stored indices and could not be confirmed.',
+  );
 }
 
 export async function resolveAppearance(

@@ -567,13 +567,6 @@ describe('historical eye pairing and thresholds', () => {
     },
     {
       LEyeColor: 0,
-      REyeColor: 1,
-      LeftEyeColor: color('#0000FF'),
-      RightEyeColor: color('#00FF00'),
-      IsExtendedAppearanceValid: true,
-    },
-    {
-      LEyeColor: 0,
       REyeColor: 0,
       LeftEyeColor: color('#0000FF'),
       RightEyeColor: color('#FF0000'),
@@ -586,7 +579,7 @@ describe('historical eye pairing and thresholds', () => {
       RightEyeColor: color('#FF0000'),
     },
   ])(
-    'does not swap unrelated, partial, equal-index, or inactive pairs',
+    'does not swap unrelated, equal-index, or inactive pairs',
     async (fields) => {
       expect((await resolve(fields)).corrections).toEqual([]);
     },
@@ -606,42 +599,99 @@ describe('historical eye pairing and thresholds', () => {
     expect(result.corrections).toEqual([]);
     expect(result.slots.leftEye.interpretation).toBe('offGrid');
   });
-  describe('uncorrected crossing evidence', () => {
+  describe('crossing evidence that is not a full pair', () => {
     // Brio 0.7.2+ stores each eye's extended color under the other eye's name. A custom
-    // color on one eye hides the second match, so only a one-sided crossed match remains.
+    // color on one eye hides the second match, so only a one-sided crossed match remains: the
+    // colors are swapped on that evidence, and the result says so.
     const live = {
       LEyeColor: 0,
       REyeColor: 1,
       IsExtendedAppearanceValid: true,
     };
-    const unconfirmed = (result: Awaited<ReturnType<typeof resolve>>) =>
-      result.issues.filter((issue) => issue.code === 'EYE_PAIRING_UNCONFIRMED');
+    const issuesWith = (
+      result: Awaited<ReturnType<typeof resolve>>,
+      code: string,
+    ) => result.issues.filter((issue) => issue.code === code);
     it.each([
-      ['left matches the right shader', '#0000FF', '#00FF00'],
-      ['right matches the left shader', '#00FF00', '#FF0000'],
+      [
+        'left matches the right shader',
+        '#0000FF',
+        '#00FF00',
+        { left: '#00FF00', right: '#0000FF' },
+        { left: 'offGrid', right: 'palette' },
+      ],
+      [
+        'right matches the left shader',
+        '#00FF00',
+        '#FF0000',
+        { left: '#FF0000', right: '#00FF00' },
+        { left: 'palette', right: 'offGrid' },
+      ],
     ])(
-      'flags a one-sided crossed match when %s, without swapping',
-      async (_name, leftHex, rightHex) => {
+      'swaps a one-sided crossed match next to a custom color when %s, and says it was inferred',
+      async (_name, leftHex, rightHex, effective, interpretation) => {
         const result = await resolve({
           ...live,
           LeftEyeColor: color(leftHex as string),
           RightEyeColor: color(rightHex as string),
         });
-        expect(result.corrections).toEqual([]);
-        expect(unconfirmed(result)).toEqual([
+        expect(result.corrections).toEqual([
+          { code: 'HISTORICAL_EYE_PAIR_SWAP', slots: ['leftEye', 'rightEye'] },
+        ]);
+        expect(result.slots.leftEye).toMatchObject({
+          extendedHex: leftHex,
+          effectiveExtendedHex: effective.left,
+          interpretation: interpretation.left,
+          correction: 'historicalEyePairSwap',
+        });
+        expect(result.slots.rightEye).toMatchObject({
+          extendedHex: rightHex,
+          effectiveExtendedHex: effective.right,
+          interpretation: interpretation.right,
+          correction: 'historicalEyePairSwap',
+        });
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([
           {
-            code: 'EYE_PAIRING_UNCONFIRMED',
+            code: 'EYE_PAIRING_INFERRED',
             severity: 'warning',
             path: [],
             message: expect.any(String),
           },
         ]);
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([]);
+      },
+    );
+    it.each([
+      ['left matches the right shader', '#0000FF', '#00FF00'],
+      ['right matches the left shader', '#00FF00', '#FF0000'],
+    ])(
+      'does not swap a one-sided crossed match when the correction is disabled, and flags it when %s',
+      async (_name, leftHex, rightHex) => {
+        const result = await resolve(
+          {
+            ...live,
+            LeftEyeColor: color(leftHex as string),
+            RightEyeColor: color(rightHex as string),
+          },
+          provider,
+          { historicalEyeCorrection: false },
+        );
+        expect(result.corrections).toEqual([]);
         expect(result.slots.leftEye.effectiveExtendedHex).toBe(
           result.slots.leftEye.extendedHex,
         );
         expect(result.slots.rightEye.effectiveExtendedHex).toBe(
           result.slots.rightEye.extendedHex,
         );
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([
+          {
+            code: 'EYE_PAIRING_UNCONFIRMED',
+            severity: 'warning',
+            path: [],
+            message: expect.stringContaining('could not be confirmed'),
+          },
+        ]);
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
       },
     );
     it.each([
@@ -656,20 +706,34 @@ describe('historical eye pairing and thresholds', () => {
         {},
       ],
       [
+        'one crossed eye beside an eye on its own shader (mirrored)',
+        '#FF0000',
+        '#FF0000',
+        {},
+      ],
+      [
         'an inactive extended block',
         '#0000FF',
         '#00FF00',
         { IsExtendedAppearanceValid: false },
       ],
-    ])('stays quiet for %s', async (_name, leftHex, rightHex, extra) => {
-      const result = await resolve({
-        ...live,
-        LeftEyeColor: color(leftHex as string),
-        RightEyeColor: color(rightHex as string),
-        ...(extra as object),
-      });
-      expect(unconfirmed(result)).toEqual([]);
-    });
+    ])(
+      'stays quiet and swaps nothing it was not sure of for %s',
+      async (name, leftHex, rightHex, extra) => {
+        const result = await resolve({
+          ...live,
+          LeftEyeColor: color(leftHex as string),
+          RightEyeColor: color(rightHex as string),
+          ...(extra as object),
+        });
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([]);
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
+        // Only the fully crossed pair is swapped here, and silently.
+        expect(result.corrections).toHaveLength(
+          name === 'fully crossed pair that is corrected' ? 1 : 0,
+        );
+      },
+    );
     it('reports a fully crossed pair that policy left uncorrected', async () => {
       const result = await resolve(
         {
@@ -681,10 +745,11 @@ describe('historical eye pairing and thresholds', () => {
         { historicalEyeCorrection: false },
       );
       expect(result.corrections).toEqual([]);
-      expect(unconfirmed(result)).toHaveLength(1);
-      expect(unconfirmed(result)[0]?.message).toContain(
-        'correction is disabled',
-      );
+      expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toHaveLength(1);
+      expect(
+        issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')[0]?.message,
+      ).toContain('correction is disabled');
+      expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
     });
   });
   // Neutral-axis CIEDE2000 distances from #808080: #909090 < 6; #919191 = 6.06269.
@@ -705,11 +770,11 @@ describe('historical eye pairing and thresholds', () => {
   );
   // Neutral-axis distances from #808080: #828282 = 0.75298; #838383 = 1.12538.
   it.each([
-    ['#828282', 1],
-    ['#838383', 0],
+    ['#828282', 'exact'],
+    ['#838383', 'inferred'],
   ])(
     'tests both sides of the historical eye tolerance with %s',
-    async (crossedHex, corrections) => {
+    async (crossedHex, kind) => {
       const neutral: PaletteProvider = {
         async getColor(request) {
           return {
@@ -730,7 +795,13 @@ describe('historical eye pairing and thresholds', () => {
         },
         neutral,
       );
-      expect(result.corrections).toHaveLength(corrections as number);
+      // Within the tolerance both eyes cross and the swap is silent. A hair beyond it the right
+      // color no longer lands on the left shader, so only the left eye's crossed match is left, next
+      // to a color that fits neither shader: the swap is made on that evidence and reported.
+      expect(result.corrections).toHaveLength(1);
+      expect(result.issues.map((issue) => issue.code)).toEqual(
+        kind === 'exact' ? [] : ['EYE_PAIRING_INFERRED'],
+      );
     },
   );
   it.each([NaN, Infinity, -1, '6', null])(
