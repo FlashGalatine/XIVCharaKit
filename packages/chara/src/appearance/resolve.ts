@@ -53,6 +53,10 @@ const ZERO_KEYS: readonly ExtendedKey[] = [
   'HairHighlight',
   'MouthColor',
 ];
+// Bit 0x80 of the Mouth byte enables lip color in Anamnesis, Ktisis and Brio.
+const LIP_COLOR_ENABLED = 0x80;
+// Bit 0x80 of the FacePaint byte mirrors the paint in Brio and Ktisis; the style is the low 7 bits.
+const FACE_PAINT_FLIPPED = 0x80;
 const current = <T>(field: Field<T>): T | null =>
   field.state === 'valid' ? field.value : null;
 
@@ -97,11 +101,11 @@ function pairEyes(
   slots: AppearanceInspection['slots'],
   policy: AppearancePolicy,
   corrections: AppearanceCorrection[],
+  issues: IssueCollector,
 ): void {
   const left = slots.leftEye,
     right = slots.rightEye;
   if (
-    !policy.historicalEyeCorrection ||
     !left.extendedActive ||
     !right.extendedActive ||
     left.storedIndex.state !== 'valid' ||
@@ -115,20 +119,49 @@ function pairEyes(
     return;
   const lands = (first: string, second: string) =>
     hexDeltaE(first, second) <= policy.eyeMatchDeltaE;
-  if (
-    !lands(left.extendedHex, right.shaderHex) ||
-    !lands(right.extendedHex, left.shaderHex) ||
-    lands(left.extendedHex, left.shaderHex) ||
-    lands(right.extendedHex, right.shaderHex)
-  )
+  // Brio 0.7.2+ stores each eye's extended color under the other eye's name.
+  const crossedLeft =
+    lands(left.extendedHex, right.shaderHex) &&
+    !lands(left.extendedHex, left.shaderHex);
+  const crossedRight =
+    lands(right.extendedHex, left.shaderHex) &&
+    !lands(right.extendedHex, right.shaderHex);
+  // A custom color on one eye hides the second match, so one crossed match next to a color that
+  // fits neither shader is the remaining evidence: it is what a Brio export of a custom eye color
+  // looks like, and no other way of storing these colors is known to produce it.
+  const bothCrossed = crossedLeft && crossedRight;
+  const custom = (hex: string) =>
+    !lands(hex, left.shaderHex as string) &&
+    !lands(hex, right.shaderHex as string);
+  const oneSided =
+    !bothCrossed &&
+    ((crossedLeft && custom(right.extendedHex)) ||
+      (crossedRight && custom(left.extendedHex)));
+  if (!bothCrossed && !oneSided) return;
+  if (policy.historicalEyeCorrection) {
+    left.effectiveExtendedHex = right.extendedHex;
+    right.effectiveExtendedHex = left.extendedHex;
+    left.correction = right.correction = 'historicalEyePairSwap';
+    corrections.push({
+      code: 'HISTORICAL_EYE_PAIR_SWAP',
+      slots: ['leftEye', 'rightEye'],
+    });
+    // The exact crossing is silent; a swap on partial evidence is reported as inferred.
+    if (oneSided)
+      issues.add(
+        'EYE_PAIRING_INFERRED',
+        [],
+        'Extended eye colors were swapped on partial evidence: one color matches the shader color of the other eye and the other color fits neither shader.',
+      );
     return;
-  left.effectiveExtendedHex = right.extendedHex;
-  right.effectiveExtendedHex = left.extendedHex;
-  left.correction = right.correction = 'historicalEyePairSwap';
-  corrections.push({
-    code: 'HISTORICAL_EYE_PAIR_SWAP',
-    slots: ['leftEye', 'rightEye'],
-  });
+  }
+  issues.add(
+    'EYE_PAIRING_UNCONFIRMED',
+    [],
+    bothCrossed
+      ? 'Extended eye colors appear crossed relative to the stored indices; the historical correction is disabled.'
+      : 'Extended eye colors may be crossed relative to the stored indices and could not be confirmed.',
+  );
 }
 
 export async function resolveAppearance(
@@ -152,6 +185,20 @@ export async function resolveAppearance(
   const race = inspection.identity.canonicalRace;
   const tribe = current(inspection.identity.tribe);
   const gender = current(inspection.identity.gender);
+  // The bit gates a lip palette index only. A Hrothgar fur pattern has no such
+  // index, so Hrothgar ignores it. With no race, the lip is known to be on only
+  // when the bit is set: any other race with it clear is off, and a Hrothgar
+  // would not be told apart.
+  const mouth = current(inspection.appearance.Mouth);
+  const bitSet = mouth !== null && (mouth & LIP_COLOR_ENABLED) !== 0;
+  const lipEnabled =
+    race === 'Hrothgar'
+      ? true
+      : race === null
+        ? bitSet || null
+        : mouth === null
+          ? null
+          : bitSet;
   const slots = Object.create(null) as AppearanceInspection['slots'];
   await Promise.all(
     DEFINITIONS.map(async ([slot, indexKey, extendedKey, palette]) => {
@@ -173,8 +220,10 @@ export async function resolveAppearance(
           : slot === 'facePaint'
             ? paint === null
               ? null
-              : paint !== 0
-            : true;
+              : (paint & ~FACE_PAINT_FLIPPED) !== 0
+            : slot === 'lip'
+              ? lipEnabled
+              : true;
       const alpha =
         slot === 'lip' && components ? (components[3] ?? null) : null;
       if (alpha !== null && (alpha < 0 || alpha > 1))
@@ -305,13 +354,17 @@ export async function resolveAppearance(
     }),
   );
   const corrections: AppearanceCorrection[] = [];
-  pairEyes(slots, policy, corrections);
+  pairEyes(slots, policy, corrections, issues);
   for (const entry of Object.values(slots)) {
     if (entry.active === false) {
       entry.extendedActive = false;
       entry.interpretation = 'inactive';
       entry.reason =
-        entry.slot === 'highlights' ? 'highlightsDisabled' : 'facePaintNone';
+        entry.slot === 'highlights'
+          ? 'highlightsDisabled'
+          : entry.slot === 'lip'
+            ? 'lipDisabled'
+            : 'facePaintNone';
       continue;
     }
     if (

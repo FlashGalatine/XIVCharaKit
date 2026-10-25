@@ -1,6 +1,7 @@
 import { type CharaErrorCode, CharaInputError } from './errors.js';
 import { CHARACTER_FIELDS, isRecord, KNOWN_FIELDS } from './field-spec.js';
 import { boundedPath, IssueCollector } from './issues.js';
+import { asBytes } from './realm.js';
 import type {
   CharaDocument,
   EmbeddedImage,
@@ -10,7 +11,7 @@ import type {
 } from './types.js';
 
 export const READ_DEFAULTS = Object.freeze({
-  maxBytes: 8 * 1024 * 1024,
+  maxBytes: 16 * 1024 * 1024,
   maxDepth: 32,
   maxNodes: 100_000,
   maxKeyLength: 1024,
@@ -50,11 +51,12 @@ function limitsFrom(options: ReadOptions): Limits {
 
 function admit(input: string | Uint8Array, maxBytes: number): string {
   if (typeof input !== 'string') {
-    if (!(input instanceof Uint8Array)) return fail('INVALID_INPUT');
-    if (input.byteLength > maxBytes) fail('INPUT_TOO_LARGE');
+    const bytes = asBytes(input);
+    if (!bytes) return fail('INVALID_INPUT');
+    if (bytes.byteLength > maxBytes) fail('INPUT_TOO_LARGE');
     try {
       return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
-        input,
+        bytes,
       );
     } catch {
       return fail('INVALID_UTF8');

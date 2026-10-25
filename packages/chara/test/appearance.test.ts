@@ -260,6 +260,21 @@ describe('activity and toned palettes', () => {
       expect(result.slots.facePaint.displayHex).toBeNull();
     },
   );
+  it('composites a lip whose enable bit is set', async () => {
+    const result = await resolve({
+      Tribe: 'Midlander',
+      Gender: 'Masculine',
+      Skintone: 0,
+      LipsToneFurPattern: 128,
+      Mouth: 130,
+      MouthColor: `${color('#808080')}, 0.5`,
+      IsExtendedAppearanceValid: true,
+    });
+    expect(result.slots.lip).toMatchObject({
+      active: true,
+      lipComposite: { hex: '#BCBCBC', alpha: 0.5, derived: true },
+    });
+  });
   it('compares a light lip to the dark shader entry and composites in linear light', async () => {
     const result = await resolve({
       Tribe: 'Midlander',
@@ -358,6 +373,170 @@ describe('activity and toned palettes', () => {
   });
 });
 
+describe('face paint flip bit (FacePaint & 0x80)', () => {
+  // Brio and Ktisis keep a mirror flag in bit 0x80 of FacePaint; the style is the low 7 bits.
+  const paint = { Race: 'Hyur', FacePaintColor: 5 };
+  it.each([
+    [0, false],
+    [128, false],
+    [1, true],
+    [127, true],
+    [129, true],
+    [200, true],
+    [255, true],
+  ])('treats FacePaint %s as paint present=%s', async (value, present) => {
+    const result = await resolve({ ...paint, FacePaint: value });
+    expect(result.slots.facePaint.active).toBe(present);
+    if (present)
+      expect(result.slots.facePaint).toMatchObject({
+        interpretation: 'palette',
+        reason: 'paletteOnly',
+        displayHex: '#808080',
+      });
+    else
+      expect(result.slots.facePaint).toMatchObject({
+        interpretation: 'inactive',
+        reason: 'facePaintNone',
+        displayHex: null,
+      });
+  });
+  it.each([
+    ['null', { FacePaint: null }],
+    ['out of range', { FacePaint: 300 }],
+  ])(
+    'keeps face paint activity unknown when FacePaint is %s',
+    async (_name, extra) => {
+      const result = await resolve({ ...paint, ...extra });
+      expect(result.slots.facePaint).toMatchObject({
+        active: null,
+        interpretation: 'palette',
+        reason: 'activityUnknown',
+      });
+    },
+  );
+});
+
+describe('lip color enable bit (Mouth & 0x80)', () => {
+  const hyurLip = { Race: 'Hyur', LipsToneFurPattern: 53 };
+  it('marks the changed interpretation with policy version 1.1.0', async () => {
+    expect((await resolve(hyurLip)).policy.version).toBe('1.1.0');
+  });
+  it.each([
+    [0, false],
+    [2, false],
+    [127, false],
+    [128, true],
+    [130, true],
+    [255, true],
+  ])('treats Mouth %s as lip color enabled=%s', async (mouth, enabled) => {
+    const result = await resolve({ ...hyurLip, Mouth: mouth });
+    expect(result.slots.lip.active).toBe(enabled);
+    if (enabled)
+      expect(result.slots.lip).toMatchObject({
+        interpretation: 'palette',
+        reason: 'paletteOnly',
+        displayHex: '#808080',
+      });
+    else
+      expect(result.slots.lip).toMatchObject({
+        interpretation: 'inactive',
+        reason: 'lipDisabled',
+        displayHex: null,
+        extendedActive: false,
+      });
+  });
+  it.each([
+    ['absent', {}],
+    ['null', { Mouth: null }],
+    ['out of range', { Mouth: 300 }],
+  ])('keeps lip activity unknown when Mouth is %s', async (_name, extra) => {
+    const result = await resolve({ ...hyurLip, ...extra });
+    expect(result.slots.lip).toMatchObject({
+      active: null,
+      interpretation: 'palette',
+      reason: 'activityUnknown',
+      displayHex: '#808080',
+    });
+  });
+  it('lets a cleared bit win over a live non-zero opacity', async () => {
+    const result = await resolve({
+      ...hyurLip,
+      Mouth: 2,
+      MouthColor: '1,1,1,1',
+      IsExtendedAppearanceValid: true,
+    });
+    expect(result.slots.lip).toMatchObject({
+      interpretation: 'inactive',
+      reason: 'lipDisabled',
+      extendedActive: false,
+      displayHex: null,
+      lipComposite: null,
+    });
+  });
+  it('still lets a live zero opacity disable a lip whose bit is set', async () => {
+    const result = await resolve({
+      ...hyurLip,
+      Mouth: 130,
+      MouthColor: '1,1,1,0',
+      IsExtendedAppearanceValid: true,
+    });
+    expect(result.slots.lip).toMatchObject({
+      interpretation: 'inactive',
+      reason: 'noLip',
+    });
+  });
+  it('does not apply the bit to a Hrothgar fur index', async () => {
+    const stored = await resolve({
+      Tribe: 'Helions',
+      LipsToneFurPattern: 3,
+      Mouth: 2,
+    });
+    expect(stored.slots.lip).toMatchObject({
+      interpretation: 'inactive',
+      reason: 'furPattern',
+    });
+    const live = await resolve({
+      Tribe: 'Helions',
+      LipsToneFurPattern: 3,
+      Mouth: 2,
+      MouthColor: '1,0,0,1',
+      IsExtendedAppearanceValid: true,
+    });
+    expect(live.slots.lip).toMatchObject({
+      interpretation: 'extendedOnly',
+      displayHex: '#FF0000',
+    });
+  });
+  it('does not turn an unknown race into an inactive lip', async () => {
+    const result = await resolve({ LipsToneFurPattern: 53, Mouth: 2 });
+    expect(result.slots.lip).toMatchObject({
+      interpretation: 'unresolved',
+      reason: 'missingRace',
+    });
+  });
+  // A Hrothgar ignores the bit and any other race obeys it, so with no race the
+  // lip is only known to be on when the bit is set.
+  it.each([
+    [undefined, null],
+    [2, null],
+    [130, true],
+  ])(
+    'reports lip activity for Mouth %s as %s when the race is unknown',
+    async (mouth, active) => {
+      const result = await resolve({
+        MouthColor: '1,0,0,1',
+        IsExtendedAppearanceValid: true,
+        ...(mouth === undefined ? {} : { Mouth: mouth }),
+      });
+      expect(result.slots.lip.active).toBe(active);
+      expect(result.slots.lip).toMatchObject({
+        interpretation: 'extendedOnly',
+        displayHex: '#FF0000',
+      });
+    },
+  );
+});
+
 describe('historical eye pairing and thresholds', () => {
   it('corrects only a fully crossed live pair and records both original colors', async () => {
     const result = await resolve({
@@ -388,13 +567,6 @@ describe('historical eye pairing and thresholds', () => {
     },
     {
       LEyeColor: 0,
-      REyeColor: 1,
-      LeftEyeColor: color('#0000FF'),
-      RightEyeColor: color('#00FF00'),
-      IsExtendedAppearanceValid: true,
-    },
-    {
-      LEyeColor: 0,
       REyeColor: 0,
       LeftEyeColor: color('#0000FF'),
       RightEyeColor: color('#FF0000'),
@@ -407,7 +579,7 @@ describe('historical eye pairing and thresholds', () => {
       RightEyeColor: color('#FF0000'),
     },
   ])(
-    'does not swap unrelated, partial, equal-index, or inactive pairs',
+    'does not swap unrelated, equal-index, or inactive pairs',
     async (fields) => {
       expect((await resolve(fields)).corrections).toEqual([]);
     },
@@ -427,6 +599,227 @@ describe('historical eye pairing and thresholds', () => {
     expect(result.corrections).toEqual([]);
     expect(result.slots.leftEye.interpretation).toBe('offGrid');
   });
+  describe('crossing evidence that is not a full pair', () => {
+    // Brio 0.7.2+ stores each eye's extended color under the other eye's name. A custom
+    // color on one eye hides the second match, so only a one-sided crossed match remains: the
+    // colors are swapped on that evidence, and the result says so.
+    const live = {
+      LEyeColor: 0,
+      REyeColor: 1,
+      IsExtendedAppearanceValid: true,
+    };
+    const issuesWith = (
+      result: Awaited<ReturnType<typeof resolve>>,
+      code: string,
+    ) => result.issues.filter((issue) => issue.code === code);
+    it.each([
+      [
+        'left matches the right shader',
+        '#0000FF',
+        '#00FF00',
+        { left: '#00FF00', right: '#0000FF' },
+        { left: 'offGrid', right: 'palette' },
+      ],
+      [
+        'right matches the left shader',
+        '#00FF00',
+        '#FF0000',
+        { left: '#FF0000', right: '#00FF00' },
+        { left: 'palette', right: 'offGrid' },
+      ],
+    ])(
+      'swaps a one-sided crossed match next to a custom color when %s, and says it was inferred',
+      async (_name, leftHex, rightHex, effective, interpretation) => {
+        const result = await resolve({
+          ...live,
+          LeftEyeColor: color(leftHex as string),
+          RightEyeColor: color(rightHex as string),
+        });
+        expect(result.corrections).toEqual([
+          { code: 'HISTORICAL_EYE_PAIR_SWAP', slots: ['leftEye', 'rightEye'] },
+        ]);
+        expect(result.slots.leftEye).toMatchObject({
+          extendedHex: leftHex,
+          effectiveExtendedHex: effective.left,
+          interpretation: interpretation.left,
+          correction: 'historicalEyePairSwap',
+        });
+        expect(result.slots.rightEye).toMatchObject({
+          extendedHex: rightHex,
+          effectiveExtendedHex: effective.right,
+          interpretation: interpretation.right,
+          correction: 'historicalEyePairSwap',
+        });
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([
+          {
+            code: 'EYE_PAIRING_INFERRED',
+            severity: 'warning',
+            path: [],
+            message: expect.any(String),
+          },
+        ]);
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([]);
+      },
+    );
+    it.each([
+      ['left matches the right shader', '#0000FF', '#00FF00'],
+      ['right matches the left shader', '#00FF00', '#FF0000'],
+    ])(
+      'does not swap a one-sided crossed match when the correction is disabled, and flags it when %s',
+      async (_name, leftHex, rightHex) => {
+        const result = await resolve(
+          {
+            ...live,
+            LeftEyeColor: color(leftHex as string),
+            RightEyeColor: color(rightHex as string),
+          },
+          provider,
+          { historicalEyeCorrection: false },
+        );
+        expect(result.corrections).toEqual([]);
+        expect(result.slots.leftEye.effectiveExtendedHex).toBe(
+          result.slots.leftEye.extendedHex,
+        );
+        expect(result.slots.rightEye.effectiveExtendedHex).toBe(
+          result.slots.rightEye.extendedHex,
+        );
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([
+          {
+            code: 'EYE_PAIRING_UNCONFIRMED',
+            severity: 'warning',
+            path: [],
+            message: expect.stringContaining('could not be confirmed'),
+          },
+        ]);
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
+      },
+    );
+    it.each([
+      ['straight on-grid pair', '#FF0000', '#0000FF', {}],
+      ['fully crossed pair that is corrected', '#0000FF', '#FF0000', {}],
+      ['two custom colors', '#00FF00', '#FFFF00', {}],
+      ['equal indices', '#0000FF', '#00FF00', { REyeColor: 0 }],
+      [
+        'one crossed eye beside an eye on its own shader',
+        '#0000FF',
+        '#0000FF',
+        {},
+      ],
+      [
+        'one crossed eye beside an eye on its own shader (mirrored)',
+        '#FF0000',
+        '#FF0000',
+        {},
+      ],
+      [
+        'an inactive extended block',
+        '#0000FF',
+        '#00FF00',
+        { IsExtendedAppearanceValid: false },
+      ],
+    ])(
+      'stays quiet and swaps nothing it was not sure of for %s',
+      async (name, leftHex, rightHex, extra) => {
+        const result = await resolve({
+          ...live,
+          LeftEyeColor: color(leftHex as string),
+          RightEyeColor: color(rightHex as string),
+          ...(extra as object),
+        });
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([]);
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
+        // Only the fully crossed pair is swapped here, and silently.
+        expect(result.corrections).toHaveLength(
+          name === 'fully crossed pair that is corrected' ? 1 : 0,
+        );
+      },
+    );
+    it('reports a fully crossed pair that policy left uncorrected', async () => {
+      const result = await resolve(
+        {
+          ...live,
+          LeftEyeColor: color('#0000FF'),
+          RightEyeColor: color('#FF0000'),
+        },
+        provider,
+        { historicalEyeCorrection: false },
+      );
+      expect(result.corrections).toEqual([]);
+      expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toHaveLength(1);
+      expect(
+        issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')[0]?.message,
+      ).toContain('correction is disabled');
+      expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
+    });
+    it.each([
+      ['straight on-grid pair', '#FF0000', '#0000FF', {}],
+      ['two custom colors', '#00FF00', '#FFFF00', {}],
+      ['equal indices', '#0000FF', '#00FF00', { REyeColor: 0 }],
+      [
+        'one crossed eye beside an eye on its own shader',
+        '#0000FF',
+        '#0000FF',
+        {},
+      ],
+      [
+        'one crossed eye beside an eye on its own shader (mirrored)',
+        '#FF0000',
+        '#FF0000',
+        {},
+      ],
+      [
+        'an inactive extended block',
+        '#0000FF',
+        '#00FF00',
+        { IsExtendedAppearanceValid: false },
+      ],
+    ])(
+      'raises no pairing warning for %s when the correction is disabled',
+      async (_name, leftHex, rightHex, extra) => {
+        const result = await resolve(
+          {
+            ...live,
+            LeftEyeColor: color(leftHex as string),
+            RightEyeColor: color(rightHex as string),
+            ...(extra as object),
+          },
+          provider,
+          { historicalEyeCorrection: false },
+        );
+        expect(result.corrections).toEqual([]);
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([]);
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
+      },
+    );
+    it.each([0, 1])(
+      'swaps nothing and reports the missing reference when the shader of eye %i cannot be found',
+      async (missing) => {
+        const noShader: PaletteProvider = {
+          async getColor(request) {
+            return request.table === 'shader' &&
+              request.palette === 'eyes' &&
+              request.index === missing
+              ? null
+              : provider.getColor(request);
+          },
+        };
+        const result = await resolve(
+          {
+            ...live,
+            LeftEyeColor: color('#0000FF'),
+            RightEyeColor: color('#FF0000'),
+          },
+          noShader,
+        );
+        expect(result.corrections).toEqual([]);
+        expect(
+          issuesWith(result, 'MISSING_SHADER_REFERENCE').length,
+        ).toBeGreaterThan(0);
+        expect(issuesWith(result, 'EYE_PAIRING_INFERRED')).toEqual([]);
+        expect(issuesWith(result, 'EYE_PAIRING_UNCONFIRMED')).toEqual([]);
+      },
+    );
+  });
   // Neutral-axis CIEDE2000 distances from #808080: #909090 < 6; #919191 = 6.06269.
   it.each([
     ['#909090', 'palette'],
@@ -445,11 +838,11 @@ describe('historical eye pairing and thresholds', () => {
   );
   // Neutral-axis distances from #808080: #828282 = 0.75298; #838383 = 1.12538.
   it.each([
-    ['#828282', 1],
-    ['#838383', 0],
+    ['#828282', 'exact'],
+    ['#838383', 'inferred'],
   ])(
     'tests both sides of the historical eye tolerance with %s',
-    async (crossedHex, corrections) => {
+    async (crossedHex, kind) => {
       const neutral: PaletteProvider = {
         async getColor(request) {
           return {
@@ -470,7 +863,13 @@ describe('historical eye pairing and thresholds', () => {
         },
         neutral,
       );
-      expect(result.corrections).toHaveLength(corrections as number);
+      // Within the tolerance both eyes cross and the swap is silent. A hair beyond it the right
+      // color no longer lands on the left shader, so only the left eye's crossed match is left, next
+      // to a color that fits neither shader: the swap is made on that evidence and reported.
+      expect(result.corrections).toHaveLength(1);
+      expect(result.issues.map((issue) => issue.code)).toEqual(
+        kind === 'exact' ? [] : ['EYE_PAIRING_INFERRED'],
+      );
     },
   );
   it.each([NaN, Infinity, -1, '6', null])(
@@ -505,7 +904,8 @@ describe('provider failures and independent expectations', () => {
       expect.objectContaining({ code: 'PALETTE_UNAVAILABLE' }),
     );
   });
-  it('rejects noncanonical provider colors and mismatched associations', async () => {
+  // Mismatched associations are covered in appearance-guards.test.ts.
+  it('rejects a provider color that is not a canonical hex', async () => {
     const hostile = {
       async getColor(request: PaletteRequest) {
         return {

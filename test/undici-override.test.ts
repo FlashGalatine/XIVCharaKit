@@ -1,0 +1,297 @@
+import { describe, expect, it, vi } from 'vitest';
+import {
+  checkOverride,
+  compareVersions,
+  describeStatus,
+  pinnedOverride,
+  run,
+} from '../scripts/check-undici-override.js';
+
+// The workspace pins undici for miniflare (pnpm-workspace.yaml) because the newest wrangler still
+// ships a vulnerable one. This check says when that pin has become unnecessary, so it can be dropped.
+
+describe('reading the pinned version out of the workspace file', () => {
+  const file = (line: string) =>
+    `packages:\n  - packages/*\nonlyBuiltDependencies:\n  - esbuild\noverrides:\n${line}\n`;
+  it('finds an exact version under overrides', () => {
+    expect(pinnedOverride(file('  miniflare>undici: 7.30.1'))).toBe('7.30.1');
+  });
+  it('accepts quotes around the key and the value', () => {
+    expect(pinnedOverride(file('  "miniflare>undici": "7.30.1"'))).toBe(
+      '7.30.1',
+    );
+    expect(pinnedOverride(file("  'miniflare>undici': '7.30.1'"))).toBe(
+      '7.30.1',
+    );
+  });
+  it('is null without the override, for another key and outside the overrides section', () => {
+    expect(pinnedOverride('packages:\n  - a\n')).toBeNull();
+    expect(pinnedOverride(file('  other>undici: 7.30.1'))).toBeNull();
+    expect(
+      pinnedOverride('onlyBuiltDependencies:\n  miniflare>undici: 7.30.1\n'),
+    ).toBeNull();
+    expect(
+      pinnedOverride(
+        'overrides:\n  other: 1.0.0\nextra:\n  miniflare>undici: 7.30.1\n',
+      ),
+    ).toBeNull();
+  });
+  it('refuses a range, because the pin is meant to be exact', () => {
+    expect(() => pinnedOverride(file('  miniflare>undici: ^7.30.1'))).toThrow(
+      /exact/,
+    );
+  });
+});
+
+describe('comparing dotted versions', () => {
+  it.each([
+    ['7.30.1', '7.29.1', 1],
+    ['7.29.1', '7.30.1', -1],
+    ['7.30.1', '7.30.1', 0],
+    ['7.9.0', '7.30.0', -1],
+    ['8.0.0', '7.99.99', 1],
+    ['7.30.10', '7.30.9', 1],
+  ])('%s against %s is %i', (a, b, sign) => {
+    expect(Math.sign(compareVersions(a, b))).toBe(sign);
+  });
+  it('refuses what is not major.minor.patch', () => {
+    for (const bad of ['7.30', '7.30.x', 'latest', '', '7.30.1.2']) {
+      expect(() => compareVersions(bad, '7.30.1')).toThrow(/version/);
+      expect(() => compareVersions('7.30.1', bad)).toThrow(/version/);
+    }
+  });
+});
+
+describe('asking the registry what the newest wrangler pulls in', () => {
+  const registry = (undici: string, wrangler = '4.152.0') =>
+    vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url === 'https://registry.npmjs.org/wrangler/latest')
+        return Response.json({
+          version: wrangler,
+          dependencies: { miniflare: '5.20261019.2-beta' },
+        });
+      if (url === 'https://registry.npmjs.org/miniflare/5.20261019.2-beta')
+        return Response.json({ dependencies: { undici } });
+      return new Response('unexpected', { status: 404 });
+    }) as unknown as typeof fetch;
+  const workspace = 'overrides:\n  miniflare>undici: 7.30.1\n';
+
+  it('keeps the override while the newest miniflare still pins an older undici', async () => {
+    const status = await checkOverride({
+      workspaceYaml: workspace,
+      request: registry('7.29.1'),
+    });
+    expect(status).toEqual({
+      pinned: '7.30.1',
+      wrangler: '4.152.0',
+      miniflare: '5.20261019.2-beta',
+      undici: '7.29.1',
+      patched: '7.30.1',
+      droppable: false,
+    });
+    expect(describeStatus(status)).toContain('still needed');
+  });
+  it.each(['7.30.1', '7.30.2', '7.31.0', '8.12.2', '8.12.3'])(
+    'can drop the override once the newest miniflare pins undici %s',
+    async (undici) => {
+      const status = await checkOverride({
+        workspaceYaml: workspace,
+        request: registry(undici),
+      });
+      expect(status.droppable).toBe(true);
+      expect(describeStatus(status)).toContain('can be dropped');
+      expect(describeStatus(status)).toContain(undici);
+    },
+  );
+  // Newer than the pin is not patched: the advisories behind the pin cover undici 8.0.0 to 8.12.1.
+  it.each(['8.0.0', '8.5.0', '8.12.1'])(
+    'keeps the override while the newest miniflare pins undici %s, newer than the pin but still vulnerable',
+    async (undici) => {
+      const status = await checkOverride({
+        workspaceYaml: workspace,
+        request: registry(undici),
+      });
+      expect(status).toMatchObject({ patched: '8.12.2', droppable: false });
+      expect(describeStatus(status)).toContain('still needed');
+      expect(describeStatus(status)).toContain('8.12.2');
+    },
+  );
+  it('keeps the override while the newest miniflare pins a patched undici older than the pin', async () => {
+    const status = await checkOverride({
+      workspaceYaml: 'overrides:\n  miniflare>undici: 7.31.0\n',
+      request: registry('7.30.2'),
+    });
+    expect(status.droppable).toBe(false);
+  });
+  it.each(['6.29.1', '9.0.0'])(
+    'cannot decide for undici %s, a major whose patched release it does not know',
+    async (undici) => {
+      await expect(
+        checkOverride({ workspaceYaml: workspace, request: registry(undici) }),
+      ).rejects.toThrow(/cannot be decided/);
+    },
+  );
+  it('reads a caret or tilde range as its lower bound', async () => {
+    expect(
+      (
+        await checkOverride({
+          workspaceYaml: workspace,
+          request: registry('^7.30.1'),
+        })
+      ).droppable,
+    ).toBe(true);
+    expect(
+      (
+        await checkOverride({
+          workspaceYaml: workspace,
+          request: registry('~7.29.1'),
+        })
+      ).droppable,
+    ).toBe(false);
+  });
+  it('asks only for the two registry documents, without credentials', async () => {
+    const request = registry('7.29.1');
+    await checkOverride({ workspaceYaml: workspace, request });
+    expect(request).toHaveBeenCalledTimes(2);
+    for (const call of vi.mocked(request).mock.calls)
+      expect(call[1]).toMatchObject({ redirect: 'error' });
+  });
+  it('fails clearly when the workspace has no override to check', async () => {
+    await expect(
+      checkOverride({
+        workspaceYaml: 'packages:\n  - a\n',
+        request: registry('7.29.1'),
+      }),
+    ).rejects.toThrow(/no override/);
+  });
+  it('fails clearly when the registry answers with an error or an unexpected document', async () => {
+    for (const status of [301, 404, 429, 503]) {
+      const error = vi.fn(
+        async () => new Response('no', { status }),
+      ) as unknown as typeof fetch;
+      await expect(
+        checkOverride({ workspaceYaml: workspace, request: error }),
+      ).rejects.toThrow(new RegExp(String(status)));
+    }
+    const blank = vi.fn(async (input: string | URL | Request) =>
+      String(input).includes('/wrangler/')
+        ? Response.json({ dependencies: { miniflare: '' } })
+        : Response.json({}),
+    ) as unknown as typeof fetch;
+    await expect(
+      checkOverride({ workspaceYaml: workspace, request: blank }),
+    ).rejects.toThrow(/wrangler lists no miniflare dependency/);
+    const empty = vi.fn(async () =>
+      Response.json({}),
+    ) as unknown as typeof fetch;
+    await expect(
+      checkOverride({ workspaceYaml: workspace, request: empty }),
+    ).rejects.toThrow(/miniflare/);
+    const noUndici = vi.fn(async (input: string | URL | Request) =>
+      String(input).includes('/wrangler/')
+        ? Response.json({ dependencies: { miniflare: '5.1.0' } })
+        : Response.json({ dependencies: {} }),
+    ) as unknown as typeof fetch;
+    await expect(
+      checkOverride({ workspaceYaml: workspace, request: noUndici }),
+    ).rejects.toThrow(/undici/);
+  });
+});
+
+describe('the exit status of the check', () => {
+  const answer = (undici: string) =>
+    vi.fn(async (input: string | URL | Request) =>
+      String(input).includes('/wrangler/')
+        ? Response.json({
+            version: '4.152.0',
+            dependencies: { miniflare: '5.1.0' },
+          })
+        : Response.json({ dependencies: { undici } }),
+    ) as unknown as typeof fetch;
+  const workspaceYaml = 'overrides:\n  miniflare>undici: 7.30.1\n';
+
+  it('is 0 and says so while the override is still needed, strict or not', async () => {
+    for (const strict of [false, true]) {
+      const log = vi.fn();
+      expect(
+        await run({ workspaceYaml, request: answer('7.29.1'), strict, log }),
+      ).toBe(0);
+      expect(log).toHaveBeenCalledTimes(1);
+      expect(log.mock.calls[0]?.[0]).toContain('still needed');
+    }
+  });
+  it('is 0 without --strict when the override can be dropped, and says so', async () => {
+    const log = vi.fn();
+    expect(
+      await run({
+        workspaceYaml,
+        request: answer('7.30.1'),
+        strict: false,
+        log,
+      }),
+    ).toBe(0);
+    expect(log.mock.calls[0]?.[0]).toContain('can be dropped');
+  });
+  it('is 2 with --strict when the override can be dropped, apart from the 1 of a failure', async () => {
+    const log = vi.fn();
+    expect(
+      await run({
+        workspaceYaml,
+        request: answer('7.31.0'),
+        strict: true,
+        log,
+      }),
+    ).toBe(2);
+    expect(log.mock.calls[0]?.[0]).toContain('can be dropped');
+    // A registry or workspace failure is an error, not an exit status that could be mistaken for 2.
+    const down = vi.fn(
+      async () => new Response('no', { status: 503 }),
+    ) as unknown as typeof fetch;
+    await expect(
+      run({ workspaceYaml, request: down, strict: true, log }),
+    ).rejects.toThrow(/503/);
+  });
+  it('fails, rather than guessing, for an undici major it has no patched release for', async () => {
+    await expect(
+      run({
+        workspaceYaml,
+        request: answer('9.0.0'),
+        strict: true,
+        log: vi.fn(),
+      }),
+    ).rejects.toThrow(/cannot be decided/);
+  });
+  it('is 0 and says there is nothing to check once the override is gone, without asking the registry', async () => {
+    for (const strict of [false, true]) {
+      const request = answer('7.31.0');
+      const log = vi.fn();
+      expect(
+        await run({
+          workspaceYaml: 'packages:\n  - a\n',
+          request,
+          strict,
+          log,
+        }),
+      ).toBe(0);
+      expect(request).not.toHaveBeenCalled();
+      expect(log).toHaveBeenCalledTimes(1);
+      expect(log.mock.calls[0]?.[0]).toContain('nothing to check');
+    }
+  });
+  // An override still in the file in a form the reader does not take must fail loudly, not pass for gone.
+  it.each([
+    'overrides:\n  miniflare>undici: 7.30.1 # why\n',
+    'overrides: # security pins\n  miniflare>undici: 7.30.1\n',
+    'overrides: { "miniflare>undici": "7.30.1" }\n',
+  ])(
+    'fails, without asking the registry, for an override it cannot read: %j',
+    async (unreadable) => {
+      const request = answer('7.31.0');
+      await expect(
+        run({ workspaceYaml: unreadable, request, strict: true, log: vi.fn() }),
+      ).rejects.toThrow(/no override/);
+      expect(request).not.toHaveBeenCalled();
+    },
+  );
+});

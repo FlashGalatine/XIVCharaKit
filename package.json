@@ -21,7 +21,8 @@
     "benchmark": "tsx scripts/benchmark-reader.ts",
     "test:package": "pnpm build && pnpm --dir packages/chara pack --pack-destination ../../.superpowers/package-smoke && tsx scripts/test-package.ts",
     "verify-fixtures": "tsx scripts/verify-fixtures.ts",
-    "verify-palettes": "tsx scripts/verify-palettes.ts"
+    "verify-palettes": "tsx scripts/verify-palettes.ts",
+    "check:undici-override": "tsx scripts/check-undici-override.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

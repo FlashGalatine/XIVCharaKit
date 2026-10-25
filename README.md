@@ -2,7 +2,7 @@
 
 A TypeScript library in development for reading and inspecting Final Fantasy XIV `.chara` files used by Anamnesis, Ktisis, and Brio.
 
-**Status: npm beta.2 published; beta.3 prepared for review.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. `xivcharakit@0.1.0-beta.2` was published through GitHub Actions with verified trusted-publisher provenance. The beta.3 candidate adds legacy `Helion` tribe normalization; preparing or merging its PR does not publish it. The maintainer elected to retain bundled appearance palettes with separate notices and provenance. GitHub release protections and npm trusted publishing are configured; releases remain manual and require approval. See the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
+**Status: npm beta.3 published; beta.4 prepared for review.** Bounded reading, typed inspection, creator/shader palettes, source-labelled swatches, and optional XIVAPI equipment candidates with caching and explicit failure states are available. Original code is MIT-licensed. `xivcharakit@0.1.0-beta.3` was published on 2026-10-22 through GitHub Actions and the registry lists signed provenance; it adds legacy `Helion` tribe normalization. The dist-tags are `next` → beta.3 and `latest` → beta.1. The beta.4 candidate carries the appearance policy `1.1.0` (with a swap of crossed Brio eye colors on partial evidence), a 16 MiB default read budget and the XIVAPI, input and inspection fixes recorded in the [changelog](CHANGELOG.md); preparing or merging its pull request does not publish it. The maintainer elected to retain bundled appearance palettes with separate notices and provenance. GitHub release protections and npm trusted publishing are configured; releases remain manual and require approval. See the [manual publication runbook](docs/npm-publication-readiness.md). The repository is [FlashGalatine/XIVCharaKit](https://github.com/FlashGalatine/XIVCharaKit); see the [rename record](docs/rename-preparation.md).
 
 The full MVP includes:
 
@@ -10,13 +10,26 @@ The full MVP includes:
 - Appearance swatches backed by versioned creator and shader palettes.
 - Optional cached XIVAPI dye names alongside both stored dye IDs, without a bundled name dataset.
 - Optional XIVAPI equipment resolution with matching candidates and explicit failure states.
-- A small website demonstrating the library's public API with local files and anonymized examples.
+- A small website demonstrating the library's public API with local files and synthetic examples.
 
-The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. Try the [live demo](https://charakit.projectgalatine.com), hosted with Workers Static Assets; see [Cloudflare hosting and deployment](docs/cloudflare-hosting.md). Beta.2 retains the same library API and behavior as beta.1.
+The demo is verified in Chromium with a module Web Worker. Installed-tarball checks cover Node, Node Worker, Chromium, module Web Worker and local workerd across all five exports. CI is configured for Ubuntu and Windows; hosted results are separate from local evidence. Editing and writing `.chara` files are deferred to a later version. Try the [live demo](https://charakit.projectgalatine.com), hosted with Workers Static Assets; see [Cloudflare hosting and deployment](docs/cloudflare-hosting.md). Beta.2 retained the beta.1 library API and behavior; beta.3 keeps the public API signatures and adds the `Helion` normalization.
 
 ## License and attribution
 
 Original library, demo and tooling code is covered by the [MIT license](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md) for upstream attribution and separate data rights. FINAL FANTASY XIV © SQUARE ENIX. This independent community project is not affiliated with, sponsored by, or endorsed by Square Enix. Game-derived materials are not covered by the MIT code license.
+
+## Connect with me
+
+**Flash Galatine** | Midgardsormr (Aether)
+
+- 🎮 **FFXIV**: [Lodestone Character](https://na.finalfantasyxiv.com/lodestone/character/7677106/)
+- 💻 **GitHub**: [@FlashGalatine](https://github.com/FlashGalatine)
+- 🐦 **X/Twitter**: [@AsheJunius](https://x.com/AsheJunius)
+- 📺 **Twitch**: [flashgalatine](https://www.twitch.tv/flashgalatine)
+- 🌐 **BlueSky**: [projectgalatine.com](https://bsky.app/profile/projectgalatine.com)
+- ❤️ **Patreon**: [ProjectGalatine](https://patreon.com/ProjectGalatine)
+- ☕ **Ko-Fi**: [flashgalatine](https://ko-fi.com/flashgalatine)
+- 💬 **Discord**: [Join Server](https://discord.gg/5VUSKTZCe5)
 
 ## Develop locally
 
@@ -56,7 +69,7 @@ const appearance = await resolveAppearance(inspection, {
   palettes: createDefaultPaletteProvider(),
 });
 const hair = appearance.slots.hair;
-// creatorHex, shaderHex, extendedHex, interpretation, displayHex, and issues
+// creatorHex, shaderHex, extendedHex, interpretation and displayHex; diagnostics are on appearance.issues
 ```
 
 Install the public beta with `npm install xivcharakit@next`, or use the checked tarball in a local consumer. Reading, inspection, bundled palette lookup, and appearance interpretation perform no network or storage operations. Main-entry imports exclude optional code/data; palette tables load only when requested. Embedded image fields are omitted; all remaining stored values are untrusted data.
@@ -68,7 +81,7 @@ import { createDyeNameResolver } from 'xivcharakit/dyes';
 const dyes = createDyeNameResolver({ languages: ['en'] });
 const names = await dyes.resolve([3, 10]);
 // names.rows: { rowId, names }; status/version/schema/issues retain evidence.
-// Reuse the resolver for its bounded default memory cache.
+// Reuse the resolver for its bounded default memory cache (on Cloudflare Workers, create it per request and share only a cache: docs/xivapi.md#cloudflare-workers).
 ```
 
 The demo shows `No dye (0)` for valid zero and raw IDs before lookup. **Resolve equipment and dye names** requests names; blank, missing and unavailable results remain distinct. Original stored fields are preserved. No name snapshot is bundled; see [dye provenance](docs/data-provenance.md#dye-names-through-xivapi). The synchronous `getDyeName` and `DYE_METADATA` exports were removed before publication.

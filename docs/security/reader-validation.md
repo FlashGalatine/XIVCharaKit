@@ -6,11 +6,13 @@ The final suite contains 122 tests across reader, inspection, model arithmetic, 
 
 ## Synthetic resource probes
 
+The image row was measured again on 2026-10-24 for the 16 MiB default that replaced 8 MiB (the 2026-10-19 row for 8,388,608 bytes: 85.24 ms, 8,432,824 sampled heap bytes, 81,388 KiB peak RSS); the other rows are from 2026-10-19.
+
 `pnpm benchmark` runs each synthetic case in an isolated child process with a 10-second termination deadline. Timing is one cold observation. Heap deltas are sampled immediately before/after reading, not peak heap. Process peak RSS includes runtime, tooling, and input allocation. The large-image input is supplied as a JavaScript string, so V8 may flatten the caller's existing string during scanning even though the image scalar is skipped. These probes do not prove an exact browser memory bound.
 
 | Case | Input bytes | Result | Time, ms | Sampled heap delta, bytes | Process peak RSS, KiB |
 | --- | ---: | --- | ---: | ---: | ---: |
-| Image at the default byte limit | 8,388,608 | accepted, payload omitted | 85.24 | 8,432,824 | 81,388 |
+| Image at the default byte limit | 16,777,216 | accepted, payload omitted | 145.73 | 16,820,368 | 95,540 |
 | Array at the default node limit | 200,011 | accepted | 46.85 | 7,279,040 | 91,148 |
 | Object near the node limit | 538,878 | accepted | 66.51 | 8,664,664 | 107,156 |
 | Excessive nesting | 87 | MAX_DEPTH | 1.25 | 88,424 | 73,472 |
