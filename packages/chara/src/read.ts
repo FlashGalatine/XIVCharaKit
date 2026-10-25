@@ -11,7 +11,7 @@ import type {
 } from './types.js';
 
 export const READ_DEFAULTS = Object.freeze({
-  maxBytes: 8 * 1024 * 1024,
+  maxBytes: 16 * 1024 * 1024,
   maxDepth: 32,
   maxNodes: 100_000,
   maxKeyLength: 1024,

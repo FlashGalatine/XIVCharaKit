@@ -6,7 +6,11 @@ import { READ_DEFAULTS, READ_MAXIMUMS, readChara } from '../src/read.js';
 // string checks on the image subtree it discards, the budgets inside that subtree, the ceilings,
 // the number grammar and the path and issue budgets.
 
-function rejects(input: string, code: string | string[], options?: object) {
+function rejects(
+  input: string | Uint8Array,
+  code: string | string[],
+  options?: object,
+) {
   const codes = Array.isArray(code) ? code : [code];
   try {
     readChara(input, options);
@@ -15,7 +19,8 @@ function rejects(input: string, code: string | string[], options?: object) {
     expect(codes).toContain((error as { code: string }).code);
     return;
   }
-  throw new Error(`Expected a rejection with ${codes.join(' or ')}: ${input}`);
+  const shown = typeof input === 'string' ? input.slice(0, 200) : '(bytes)';
+  throw new Error(`Expected a rejection with ${codes.join(' or ')}: ${shown}`);
 }
 const image = (value: string, sibling = '') =>
   `{"Hair":0,"Base64Image":${value}${sibling}}`;
@@ -200,7 +205,7 @@ describe('the host ceilings', () => {
     maxIssues: 64,
   };
   const DEFAULTS = {
-    maxBytes: 8 * 1024 * 1024,
+    maxBytes: 16 * 1024 * 1024,
     maxDepth: 32,
     maxNodes: 100_000,
     maxKeyLength: 1024,
@@ -220,6 +225,21 @@ describe('the host ceilings', () => {
       });
       rejects('{"Hair":0}', 'INVALID_OPTIONS', { [key]: ceiling + 1 });
     });
+  it('admits a document of exactly 16 MiB by default, as text or bytes, and refuses one byte more', () => {
+    const MIB16 = 16 * 1024 * 1024;
+    const open = '{"Hair":0,"Base64Image":"';
+    const close = '"}';
+    const make = (bytes: number) =>
+      open + 'a'.repeat(bytes - open.length - close.length) + close;
+    const exact = make(MIB16);
+    expect(exact.length).toBe(MIB16);
+    expect(readChara(exact).hasEmbeddedImage).toBe(true);
+    expect(readChara(new TextEncoder().encode(exact)).hasEmbeddedImage).toBe(
+      true,
+    );
+    rejects(make(MIB16 + 1), 'INPUT_TOO_LARGE');
+    rejects(new TextEncoder().encode(make(MIB16 + 1)), 'INPUT_TOO_LARGE');
+  });
   it('accept 1 for each limit, and let the reader apply it', () => {
     rejects('{"Hair":0}', 'INPUT_TOO_LARGE', { maxBytes: 1 });
     rejects('{"Hair":0}', 'MAX_DEPTH', { maxDepth: 1 });
