@@ -503,6 +503,8 @@ describe('what a dataset must look like', () => {
     ['a short hex', '#ABC'],
     ['a hex without #', 'ABCDEF'],
     ['a non-hex digit', '#GGGGGG'],
+    ['text before the #', 'x#ABCDEF'],
+    ['a leading space', ' #ABCDEF'],
     ['trailing text', '#ABCDEF '],
     ['an eight digit hex', '#ABCDEF00'],
     ['a number', 0xabcdef],

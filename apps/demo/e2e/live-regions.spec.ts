@@ -69,6 +69,14 @@ test.describe('live regions', () => {
         alertChanges: w.__live.alertChanges,
       };
     });
+  // A clock that stands still until runFor moves it. Installing it is not enough: it runs in real
+  // time until it is paused, so the 50 ms before a repeated alert is refilled would race the test.
+  // It is paused a minute ahead so that a runner that stalls between the calls stays behind it.
+  async function pauseClock(page: Page) {
+    const start = new Date('2026-01-01T00:00:00Z');
+    await page.clock.install({ time: start });
+    await page.clock.pauseAt(new Date(start.getTime() + 60_000));
+  }
 
   test('are never recreated while the page renders, and the alert stays empty without an error', async ({
     page,
@@ -164,7 +172,7 @@ test.describe('live regions', () => {
   test('refill the alert after the pause when the same rejection repeats', async ({
     page,
   }) => {
-    await page.clock.install();
+    await pauseClock(page);
     await load(page, {}, 'first.pose');
     await expect(page.getByRole('alert')).toContainText('FILE_EXTENSION');
     await load(page, {}, 'second.pose');
@@ -175,7 +183,7 @@ test.describe('live regions', () => {
   test('do not bring back an error that was cleared during the pause', async ({
     page,
   }) => {
-    await page.clock.install();
+    await pauseClock(page);
     await load(page, { Tribe: 'Midlander' });
     await expect(page.getByTestId('identity')).toContainText('Hyur');
     await load(page, {}, 'first.pose');

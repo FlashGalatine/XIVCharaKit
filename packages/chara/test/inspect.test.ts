@@ -102,6 +102,8 @@ describe('truncated diagnostics', () => {
     expect(issues.map((issue) => issue.code)).not.toContain('ISSUES_TRUNCATED');
   });
   it('still ends with exactly one marker when inspection overflows its own cap too', () => {
+    // The reader keeps 59 of the 90 unknown keys plus its marker, and the ten bad byte fields would
+    // take the inspection to 69 entries: both lists overflow, yet only one marker may remain.
     const fields: Record<string, unknown> = { Race: 'Hyur' };
     for (let i = 0; i < 90; i++) fields[`Hair${i}`] = i;
     for (const key of [
@@ -117,14 +119,18 @@ describe('truncated diagnostics', () => {
       'Mouth',
     ])
       fields[key] = 'x';
-    const issues = inspectChara(
-      readChara(JSON.stringify(fields), { maxIssues: 3 }),
-    ).issues;
+    const document = readChara(JSON.stringify(fields), { maxIssues: 60 });
+    expect(document.issues).toHaveLength(60);
+    expect(document.issues.at(-1)?.code).toBe('ISSUES_TRUNCATED');
+    const issues = inspectChara(document).issues;
+    expect(issues).toHaveLength(64);
     expect(issues.at(-1)?.code).toBe('ISSUES_TRUNCATED');
     expect(
       issues.filter((issue) => issue.code === 'ISSUES_TRUNCATED'),
     ).toHaveLength(1);
-    expect(issues.length).toBeLessThanOrEqual(64);
+    expect(
+      issues.filter((issue) => issue.code === 'INVALID_FIELD'),
+    ).toHaveLength(4); // the other six were dropped or overwritten by the marker
   });
 });
 

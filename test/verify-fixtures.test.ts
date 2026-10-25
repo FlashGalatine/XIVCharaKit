@@ -42,6 +42,16 @@ const editManifest = (change: (manifest: Record<string, unknown>) => void) => {
   change(manifest);
   writeFileSync(file, JSON.stringify(manifest));
 };
+const expectedFor = (manifest: Record<string, unknown>, path: string) => {
+  const entry = (
+    manifest.fixtures as {
+      path: string;
+      expected: { canonicalRace: string | null; facewear: number | null };
+    }[]
+  ).find((fixture) => fixture.path === path);
+  if (!entry) throw new Error(`The manifest does not list ${path}.`);
+  return entry.expected;
+};
 
 describe('fixture verification', () => {
   it('accepts the committed fixtures and reports what it checked', async () => {
@@ -81,6 +91,18 @@ describe('fixture verification', () => {
   it('fails when a fixture is changed', async () => {
     appendFileSync(join(fixtures, 'partial', 'equipment.chara'), ' ');
     await expect(run()).rejects.toThrow(/hash/i);
+  });
+  it('fails when a fixture does not read as the race the manifest expects', async () => {
+    editManifest((m) => {
+      expectedFor(m, 'partial/appearance.chara').canonicalRace = 'Elezen';
+    });
+    await expect(run()).rejects.toThrow(/expectation mismatch/);
+  });
+  it('fails when a fixture does not read as the facewear the manifest expects', async () => {
+    editManifest((m) => {
+      expectedFor(m, 'ktisis/full.chara').facewear = 0;
+    });
+    await expect(run()).rejects.toThrow(/expectation mismatch/);
   });
   it('fails when the appearance expectations are changed or not pinned', async () => {
     appendFileSync(join(fixtures, 'expected', 'appearance.json'), ' ');

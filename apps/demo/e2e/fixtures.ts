@@ -25,9 +25,9 @@ type Forbidden = { __forbidden?: string[] };
  * navigation: the fixture attaches it when the page is created, ahead of any beforeEach hook.
  *
  * Limits, so that the gates are not read as more than they are: a request body that is a Blob,
- * File or FormData reaches Playwright without its bytes, so any request that is not a GET is a
- * failure whatever its body; what a document sends while it is destroyed is not reported, so
- * the lifecycle events are fired on the live page instead; a violation of the Content-Security-Policy raised inside a dedicated
+ * File or FormData reaches Playwright without its bytes, so any request other than a GET or HEAD
+ * (the two a page cannot send a body with) is a failure whatever its body; what a document sends
+ * while it is destroyed is not reported, so the lifecycle events are fired on the live page instead; a violation of the Content-Security-Policy raised inside a dedicated
  * worker is not reported to the page (the worker's requests and console output are); and
  * SharedWorker, EventSource and the page's own WebSocket are refused outright.
  */
@@ -318,7 +318,8 @@ function record(page: Page, appOrigin: string): Traffic {
 
 const recorded = new WeakMap<Page, Traffic>();
 export const test = base.extend<{ traffic: Traffic; allowXivapi: boolean }>({
-  // Set by the one test that talks to the real service (live.spec.ts).
+  // Set by the one test that talks to the real service (live.spec.ts) and by two recorder
+  // self-tests that make no XIVAPI request (recorder.spec.ts).
   allowXivapi: [false, { option: true }],
   // Overriding `page` guarantees the recorder exists before any hook or test body navigates.
   page: async ({ page, baseURL, allowXivapi }, use) => {

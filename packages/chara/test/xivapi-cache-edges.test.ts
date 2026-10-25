@@ -438,4 +438,35 @@ describe('a resolution shares one budget with its cache hits and its hung cache'
     expect(gets).toBe(1);
     expect(sets).toBe(0);
   });
+
+  it('stops using a cache whose write timed out, for the rest of the resolution', async () => {
+    vi.useFakeTimers();
+    let gets = 0;
+    let sets = 0;
+    const fetch: typeof globalThis.fetch = async (input) =>
+      new URL(String(input)).pathname === '/api/sheet/Glasses'
+        ? json({ version: V, schema: S, rows: [glassesRow] })
+        : json(pageOf([wire()]));
+    const pending = resolverOver(
+      fetch,
+      {
+        get: async () => {
+          gets++;
+          return null;
+        },
+        set: () => {
+          sets++;
+          return new Promise<void>(() => {});
+        },
+      },
+      { timeoutMs: 20 },
+    ).resolve({ models: [body], glassesId: 8 });
+    await vi.advanceTimersByTimeAsync(30_000);
+    const result = await pending;
+    expect(result.items.Body?.status).toBe('matched');
+    expect(result.facewear?.status).toBe('matched');
+    // The items' read missed and their write timed out; the facewear lookup neither reads nor writes.
+    expect(gets).toBe(1);
+    expect(sets).toBe(1);
+  });
 });
