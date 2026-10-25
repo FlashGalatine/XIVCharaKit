@@ -5,15 +5,16 @@ name: Check the undici override
 # Every Monday this asks the public npm registry whether the newest wrangler no longer needs the pin,
 # and opens one issue when the override can be dropped. It changes nothing in the repository.
 # Scheduled workflows run from the default branch only.
+# The check job installs and runs the repository's dependencies with a read-only token. Only the
+# report job may write issues, and it neither checks out nor installs anything: it reads the check's
+# output from an artifact and keeps that text in a file, never in a run block or an expression.
 
 on:
   schedule:
     - cron: '17 6 * * 1'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  issues: write
+permissions: {}
 
 concurrency:
   group: undici-override
@@ -24,6 +25,10 @@ jobs:
     name: Can the miniflare>undici override be dropped?
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.check.outputs.status }}
     env:
       CI: 'true'
     steps:
@@ -40,20 +45,47 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Ask the registry
         id: check
-        # Exit status 0: still needed. 2: it can be dropped. Anything else is a failure of the check.
+        # Exit status 0: still needed, or no override left to check. 2: it can be dropped. Anything
+        # else is a failure of the check.
         run: |
           set +e
-          pnpm --silent run check:undici-override --strict | tee "$RUNNER_TEMP/check.txt"
+          mkdir -p "$RUNNER_TEMP/undici-override"
+          pnpm --silent run check:undici-override --strict | tee "$RUNNER_TEMP/undici-override/check.txt"
           status=${PIPESTATUS[0]}
+          echo "$status" > "$RUNNER_TEMP/undici-override/status.txt"
           echo "status=$status" >> "$GITHUB_OUTPUT"
           if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then exit "$status"; fi
-      - name: Open an issue when the override can be dropped
-        if: steps.check.outputs.status == '2'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: undici-override
+          path: ${{ runner.temp }}/undici-override/
+          if-no-files-found: error
+          retention-days: 7
+
+  report:
+    name: Open an issue when the override can be dropped
+    needs: check
+    if: needs.check.outputs.status == '2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: undici-override
+          path: ${{ runner.temp }}/undici-override
+      - name: Open an issue unless one is already open
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          result="$RUNNER_TEMP/undici-override"
+          if [ "$(cat "$result/status.txt")" != "2" ]; then
+            echo "The check's artifact does not say that the override can be dropped." >&2
+            exit 1
+          fi
           title='Drop the miniflare>undici override'
           open=$(gh issue list --state open --limit 100 --json title --jq "[.[] | select(.title == \"$title\")] | length")
           if [ "$open" != "0" ]; then
@@ -61,7 +93,7 @@ jobs:
             exit 0
           fi
           {
-            cat "$RUNNER_TEMP/check.txt"
+            cat "$result/check.txt"
             echo
             echo 'To drop it:'
             echo
@@ -69,6 +101,7 @@ jobs:
             echo '2. Delete `miniflare>undici` from `overrides:` in `pnpm-workspace.yaml`.'
             echo '3. Run `pnpm install` and `pnpm audit`; the audit must report no vulnerabilities.'
             echo '4. Run `pnpm test:demo:cloudflare` and `pnpm test:package`.'
+            echo '5. In the same PR, delete this weekly check: `.github/workflows/undici-override.yml`, `scripts/check-undici-override.ts`, `test/undici-override.test.ts` and the `check:undici-override` script in the root `package.json`.'
             echo
             echo "Found by $RUN_URL."
           } > "$RUNNER_TEMP/issue.md"

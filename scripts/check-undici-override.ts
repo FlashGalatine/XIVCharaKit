@@ -6,11 +6,21 @@ import { isEntryPoint } from './release.js';
 // vulnerable one (the three advisories that make `pnpm audit` fail). This reports when the newest
 // wrangler no longer needs the pin, so that the override can be dropped. It reads the public npm
 // registry only; run it with `pnpm check:undici-override`, or with `--strict`, which exits with 2 once
-// the override can go (an error exits with 1).
+// the override can go (an error, including an undici major it has no patched release for, exits with
+// 1). Once pnpm-workspace.yaml no longer mentions the override, it says there is nothing to check and
+// exits with 0.
 
 const KEY = 'miniflare>undici';
 const VERSION = /^\d+\.\d+\.\d+$/;
 const REGISTRY = 'https://registry.npmjs.org';
+
+// The first release of each undici major that is patched against the three advisories behind the pin
+// (GHSA-xjj6-f33q-929c, GHSA-4qv8-2p9j-2685 and GHSA-f72v-6w45-q472). Newer than the pin is not
+// enough: undici 8.0.0 to 8.12.1 are still vulnerable. Update this together with the pin.
+const PATCHED: Readonly<Record<string, string>> = {
+  '7': '7.30.1',
+  '8': '8.12.2',
+};
 
 /** The exact version that the `overrides:` section of pnpm-workspace.yaml pins for miniflare's undici. */
 export function pinnedOverride(workspaceYaml: string): string | null {
@@ -48,6 +58,18 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
+/** The first patched release in the major of an exact undici version; an unknown major cannot be decided. */
+function patchedRelease(version: string): string {
+  if (!VERSION.test(version))
+    throw new Error(`"${version}" is not a major.minor.patch version.`);
+  const patched = PATCHED[version.split('.')[0] as string];
+  if (patched === undefined)
+    throw new Error(
+      `Whether undici ${version} is patched cannot be decided: the check knows the patched releases of undici ${Object.keys(PATCHED).join(' and ')} only.`,
+    );
+  return patched;
+}
+
 export interface OverrideStatus {
   /** The version the workspace pins. */
   pinned: string;
@@ -57,7 +79,9 @@ export interface OverrideStatus {
   miniflare: string;
   /** The undici that miniflare depends on, as the registry states it. */
   undici: string;
-  /** True when the newest wrangler already resolves an undici at least as new as the pin. */
+  /** The first patched release in the major of that undici's lower bound. */
+  patched: string;
+  /** True when that lower bound is a patched release and at least as new as the pin. */
   droppable: boolean;
 }
 
@@ -109,12 +133,16 @@ export async function checkOverride({
   );
   const undici = dependency(miniflareDoc, 'undici', `miniflare ${miniflare}`);
   const lowerBound = undici.replace(/^[\^~]/, '');
+  const patched = patchedRelease(lowerBound);
   return {
     pinned,
     wrangler: String(wranglerDoc.version),
     miniflare,
     undici,
-    droppable: compareVersions(lowerBound, pinned) >= 0,
+    patched,
+    droppable:
+      compareVersions(lowerBound, patched) >= 0 &&
+      compareVersions(lowerBound, pinned) >= 0,
   };
 }
 
@@ -122,10 +150,14 @@ export function describeStatus(status: OverrideStatus): string {
   const facts = `the newest wrangler (${status.wrangler}) uses miniflare ${status.miniflare}, which pins undici ${status.undici}`;
   return status.droppable
     ? `The override ${KEY}=${status.pinned} can be dropped: ${facts}. Bump wrangler to ${status.wrangler}, remove the override from pnpm-workspace.yaml, then run pnpm install and pnpm audit.`
-    : `The override ${KEY}=${status.pinned} is still needed: ${facts}.`;
+    : `The override ${KEY}=${status.pinned} is still needed: ${facts}, and the first patched release of that major is ${status.patched}.`;
 }
 
-/** The exit status: 0, or 2 when --strict is given and the override can be dropped. A failure throws. */
+/**
+ * The exit status: 0, or 2 when --strict is given and the override can be dropped. It is also 0, without
+ * asking the registry, once pnpm-workspace.yaml no longer mentions the override at all; an override line
+ * it cannot read still fails. A failure throws.
+ */
 export async function run({
   workspaceYaml,
   request = fetch,
@@ -137,6 +169,12 @@ export async function run({
   strict: boolean;
   log?: (message: string) => void;
 }): Promise<number> {
+  if (!workspaceYaml.includes(KEY)) {
+    log(
+      `pnpm-workspace.yaml has no override for ${KEY}, so there is nothing to check.`,
+    );
+    return 0;
+  }
   const status = await checkOverride({ workspaceYaml, request });
   log(describeStatus(status));
   return strict && status.droppable ? 2 : 0;
